@@ -1,5 +1,3 @@
-
-
 import { Input, Dropdown } from "antd";
 import type { MenuProps } from "antd";
 import { Menu, Search, Settings, Users, BookmarkIcon, Moon } from "lucide-react";
@@ -51,12 +49,13 @@ export function Sidebar() {
           allowClear
           className="flex-1"
           styles={{
-            input: {
-              backgroundColor: "var(--input)",
-              borderColor: "transparent",
-              borderRadius: "20px",
-              height: "36px",
-            },
+            input: { backgroundColor: "transparent" },
+          }}
+          style={{
+            backgroundColor: "var(--input)",
+            borderColor: "transparent",
+            borderRadius: "20px",
+            height: "36px",
           }}
         />
       </header>
