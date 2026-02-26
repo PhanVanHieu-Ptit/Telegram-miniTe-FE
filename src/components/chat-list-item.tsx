@@ -1,5 +1,4 @@
-
-
+import { memo, useMemo } from "react";
 import { Avatar, Badge } from "antd";
 import { Pin, VolumeOff } from "lucide-react";
 import type { Conversation } from "@/lib/types";
@@ -40,9 +39,21 @@ interface ChatListItemProps {
   onClick: () => void;
 }
 
-export function ChatListItem({ conversation, active, onClick }: ChatListItemProps) {
+const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemProps) => {
+// Connect to Zustand store to get conversation partner
   const getConversationPartner = useChatStore((s) => s.getConversationPartner);
-  const partner = getConversationPartner(conversation);
+
+  // Memoize partner to avoid recalculating on every render
+  const partner = useMemo(
+    () => getConversationPartner(conversation),
+    [getConversationPartner, conversation]
+  );
+
+  // Memoize avatar color
+  const avatarColor = useMemo(() => {
+    if (!partner) return avatarColors[0];
+    return getAvatarColor(partner.name);
+  }, [partner]);
 
   if (!partner) return null;
 
@@ -64,7 +75,7 @@ export function ChatListItem({ conversation, active, onClick }: ChatListItemProp
         <Badge dot={partner.online} color="var(--online)" offset={[-4, 36]}>
           <Avatar
             size={48}
-            style={{ backgroundColor: getAvatarColor(partner.name), fontSize: 16, fontWeight: 600 }}
+            style={{ backgroundColor: avatarColor, fontSize: 16, fontWeight: 600 }}
           >
             {getInitials(partner.name)}
           </Avatar>
@@ -119,4 +130,7 @@ export function ChatListItem({ conversation, active, onClick }: ChatListItemProp
       </div>
     </button>
   );
-}
+};
+
+// Memoize component to prevent unnecessary re-renders in chat list
+export const ChatListItem = memo(ChatListItemComponent);

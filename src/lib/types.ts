@@ -12,7 +12,8 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: string;
-  read: boolean;
+  seenBy?: string[];
+  read?: boolean;
 }
 
 export interface Conversation {

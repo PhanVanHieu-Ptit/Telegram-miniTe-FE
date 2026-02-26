@@ -64,6 +64,10 @@ export class TelegramMqttClient {
   private statusCallbacks: Set<StatusCallback> = new Set();
   private options: MqttConnectionOptions;
   private _status: ConnectionStatus = "disconnected";
+  private subscribedTopics: Map<string, QoS> = new Map();
+  private activeTopics: Map<string, QoS> = new Map();
+  private pendingTopics: Set<string> = new Set();
+  private isDisconnecting = false;
 
   constructor(options: MqttConnectionOptions) {
     this.options = options;
@@ -92,6 +96,7 @@ export class TelegramMqttClient {
         return;
       }
 
+      this.isDisconnecting = false;
       this.setStatus("connecting");
 
       const {
@@ -106,7 +111,7 @@ export class TelegramMqttClient {
         extra,
       } = this.options;
 
-      this.client = mqtt.connect(url, {
+      const client = mqtt.connect(url, {
         username,
         password,
         clientId,
@@ -117,34 +122,52 @@ export class TelegramMqttClient {
         clean: true,
         ...extra,
       });
+      this.client = client;
 
-      this.client.on("connect", () => {
+      let settled = false;
+      const settleResolve = () => {
+        if (!settled) {
+          settled = true;
+          resolve();
+        }
+      };
+      const settleReject = (error: Error) => {
+        if (!settled) {
+          settled = true;
+          reject(error);
+        }
+      };
+
+      client.on("connect", () => {
         this.setStatus("connected");
-        resolve();
+        if (this.subscribedTopics.size > 0) {
+          void this.resubscribeTopics();
+        }
+        settleResolve();
       });
 
-      this.client.on("reconnect", () => {
+      client.on("reconnect", () => {
+        if (this.isDisconnecting) return;
         this.setStatus("reconnecting");
       });
 
-      this.client.on("error", (err: Error) => {
+      client.on("error", (err: Error) => {
+        if (this.isDisconnecting) return;
         this.setStatus("error", err);
-        if (this._status !== "connected") {
-          reject(err);
-        }
+        settleReject(err);
       });
 
-      this.client.on("close", () => {
-        if (this._status !== "reconnecting") {
-          this.setStatus("disconnected");
-        }
-      });
-
-      this.client.on("offline", () => {
+      client.on("close", () => {
+        if (this.isDisconnecting || this._status === "reconnecting") return;
         this.setStatus("disconnected");
       });
 
-      this.client.on("message", (topic: string, payload: Buffer, packet: Packet) => {
+      client.on("offline", () => {
+        if (this.isDisconnecting) return;
+        this.setStatus("disconnected");
+      });
+
+      client.on("message", (topic: string, payload: Buffer, packet: Packet) => {
         this.messageCallbacks.forEach((cb) => {
           try {
             cb(topic, payload, packet);
@@ -159,14 +182,25 @@ export class TelegramMqttClient {
   disconnect(): Promise<void> {
     return new Promise((resolve) => {
       if (!this.client) {
+        this.subscribedTopics.clear();
+        this.activeTopics.clear();
+        this.pendingTopics.clear();
         this.setStatus("disconnected");
         resolve();
         return;
       }
 
-      this.client.end(false, {}, () => {
+      const client = this.client;
+      this.isDisconnecting = true;
+
+      client.end(false, {}, () => {
+        client.removeAllListeners();
         this.client = null;
+        this.subscribedTopics.clear();
+        this.activeTopics.clear();
+        this.pendingTopics.clear();
         this.setStatus("disconnected");
+        this.isDisconnecting = false;
         resolve();
       });
     });
@@ -184,12 +218,45 @@ export class TelegramMqttClient {
         return;
       }
 
-      this.client.subscribe(topic, { qos: options.qos ?? 1 }, (err, granted) => {
+      const topics = Array.isArray(topic) ? topic : [topic];
+      const uniqueTopics = [...new Set(topics)];
+      const qos = options.qos ?? 1;
+
+      uniqueTopics.forEach((t) => {
+        this.subscribedTopics.set(t, qos);
+      });
+
+      const freshTopics = uniqueTopics.filter(
+        (t) => !this.activeTopics.has(t) && !this.pendingTopics.has(t),
+      );
+      if (freshTopics.length === 0) {
+        resolve([]);
+        return;
+      }
+
+      freshTopics.forEach((t) => {
+        this.pendingTopics.add(t);
+      });
+
+      this.client.subscribe(freshTopics, { qos }, (err, granted) => {
         if (err) {
+          freshTopics.forEach((t) => {
+            this.pendingTopics.delete(t);
+          });
           reject(err);
-        } else {
-          resolve(granted ?? []);
+          return;
         }
+
+        freshTopics.forEach((t) => {
+          this.pendingTopics.delete(t);
+          if (this.subscribedTopics.has(t)) {
+            this.activeTopics.set(t, qos);
+          } else {
+            this.client?.unsubscribe(t, () => undefined);
+          }
+        });
+
+        resolve(granted ?? []);
       });
     });
   }
@@ -201,9 +268,30 @@ export class TelegramMqttClient {
         return;
       }
 
-      this.client.unsubscribe(topic, {}, (err) => {
-        if (err) reject(err);
-        else resolve();
+      const topics = Array.isArray(topic) ? topic : [topic];
+      const activeTopics = topics.filter((t) => this.activeTopics.has(t));
+
+      topics.forEach((t) => {
+        this.subscribedTopics.delete(t);
+        this.pendingTopics.delete(t);
+      });
+
+      if (activeTopics.length === 0) {
+        resolve();
+        return;
+      }
+
+      this.client.unsubscribe(activeTopics, {}, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+
+        activeTopics.forEach((t) => {
+          this.activeTopics.delete(t);
+        });
+
+        resolve();
       });
     });
   }
@@ -254,8 +342,24 @@ export class TelegramMqttClient {
 
   // ── Internals ────────────────────────────────────────────────────────
 
+  private async resubscribeTopics(): Promise<void> {
+    if (!this.client || this.subscribedTopics.size === 0) return;
+
+    const entries = [...this.subscribedTopics.entries()];
+
+    await Promise.all(
+      entries.map(([topic, qos]) => this.subscribe(topic, { qos }).catch(() => [])),
+    );
+  }
+
   private setStatus(status: ConnectionStatus, error?: Error): void {
     this._status = status;
+
+    if (status === "reconnecting" || status === "disconnected") {
+      this.activeTopics.clear();
+      this.pendingTopics.clear();
+    }
+
     this.statusCallbacks.forEach((cb) => {
       try {
         cb(status, error);

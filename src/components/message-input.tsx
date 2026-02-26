@@ -1,6 +1,6 @@
 
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
 import { SendHorizontal, Smile } from "lucide-react";
 import { useChatStore } from "@/lib/store";
@@ -16,7 +16,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   const typingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const sendMessage = useChatStore((s) => s.sendMessage);
+  const addMessage = useChatStore((s) => s.addMessage);
   const currentUserId = useChatStore((s) => s.currentUserId);
 
   // ── Typing indicator management ──────────────────────────────────
@@ -58,6 +58,19 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     }
   }, [emitTyping]);
 
+  useEffect(() => {
+    return () => {
+      if (typingTimerRef.current) {
+        clearTimeout(typingTimerRef.current);
+        typingTimerRef.current = null;
+      }
+      if (typingRef.current) {
+        typingRef.current = false;
+        emitTyping(false);
+      }
+    };
+  }, [emitTyping]);
+
   // ── Send ─────────────────────────────────────────────────────────
 
   const handleSend = useCallback(() => {
@@ -76,11 +89,12 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         hour: "2-digit",
         minute: "2-digit",
       }),
+      seenBy: [],
       read: false,
     };
 
-    // Commit locally via store
-    sendMessage(conversationId, trimmed);
+    // Commit locally via store (optimistic)
+    addMessage(conversationId, message);
 
     // Publish over MQTT
     try {
@@ -93,7 +107,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     }
 
     setText("");
-  }, [text, conversationId, currentUserId, sendMessage, stopTyping]);
+  }, [text, conversationId, currentUserId, addMessage, stopTyping]);
 
   // ── Keyboard ─────────────────────────────────────────────────────
 

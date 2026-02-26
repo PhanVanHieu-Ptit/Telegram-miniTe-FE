@@ -15,6 +15,7 @@ import { useChatStore } from "./store";
 const TOPICS = {
   messageNew: (id: string) => `conversation/${id}/message/new` as const,
   typing: (id: string) => `conversation/${id}/typing` as const,
+  seen: (id: string) => `conversation/${id}/seen` as const,
   online: "presence/online" as const,
 } as const;
 
@@ -28,13 +29,19 @@ interface MessageNewPayload {
   senderId: string;
   text: string;
   timestamp: string;
-  read: boolean;
+  seenBy?: string[];
+  read?: boolean;
 }
 
 interface TypingPayload {
   conversationId: string;
   userId: string;
   active: boolean;
+}
+
+interface SeenPayload {
+  conversationId: string;
+  userId: string;
 }
 
 interface OnlinePayload {
@@ -55,6 +62,7 @@ function safeParse<T>(buffer: Buffer): T | null {
 
 const MESSAGE_RE = /^conversation\/([^/]+)\/message\/new$/;
 const TYPING_RE = /^conversation\/([^/]+)\/typing$/;
+const SEEN_RE = /^conversation\/([^/]+)\/seen$/;
 
 // ---------------------------------------------------------------------------
 // Bridge — routes MQTT events into Zustand store
@@ -67,7 +75,7 @@ export class MqttStoreBridge {
   private subscribedIds = new Set<string>();
   private typingTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
-  private static readonly TYPING_TIMEOUT_MS = 4_000;
+  private static readonly TYPING_TIMEOUT_MS = 3_000;
 
   constructor(options: MqttConnectionOptions) {
     this.client = getMqttClient(options);
@@ -104,6 +112,7 @@ export class MqttStoreBridge {
     await this.client.subscribe([
       TOPICS.messageNew(conversationId),
       TOPICS.typing(conversationId),
+      TOPICS.seen(conversationId),
     ]);
     this.subscribedIds.add(conversationId);
   }
@@ -113,6 +122,7 @@ export class MqttStoreBridge {
     await this.client.unsubscribe([
       TOPICS.messageNew(conversationId),
       TOPICS.typing(conversationId),
+      TOPICS.seen(conversationId),
     ]);
     this.subscribedIds.delete(conversationId);
   }
@@ -126,7 +136,8 @@ export class MqttStoreBridge {
       senderId: message.senderId,
       text: message.text,
       timestamp: message.timestamp,
-      read: message.read,
+      seenBy: message.seenBy,
+      read: message.read ?? false,
     };
     await this.client.publish(TOPICS.messageNew(conversationId), payload);
   }
@@ -138,6 +149,17 @@ export class MqttStoreBridge {
       active,
     };
     await this.client.publish(TOPICS.typing(conversationId), payload, {
+      qos: 0,
+      retain: false,
+    });
+  }
+
+  async publishSeen(conversationId: string): Promise<void> {
+    const payload: SeenPayload = {
+      conversationId,
+      userId: useChatStore.getState().currentUserId,
+    };
+    await this.client.publish(TOPICS.seen(conversationId), payload, {
       qos: 0,
       retain: false,
     });
@@ -171,6 +193,7 @@ export class MqttStoreBridge {
         senderId: data.senderId,
         text: data.text,
         timestamp: data.timestamp,
+        seenBy: data.seenBy,
         read: data.read,
       };
       store().addMessage(msgMatch[1], msg);
@@ -191,6 +214,15 @@ export class MqttStoreBridge {
         store().removeTypingUser(convoId, data.userId);
         this.clearTimer(convoId, data.userId);
       }
+      return;
+    }
+
+    // ── seen ──
+    const seenMatch = SEEN_RE.exec(topic);
+    if (seenMatch) {
+      const data = safeParse<SeenPayload>(payload);
+      if (!data) return;
+      store().markConversationSeenBy(seenMatch[1], data.userId);
       return;
     }
 
