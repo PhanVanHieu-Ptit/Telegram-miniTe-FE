@@ -18,13 +18,26 @@ export default function RegisterPage() {
     const onFinish = async (values: RegisterFormValues) => {
         setLoading(true);
         try {
+            // Call register action
             await register(values);
+
+            // Show success message
             message.success("Registration successful! Redirecting to login...");
-            navigate("/login");
+
+            // Reset form
+            form.resetFields();
+
+            // Redirect to login after 1 second
+            setTimeout(() => {
+                navigate("/login");
+            }, 1000);
         } catch (error) {
-            message.error(
-                error instanceof Error ? error.message : "Registration failed. Please try again."
-            );
+            // Handle errors from store or validation
+            const errorMessage =
+                error instanceof Error
+                    ? error.message
+                    : "Registration failed. Please try again.";
+            message.error(errorMessage);
         } finally {
             setLoading(false);
         }

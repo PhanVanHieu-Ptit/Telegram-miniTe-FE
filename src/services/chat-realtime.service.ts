@@ -1,3 +1,4 @@
+import { MessageStatus } from "@/types/chat.types";
 import type { Message } from "@/lib/types";
 import {
     getMqttClient,
@@ -186,6 +187,7 @@ export class ChatRealtimeService {
                 senderId: data.senderId,
                 text: data.text,
                 timestamp: data.timestamp,
+                status: MessageStatus.Sent,
                 seenBy: data.seenBy,
                 read: data.read,
             };

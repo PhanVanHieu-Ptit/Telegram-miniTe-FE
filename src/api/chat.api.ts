@@ -43,11 +43,25 @@ export const getConversations = (): Promise<Conversation[]> => {
         .then((response) => response.data);
 };
 
-export const getMessages = (conversationId: string): Promise<Message[]> => {
+export interface GetMessagesParams {
+    conversationId: string;
+    cursor?: string;
+    limit?: number;
+}
+
+export interface PaginatedMessages {
+    messages: Message[];
+    nextCursor?: string;
+    hasMore: boolean;
+}
+
+export const getMessages = (params: GetMessagesParams): Promise<PaginatedMessages> => {
     return apiClient
-        .get<Message[]>("/messages", {
+        .get<PaginatedMessages>("/messages", {
             params: {
-                conversationId,
+                conversationId: params.conversationId,
+                cursor: params.cursor,
+                limit: params.limit,
             },
         })
         .then((response) => response.data);

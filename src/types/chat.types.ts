@@ -1,6 +1,14 @@
 export type ISODateString = string;
 
-export type MessageStatus = "sent" | "delivered" | "seen";
+export const MessageStatus = {
+    Sending: "sending",
+    Sent: "sent",
+    Delivered: "delivered",
+    Seen: "seen",
+    Failed: "failed",
+} as const;
+
+export type MessageStatus = (typeof MessageStatus)[keyof typeof MessageStatus];
 
 export interface User {
     id: string;

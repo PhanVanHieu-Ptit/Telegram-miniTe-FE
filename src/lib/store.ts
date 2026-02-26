@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { User, Message, Conversation } from "./types";
+import { MessageStatus, type User, type Message, type Conversation } from "./types";
 import {
   users,
   conversations as mockConversations,
@@ -100,6 +100,52 @@ export const useChatStore = create<ChatStore>((set, get) => {
     await service.start();
     return service;
   };
+
+  const replaceMessage = (
+    conversationId: string,
+    tempId: string,
+    nextMessage: Message
+  ): void =>
+    set((state) => {
+      const list = state.messages[conversationId] ?? [];
+      const nextList = list.map((message) =>
+        message.id === tempId ? nextMessage : message
+      );
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: nextList,
+        },
+        conversations: state.conversations.map((c) =>
+          c.id === conversationId ? { ...c, lastMessage: nextMessage } : c
+        ),
+      };
+    });
+
+  const updateMessageStatus = (
+    conversationId: string,
+    messageId: string,
+    status: MessageStatus
+  ): void =>
+    set((state) => {
+      const list = state.messages[conversationId] ?? [];
+      const nextList = list.map((message) =>
+        message.id === messageId ? { ...message, status } : message
+      );
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: nextList,
+        },
+        conversations: state.conversations.map((c) =>
+          c.id === conversationId && c.lastMessage?.id === messageId
+            ? { ...c, lastMessage: { ...c.lastMessage, status } }
+            : c
+        ),
+      };
+    });
 
   return {
     // State
@@ -335,9 +381,11 @@ export const useChatStore = create<ChatStore>((set, get) => {
     sendMessage: async (conversationId: string, text: string) => {
       const trimmed = text.trim();
       if (!trimmed) return;
+
       const senderId = get().currentUserId;
-      const newMessage: Message = {
-        id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const optimisticMessage: Message = {
+        id: tempId,
         conversationId,
         senderId,
         text: trimmed,
@@ -345,23 +393,29 @@ export const useChatStore = create<ChatStore>((set, get) => {
           hour: "2-digit",
           minute: "2-digit",
         }),
+        status: MessageStatus.Sending,
         seenBy: [],
         read: false,
       };
 
-      get().addMessage(conversationId, newMessage);
+      get().addMessage(conversationId, optimisticMessage);
 
       try {
-        const service = await ensureRealtime();
-        await service.publishMessage(conversationId, newMessage);
-      } catch (error) {
-        console.error("Failed to publish message:", error);
-      }
+        const savedMessage = await chatService.sendMessage({
+          conversationId,
+          text: trimmed,
+        });
+        replaceMessage(conversationId, tempId, savedMessage);
 
-      try {
-        await chatService.sendMessage({ conversationId, text: trimmed });
+        try {
+          const service = await ensureRealtime();
+          await service.publishMessage(conversationId, savedMessage);
+        } catch (error) {
+          console.error("Failed to publish message:", error);
+        }
       } catch (error) {
         console.error("Failed to send message:", error);
+        updateMessageStatus(conversationId, tempId, MessageStatus.Failed);
       }
     },
   };
