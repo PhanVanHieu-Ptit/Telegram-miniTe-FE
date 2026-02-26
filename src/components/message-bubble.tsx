@@ -1,5 +1,6 @@
 
 
+import { memo } from "react";
 import { Avatar } from "antd";
 import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,7 +42,7 @@ function getAvatarColor(id: string): string {
   return colors[Math.abs(hash) % colors.length];
 }
 
-export function MessageBubble({
+export const MessageBubble = memo(function MessageBubble({
   message,
   isOwnMessage,
   showAvatar,
@@ -113,4 +114,4 @@ export function MessageBubble({
       </div>
     </div>
   );
-}
+});

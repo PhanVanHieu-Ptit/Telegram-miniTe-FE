@@ -31,6 +31,7 @@ interface ChatActions {
   setActiveConversation: (id: string | null) => void;
   addMessage: (conversationId: string, message: Message) => void;
   setMessages: (conversationId: string, msgs: Message[]) => void;
+  markConversationSeenBy: (conversationId: string, userId: string) => void;
   setOnlineUsers: (ids: string[]) => void;
   setTypingUser: (conversationId: string, userId: string) => void;
   removeTypingUser: (conversationId: string, userId: string) => void;
@@ -91,16 +92,40 @@ export const useChatStore = create<ChatStore>((set, get) => ({
       },
     })),
 
+  markConversationSeenBy: (conversationId: string, userId: string) =>
+    set((state) => {
+      const list = state.messages[conversationId] ?? [];
+      const nextList = list.map((message) => {
+        if (message.senderId === userId) return message;
+        const seenBy = message.seenBy ?? [];
+        if (seenBy.includes(userId)) return message;
+        return {
+          ...message,
+          seenBy: [...seenBy, userId],
+          read: true,
+        };
+      });
+
+      return {
+        messages: {
+          ...state.messages,
+          [conversationId]: nextList,
+        },
+      };
+    }),
+
   setOnlineUsers: (ids: string[]) => set({ onlineUsers: ids }),
 
   setTypingUser: (conversationId: string, userId: string) =>
     set((state) => {
       const current = state.typingUsers[conversationId] ?? [];
-      if (current.includes(userId)) return state;
+      const nextConversationTyping = Array.from(new Set([...current, userId]));
+      if (nextConversationTyping.length === current.length) return state;
+
       return {
         typingUsers: {
           ...state.typingUsers,
-          [conversationId]: [...current, userId],
+          [conversationId]: nextConversationTyping,
         },
       };
     }),
@@ -108,11 +133,19 @@ export const useChatStore = create<ChatStore>((set, get) => ({
   removeTypingUser: (conversationId: string, userId: string) =>
     set((state) => {
       const current = state.typingUsers[conversationId] ?? [];
+      if (!current.includes(userId)) return state;
+
+      const nextConversationTyping = current.filter((id) => id !== userId);
+      const nextTypingUsers = { ...state.typingUsers };
+
+      if (nextConversationTyping.length === 0) {
+        delete nextTypingUsers[conversationId];
+      } else {
+        nextTypingUsers[conversationId] = nextConversationTyping;
+      }
+
       return {
-        typingUsers: {
-          ...state.typingUsers,
-          [conversationId]: current.filter((id) => id !== userId),
-        },
+        typingUsers: nextTypingUsers,
       };
     }),
 
@@ -153,15 +186,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
   sendMessage: (conversationId: string, text: string) => {
     if (!text.trim()) return;
+    const senderId = get().currentUserId;
     const newMessage: Message = {
       id: `m-${Date.now()}`,
       conversationId,
-      senderId: get().currentUserId,
+      senderId,
       text: text.trim(),
       timestamp: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
       }),
+      seenBy: [],
       read: false,
     };
     get().addMessage(conversationId, newMessage);
