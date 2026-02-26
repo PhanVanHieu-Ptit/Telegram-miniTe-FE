@@ -1,18 +1,15 @@
 import axios, {
-  AxiosError,
   type AxiosInstance,
   type AxiosResponse,
   type InternalAxiosRequestConfig,
+  type AxiosError,
 } from "axios";
-import { notification } from "antd";
+import { tokenStorage } from "@/lib/token-storage";
+import { handleUnauthorizedError } from "@/lib/token-refresh";
 
-type ApiErrorData = {
-  message?: string;
-  error?: string;
-  detail?: string;
-};
-
-type ApiError = AxiosError<ApiErrorData>;
+// ============================================================================
+// Initialization
+// ============================================================================
 
 const apiBaseUrl: string | undefined = import.meta.env.VITE_API_URL;
 
@@ -21,60 +18,52 @@ const apiClient: AxiosInstance = axios.create({
   timeout: 10000,
 });
 
+// ============================================================================
+// Interceptors
+// ============================================================================
+
+/**
+ * Request interceptor: Inject authorization token from token storage
+ * Separates concerns: token management is handled by tokenStorage module
+ */
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    const token = localStorage.getItem("token");
+    const token = tokenStorage.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error: ApiError): Promise<ApiError> => Promise.reject(error)
+  (error) => Promise.reject(error)
 );
 
-const getErrorMessage = (error: unknown): string => {
-  if (axios.isAxiosError<ApiErrorData>(error)) {
-    const dataMessage = error.response?.data?.message;
-    const dataError = error.response?.data?.error;
-    const dataDetail = error.response?.data?.detail;
-    return dataMessage || dataError || dataDetail || error.message || "Request failed";
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unexpected error";
-};
-
-const handleApiError = (error: unknown): ApiError | unknown => {
-  if (axios.isAxiosError<ApiErrorData>(error)) {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
-    }
-
-    notification.error({
-      message: "Request Error",
-      description: getErrorMessage(error),
-      placement: "topRight",
-    });
-
-    return error;
-  }
-
-  notification.error({
-    message: "Request Error",
-    description: getErrorMessage(error),
-    placement: "topRight",
-  });
-
-  return error;
-};
-
+/**
+ * Response interceptor: Handle 401 Unauthorized with automatic token refresh
+ * Attempts to refresh the access token and retry the failed request
+ * Prevents infinite loops by tracking retry state
+ */
 apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => response,
-  (error: ApiError): Promise<ApiError> => Promise.reject(handleApiError(error) as ApiError)
+  async (error: unknown): Promise<unknown> => {
+    // Handle 401 Unauthorized with token refresh
+    if (
+      axios.isAxiosError(error) &&
+      error.response?.status === 401 &&
+      error.config
+    ) {
+      try {
+        return await handleUnauthorizedError(
+          error as AxiosError,
+          apiClient
+        );
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+
+    // Return error as-is for caller to handle
+    return Promise.reject(error);
+  }
 );
 
 export default apiClient;
