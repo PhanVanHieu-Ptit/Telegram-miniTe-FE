@@ -1,8 +1,6 @@
 
 
-import { useEffect } from "react";
 import { useChatStore } from "@/lib/store";
-import { getMqttBridge } from "@/lib/mqtt-bridge";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -12,31 +10,14 @@ export function ChatPanel() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
   const getConversationPartner = useChatStore((s) => s.getConversationPartner);
-  const setActiveConversation = useChatStore((s) => s.setActiveConversation);
+  const openConversation = useChatStore((s) => s.openConversation);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
 
   const activeConversation = conversations.find((c) => c.id === activeConversationId);
   const partner = activeConversation ? getConversationPartner(activeConversation) : undefined;
-  const markConversationSeenBy = useChatStore((s) => s.markConversationSeenBy);
-  const currentUserId = useChatStore((s) => s.currentUserId);
-
-  useEffect(() => {
-    if (!activeConversationId) return;
-
-    markConversationSeenBy(activeConversationId, currentUserId);
-
-    try {
-      const bridge = getMqttBridge({
-        url: process.env.NEXT_PUBLIC_MQTT_URL ?? "ws://localhost:9001",
-      });
-      void bridge.publishSeen(activeConversationId);
-    } catch {
-      // MQTT not connected — local-only is fine
-    }
-  }, [activeConversationId, currentUserId, markConversationSeenBy]);
 
   const handleBack = () => {
-    setActiveConversation(null);
+    void openConversation(null);
     setSidebarOpen(true);
   };
 

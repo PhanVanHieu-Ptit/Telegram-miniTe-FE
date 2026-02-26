@@ -16,7 +16,7 @@ export function Sidebar() {
   const setSearchQuery = useChatStore((s) => s.setSearchQuery);
   const getFilteredConversations = useChatStore((s) => s.getFilteredConversations);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const setActiveConversation = useChatStore((s) => s.setActiveConversation);
+  const openConversation = useChatStore((s) => s.openConversation);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
 
   const filteredConversations = getFilteredConversations();
@@ -24,7 +24,7 @@ export function Sidebar() {
   const regular = filteredConversations.filter((c) => !c.pinned);
 
   const handleConversationClick = (id: string) => {
-    setActiveConversation(id);
+    void openConversation(id);
     setSidebarOpen(false);
   };
 

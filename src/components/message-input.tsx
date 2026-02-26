@@ -4,8 +4,6 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
 import { SendHorizontal, Smile } from "lucide-react";
 import { useChatStore } from "@/lib/store";
-import { getMqttBridge } from "@/lib/mqtt-bridge";
-import type { Message } from "@/lib/types";
 
 interface MessageInputProps {
   conversationId: string;
@@ -16,23 +14,16 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   const typingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const addMessage = useChatStore((s) => s.addMessage);
-  const currentUserId = useChatStore((s) => s.currentUserId);
+  const sendMessage = useChatStore((s) => s.sendMessage);
+  const setTypingActive = useChatStore((s) => s.setTypingActive);
 
   // ── Typing indicator management ──────────────────────────────────
 
   const emitTyping = useCallback(
     (active: boolean) => {
-      try {
-        const bridge = getMqttBridge({
-          url: process.env.NEXT_PUBLIC_MQTT_URL ?? "ws://localhost:9001",
-        });
-        void bridge.publishTyping(conversationId, active);
-      } catch {
-        // MQTT not connected — ignore silently
-      }
+      void setTypingActive(conversationId, active);
     },
-    [conversationId]
+    [conversationId, setTypingActive]
   );
 
   const handleTypingStart = useCallback(() => {
@@ -78,36 +69,9 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     if (!trimmed) return;
 
     stopTyping();
-
-    // Build message
-    const message: Message = {
-      id: `m-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-      conversationId,
-      senderId: currentUserId,
-      text: trimmed,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      seenBy: [],
-      read: false,
-    };
-
-    // Commit locally via store (optimistic)
-    addMessage(conversationId, message);
-
-    // Publish over MQTT
-    try {
-      const bridge = getMqttBridge({
-        url: process.env.NEXT_PUBLIC_MQTT_URL ?? "ws://localhost:9001",
-      });
-      void bridge.publishMessage(conversationId, message);
-    } catch {
-      // MQTT not connected — local‑only is fine
-    }
-
+    void sendMessage(conversationId, trimmed);
     setText("");
-  }, [text, conversationId, currentUserId, addMessage, stopTyping]);
+  }, [text, conversationId, sendMessage, stopTyping]);
 
   // ── Keyboard ─────────────────────────────────────────────────────
 
