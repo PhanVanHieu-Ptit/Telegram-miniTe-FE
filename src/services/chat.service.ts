@@ -4,6 +4,7 @@ import {
     sendMessage as sendMessageApi,
     type SendMessageDto,
 } from "@/api/chat.api";
+import { MessageStatus } from "@/types/chat.types";
 import type { Conversation as ApiConversation, Message as ApiMessage } from "@/types/chat.types";
 import type { Conversation, Message } from "@/lib/types";
 
@@ -13,7 +14,8 @@ const mapMessage = (message: ApiMessage): Message => ({
     senderId: message.senderId,
     text: message.text,
     timestamp: message.timestamp,
-    read: message.status === "seen",
+    status: message.status,
+    read: message.status === MessageStatus.Seen,
     seenBy: [],
 });
 
@@ -32,8 +34,8 @@ export const chatService = {
         return data.map(mapConversation);
     },
     async getMessages(conversationId: string): Promise<Message[]> {
-        const data = await getMessagesApi(conversationId);
-        return data.map(mapMessage);
+        const data = await getMessagesApi({ conversationId });
+        return data.messages.map(mapMessage);
     },
     async sendMessage(payload: SendMessageDto): Promise<Message> {
         const data = await sendMessageApi(payload);

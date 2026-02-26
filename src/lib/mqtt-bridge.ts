@@ -1,5 +1,5 @@
 import type { Packet } from "mqtt";
-import type { Message } from "./types";
+import { MessageStatus, type Message } from "./types";
 import {
   TelegramMqttClient,
   type MqttConnectionOptions,
@@ -193,6 +193,7 @@ export class MqttStoreBridge {
         senderId: data.senderId,
         text: data.text,
         timestamp: data.timestamp,
+        status: MessageStatus.Sent,
         seenBy: data.seenBy,
         read: data.read,
       };

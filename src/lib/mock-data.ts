@@ -1,4 +1,4 @@
-import type { User, Message, Conversation } from "./types";
+import { MessageStatus, type User, type Message, type Conversation } from "./types";
 
 export const currentUserId = "me";
 
@@ -14,7 +14,9 @@ export const users: User[] = [
   { id: "u8", name: "Hannah Mills", avatar: "", online: false, lastSeen: "3 days ago" },
 ];
 
-export const mockMessages: Message[] = [
+type RawMessage = Omit<Message, "status">;
+
+const rawMessages: RawMessage[] = [
   { id: "m1", conversationId: "c1", senderId: "u1", text: "Hey! Are you coming to the standup?", timestamp: "10:15 AM", read: true },
   { id: "m2", conversationId: "c1", senderId: "me", text: "Yes, give me 5 minutes", timestamp: "10:16 AM", read: true },
   { id: "m3", conversationId: "c1", senderId: "u1", text: "Sure, no rush. We can start with the design review first.", timestamp: "10:16 AM", read: true },
@@ -53,6 +55,11 @@ export const mockMessages: Message[] = [
   { id: "m29", conversationId: "c8", senderId: "u8", text: "Welcome to the team! Let me know if you need anything", timestamp: "Last week", read: true },
   { id: "m30", conversationId: "c8", senderId: "me", text: "Thanks Hannah! Super excited to be here", timestamp: "Last week", read: true },
 ];
+
+export const mockMessages: Message[] = rawMessages.map((message) => ({
+  ...message,
+  status: message.read ? MessageStatus.Seen : MessageStatus.Sent,
+}));
 
 export const conversations: Conversation[] = [
   { id: "c1", participants: ["me", "u1"], lastMessage: mockMessages.find((m) => m.id === "m7"), unreadCount: 1, pinned: true, muted: false },

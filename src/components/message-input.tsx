@@ -35,7 +35,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     typingTimerRef.current = setTimeout(() => {
       typingRef.current = false;
       emitTyping(false);
-    }, 3_000);
+    }, 3000); // 3 seconds inactivity
   }, [emitTyping]);
 
   const stopTyping = useCallback(() => {

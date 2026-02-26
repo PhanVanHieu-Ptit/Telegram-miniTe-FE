@@ -1,3 +1,5 @@
+import { MessageStatus } from "@/types/chat.types";
+
 export interface User {
   id: string;
   name: string;
@@ -12,6 +14,7 @@ export interface Message {
   senderId: string;
   text: string;
   timestamp: string;
+  status: MessageStatus;
   seenBy?: string[];
   read?: boolean;
 }
@@ -24,3 +27,5 @@ export interface Conversation {
   pinned: boolean;
   muted: boolean;
 }
+
+export { MessageStatus };
