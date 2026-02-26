@@ -1,121 +1,78 @@
-import type { Conversation, Message } from "@/types/chat.types";
 import { create } from "zustand";
+import type { Conversation, Message } from "@/types/chat.types";
+import {
+    getConversations,
+    getMessages,
+    type SendMessageDto,
+    sendMessage as sendMessageApi,
+} from "@/api/chat.api";
 
-export interface ChatState {
+interface ChatState {
     conversations: Conversation[];
-    activeConversationId: string | null;
-    messages: Record<string, Message[]>;
-    onlineUsers: string[];
-    typingUsers: Record<string, string[]>;
+    messages: Message[];
+    loading: boolean;
 }
 
-export interface ChatActions {
-    setConversations: (conversations: Conversation[]) => void;
-    setActiveConversation: (id: string | null) => void;
-    addMessage: (conversationId: string, message: Message) => void;
-    setMessages: (conversationId: string, msgs: Message[]) => void;
-    markMessageSeen: (conversationId: string, messageId: string) => void;
-    setOnlineUsers: (ids: string[]) => void;
-    setTypingUser: (conversationId: string, userId: string) => void;
-    removeTypingUser: (conversationId: string, userId: string) => void;
+interface ChatActions {
+    fetchConversations: () => Promise<void>;
+    fetchMessages: (conversationId: string) => Promise<void>;
+    addMessage: (message: Message) => void;
+    sendMessage: (payload: SendMessageDto) => Promise<Message | undefined>;
 }
 
-export type ChatStore = ChatState & ChatActions;
+type ChatStore = ChatState & ChatActions;
 
-export const useChatStore = create<ChatStore>((set) => ({
+export const useChatStore = create<ChatStore>((set, get) => ({
+    // State
     conversations: [],
-    activeConversationId: null,
-    messages: {},
-    onlineUsers: [],
-    typingUsers: {},
+    messages: [],
+    loading: false,
 
-    setConversations: (conversations) => set({ conversations }),
+    // Actions
+    fetchConversations: async () => {
+        set({ loading: true });
+        try {
+            const conversations = await getConversations();
+            set({ conversations });
+        } catch (error) {
+            console.error("Failed to fetch conversations:", error);
+        } finally {
+            set({ loading: false });
+        }
+    },
 
-    setActiveConversation: (id) => set({ activeConversationId: id }),
-
-    addMessage: (conversationId, message) =>
-        set((state) => {
-            const existing = state.messages[conversationId] ?? [];
-            const nextMessages = {
-                ...state.messages,
-                [conversationId]: [...existing, message],
-            };
-            const nextConversations = state.conversations.map((conversation) =>
-                conversation.id === conversationId
-                    ? { ...conversation, lastMessage: message, updatedAt: message.timestamp }
-                    : conversation
+    fetchMessages: async (conversationId: string) => {
+        set({ loading: true });
+        try {
+            const messages = await getMessages(conversationId);
+            set({ messages });
+        } catch (error) {
+            console.error(
+                `Failed to fetch messages for conversation ${conversationId}:`,
+                error
             );
-            return {
-                messages: nextMessages,
-                conversations: nextConversations,
-            };
-        }),
+        } finally {
+            set({ loading: false });
+        }
+    },
 
-    setMessages: (conversationId, msgs) =>
+    addMessage: (message: Message) => {
         set((state) => ({
-            messages: {
-                ...state.messages,
-                [conversationId]: msgs,
-            },
-        })),
+            messages: [...state.messages, message],
+        }));
+    },
 
-    markMessageSeen: (conversationId, messageId) =>
-        set((state) => {
-            const list = state.messages[conversationId];
-            if (!list) return state;
-            const index = list.findIndex((msg) => msg.id === messageId);
-            if (index === -1 || list[index].status === "seen") return state;
-
-            const updatedMessage: Message = { ...list[index], status: "seen" };
-            const nextList = [...list];
-            nextList[index] = updatedMessage;
-
-            const nextConversations = state.conversations.map((conversation) =>
-                conversation.id === conversationId && conversation.lastMessage?.id === messageId
-                    ? { ...conversation, lastMessage: updatedMessage }
-                    : conversation
-            );
-
-            return {
-                messages: {
-                    ...state.messages,
-                    [conversationId]: nextList,
-                },
-                conversations: nextConversations,
-            };
-        }),
-
-    setOnlineUsers: (ids) => set({ onlineUsers: ids }),
-
-    setTypingUser: (conversationId, userId) =>
-        set((state) => {
-            const current = state.typingUsers[conversationId] ?? [];
-            const nextConversationTyping = Array.from(new Set([...current, userId]));
-            if (nextConversationTyping.length === current.length) return state;
-            return {
-                typingUsers: {
-                    ...state.typingUsers,
-                    [conversationId]: nextConversationTyping,
-                },
-            };
-        }),
-
-    removeTypingUser: (conversationId, userId) =>
-        set((state) => {
-            const current = state.typingUsers[conversationId] ?? [];
-            if (!current.includes(userId)) return state;
-
-            const nextConversationTyping = current.filter((id) => id !== userId);
-            const nextTypingUsers = { ...state.typingUsers };
-
-            if (nextConversationTyping.length === 0) {
-                delete nextTypingUsers[conversationId];
-            } else {
-                nextTypingUsers[conversationId] = nextConversationTyping;
-            }
-
-            return {
-                typingUsers: nextTypingUsers,
-            };
-        }),
+    sendMessage: async (payload) => {
+        set({ loading: true });
+        try {
+            const message = await sendMessageApi(payload);
+            get().addMessage(message);
+            return message;
+        } catch (error) {
+            console.error("Failed to send message:", error);
+            return undefined;
+        } finally {
+            set({ loading: false });
+        }
+    },
 }));

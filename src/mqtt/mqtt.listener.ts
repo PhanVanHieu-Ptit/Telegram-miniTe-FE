@@ -1,5 +1,5 @@
-import type { Message, TypingEvent } from "@/types/chat.types";
-import { useChatStore } from "@/store/chat.store";
+import type { Message } from "@/lib/types";
+import { useChatStore } from "@/lib/store";
 import type { AppMqttClient, MqttMessage } from "./mqtt.client";
 
 interface SeenEvent {
@@ -12,6 +12,13 @@ interface SeenEvent {
 interface OnlineEvent {
     userId: string;
     online: boolean;
+    timestamp: string;
+}
+
+interface TypingEvent {
+    conversationId: string;
+    userId: string;
+    isTyping: boolean;
     timestamp: string;
 }
 
@@ -120,7 +127,9 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
         // Handle message events: chat/{conversationId}/message
         if (topic.includes("/message")) {
             const messageData = payload as Message;
-            useChatStore.getState().addMessage(messageData.conversationId, messageData);
+            useChatStore
+                .getState()
+                .addMessage(messageData.conversationId, messageData);
             return;
         }
 
@@ -142,7 +151,9 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
         // Handle seen events: chat/{conversationId}/seen
         if (topic.includes("/seen")) {
             const seenData = payload as SeenEvent;
-            useChatStore.getState().markMessageSeen(seenData.conversationId, seenData.messageId);
+            useChatStore
+                .getState()
+                .markMessageSeen(seenData.conversationId, seenData.messageId, seenData.userId);
             return;
         }
 
@@ -162,7 +173,9 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
                 // Remove user from online list
                 useChatStore
                     .getState()
-                    .setOnlineUsers(currentOnlineUsers.filter((id) => id !== onlineData.userId));
+                    .setOnlineUsers(
+                        currentOnlineUsers.filter((id: string) => id !== onlineData.userId)
+                    );
             }
         }
     });
