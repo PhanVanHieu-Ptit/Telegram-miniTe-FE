@@ -16,6 +16,14 @@ const apiBaseUrl: string | undefined = import.meta.env.VITE_API_URL;
 const apiClient: AxiosInstance = axios.create({
   baseURL: apiBaseUrl,
   timeout: 10000,
+  headers: {
+    "X-App-Version": "1.0.0",
+    "X-Client-Type": "web",
+    "Accept": "application/json",
+    "Content-Type": "application/json",
+  },
+  // Uncomment if backend requires cookies for auth
+  // withCredentials: true,
 });
 
 // ============================================================================
@@ -30,11 +38,12 @@ apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = tokenStorage.getToken();
     if (token) {
+      // Attach Authorization header safely
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => Promise.reject(error)
+  (error: unknown) => Promise.reject(error)
 );
 
 /**
@@ -44,15 +53,21 @@ apiClient.interceptors.request.use(
  */
 apiClient.interceptors.response.use(
   (response: AxiosResponse): AxiosResponse => response,
-  async (error: unknown): Promise<unknown> => {
+  async (error: unknown): Promise<never> => {
     // Handle 401 Unauthorized with token refresh
     if (
       axios.isAxiosError(error) &&
       error.response?.status === 401 &&
       error.config
     ) {
+      const url = error.config.url || "";
+      // Do not handle 401 for login/register endpoints
+      if (url.includes("/login") || url.includes("/register")) {
+        // Return error as-is for caller to handle
+        return Promise.reject(error);
+      }
       try {
-        return await handleUnauthorizedError(
+        await handleUnauthorizedError(
           error as AxiosError,
           apiClient
         );
@@ -60,7 +75,6 @@ apiClient.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-
     // Return error as-is for caller to handle
     return Promise.reject(error);
   }

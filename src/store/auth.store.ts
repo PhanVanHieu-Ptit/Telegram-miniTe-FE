@@ -35,6 +35,8 @@ interface AuthState {
     loading: boolean;
     isAuthenticated: boolean;
     error: string | null;
+    initialized: boolean;
+    authInitialized: boolean;
 
     // Actions
     login: (data: LoginDto) => Promise<void>;
@@ -59,6 +61,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     loading: false,
     isAuthenticated: false,
     error: null,
+    initialized: false,
+    authInitialized: false,
 
     // ========================================================================
     // Login Action
@@ -79,7 +83,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const response: AuthResponse = await apiLogin(data);
 
             // Save tokens to localStorage
-            tokenStorage.setToken(response.accessToken);
+            tokenStorage.setToken(response.token);
             if (response.refreshToken) {
                 tokenStorage.setRefreshToken(response.refreshToken);
             }
@@ -90,7 +94,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             // Update store state with response data
             set({
                 user,
-                accessToken: response.accessToken,
+                accessToken: response.token,
                 isAuthenticated: true,
                 loading: false,
                 error: null,
@@ -191,23 +195,18 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Initialize Auth Action
     // ========================================================================
     initializeAuth: (): boolean => {
-        // Check if token exists in storage
+        // Read token from localStorage
         const token = tokenStorage.getToken();
-
-        const isAuthenticated = Boolean(token) && authService.hasValidToken();
-
-        if (isAuthenticated) {
-            set({
-                accessToken: token,
-                isAuthenticated: true,
-            });
-            return true;
-        } else {
-            set({
-                accessToken: null,
-                isAuthenticated: false,
-            });
-            return false;
+        let isAuthenticated = false;
+        if (token) {
+            isAuthenticated = true;
         }
+        set({
+            accessToken: token || null,
+            isAuthenticated,
+            initialized: true,
+            authInitialized: true,
+        });
+        return isAuthenticated;
     },
 }));

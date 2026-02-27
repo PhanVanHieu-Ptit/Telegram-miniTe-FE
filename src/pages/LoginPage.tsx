@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Form, Input, Button, Card, Typography, message } from "antd";
 import { MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
@@ -16,12 +16,38 @@ export default function LoginPage() {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
     const login = useAuthStore((state) => state.login);
+    const authInitialized = useAuthStore((state) => state.authInitialized);
+    const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
+    // Redirect only when both are true
+    // Prevent unnecessary re-renders by checking both values in a single effect
+    useEffect(() => {
+        if (authInitialized && isAuthenticated) {
+            navigate("/chat");
+        }
+    }, [authInitialized, isAuthenticated, navigate]);
     const onFinish = async (values: LoginFormValues) => {
         setLoading(true);
         try {
+            // Await login and Zustand state update
             await login(values);
+
+            // Ensure token is in localStorage before proceeding
+            const token = localStorage.getItem("auth_token");
+            if (!token) {
+                throw new Error("Token not saved. Please try again.");
+            }
+
+            // Force axios header update (if needed)
+            // This is handled by interceptor, but for safety:
+            // eslint-disable-next-line no-undef
+            const axios = (await import("@/api/axios")).default;
+            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+            // Show success message
             message.success("Login successful!");
+
+            // Navigate only after all above steps
             navigate("/chat");
         } catch (error) {
             message.error(

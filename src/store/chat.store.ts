@@ -50,7 +50,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     fetchConversations: async () => {
         set({ loading: true });
         try {
-            const conversations = await getConversations();
+            const userId = useAuthStore.getState().user?.id;
+            if (!userId) throw new Error("User ID is missing");
+            const conversations = await getConversations({ userId });
             set({ conversations });
         } catch (error) {
             const message = error instanceof Error ? error.message : "Failed to fetch conversations";
