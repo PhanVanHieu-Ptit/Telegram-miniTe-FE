@@ -45,7 +45,7 @@ export interface AuthUserDto {
  * Authentication response from server
  */
 export interface AuthResponse {
-    accessToken: string;
+    token: string;
     refreshToken?: string;
     user: AuthUserDto;
 }
@@ -54,7 +54,7 @@ export interface AuthResponse {
  * Refresh token response from server
  */
 export interface RefreshTokenResponse {
-    accessToken: string;
+    token: string;
     refreshToken?: string;
 }
 

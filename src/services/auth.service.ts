@@ -50,7 +50,7 @@ export class AuthService {
             const { refreshToken: apiRefresh } = await import("@/api/auth.api");
             const response = await apiRefresh(refreshTokenValue);
 
-            tokenStorage.setToken(response.accessToken);
+            tokenStorage.setToken(response.token);
 
             if (response.refreshToken) {
                 tokenStorage.setRefreshToken(response.refreshToken);
@@ -58,7 +58,7 @@ export class AuthService {
 
             return {
                 user: { id: "", displayName: "", online: true },
-                accessToken: response.accessToken,
+                accessToken: response.token,
                 refreshToken: response.refreshToken,
             };
         } catch (error) {
@@ -75,7 +75,7 @@ export class AuthService {
             const response = await apiLogin(credentials);
 
             const user = transformAuthResponseToUser(response);
-            tokenStorage.setToken(response.accessToken);
+            tokenStorage.setToken(response.token);
 
             if (response.refreshToken) {
                 tokenStorage.setRefreshToken(response.refreshToken);
@@ -83,7 +83,7 @@ export class AuthService {
 
             return {
                 user,
-                accessToken: response.accessToken,
+                accessToken: response.token,
                 refreshToken: response.refreshToken,
             };
         } catch (error) {
@@ -100,7 +100,7 @@ export class AuthService {
             const response = await apiRegister(data);
 
             const user = transformAuthResponseToUser(response);
-            tokenStorage.setToken(response.accessToken);
+            tokenStorage.setToken(response.token);
 
             if (response.refreshToken) {
                 tokenStorage.setRefreshToken(response.refreshToken);
@@ -108,7 +108,7 @@ export class AuthService {
 
             return {
                 user,
-                accessToken: response.accessToken,
+                accessToken: response.token,
                 refreshToken: response.refreshToken,
             };
         } catch (error) {

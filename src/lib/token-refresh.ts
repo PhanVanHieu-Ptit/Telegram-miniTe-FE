@@ -54,7 +54,7 @@ export const performTokenRefresh = async (): Promise<string> => {
 
     const response = await apiRefreshToken(refreshTokenValue);
 
-    const newAccessToken = response.accessToken;
+    const newAccessToken = response.token;
     tokenStorage.setToken(newAccessToken);
 
     if (response.refreshToken) {

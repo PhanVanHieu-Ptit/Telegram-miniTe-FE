@@ -29,8 +29,8 @@ const mapConversation = (conversation: ApiConversation): Conversation => ({
 });
 
 export const chatService = {
-    async getConversations(): Promise<Conversation[]> {
-        const data = await getConversationsApi();
+    async getConversations(userId: string): Promise<Conversation[]> {
+        const data = await getConversationsApi({ userId });
         return data.map(mapConversation);
     },
     async getMessages(conversationId: string): Promise<Message[]> {

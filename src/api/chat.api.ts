@@ -37,9 +37,17 @@ export const joinConversation = (payload: JoinConversationDto): Promise<Conversa
         .then((response) => response.data);
 };
 
-export const getConversations = (): Promise<Conversation[]> => {
+export interface GetConversationsParams {
+    userId: string;
+}
+
+export const getConversations = (params: GetConversationsParams): Promise<Conversation[]> => {
     return apiClient
-        .get<Conversation[]>("/conversations")
+        .get<Conversation[]>("/conversations", {
+            params: {
+                userId: params.userId,
+            },
+        })
         .then((response) => response.data);
 };
 
