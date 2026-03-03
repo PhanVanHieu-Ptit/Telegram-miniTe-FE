@@ -1,17 +1,17 @@
 import { useEffect } from "react";
 import { Sidebar } from "@/components/sidebar";
 import { ChatPanel } from "@/components/chat-panel";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/store/chat.store";
 import { cn } from "@/lib/utils";
 
 export default function Home() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const sidebarOpen = useChatStore((s) => s.sidebarOpen);
-  const initialize = useChatStore((s) => s.initialize);
+  const fetchConversations = useChatStore((s) => s.fetchConversations);
 
   useEffect(() => {
-    void initialize();
-  }, [initialize]);
+    void fetchConversations();
+  }, [fetchConversations]);
 
   return (
     <main className="flex h-dvh w-full overflow-hidden">

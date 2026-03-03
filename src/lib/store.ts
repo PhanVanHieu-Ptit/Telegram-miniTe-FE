@@ -156,14 +156,20 @@ export const useChatStore = create<ChatStore>((set, get) => {
     // ─── Core Actions ─────────────────────────────────────────────────────
     initialize: async () => {
       try {
-    // Fetch real users if API available (update this if you have user API)
-    // Example: const realUsers = await userService.getUsers(); set({ users: realUsers });
+        // Import dynamically to avoid circular dependency
+        const { useAuthStore } = await import("@/store/auth.store");
+        const authUser = useAuthStore.getState().user;
+        const userId = authUser?.id;
+
+        if (!userId) {
+          console.warn("Cannot initialize chat store: user not authenticated");
+          return;
+        }
+
+        // Sync local currentUserId with auth store
+        set({ currentUserId: userId });
 
         // Fetch real conversations
-        // You may want to get currentUserId from auth store
-        console.log('get(): ',get())
-        const userId = get().currentUserId;
-        if (!userId) return;
         const realConversations = await chatService.getConversations(userId);
         set({ conversations: realConversations });
 
@@ -191,7 +197,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         }
       } catch (error) {
         console.error("Failed to initialize with real data:", error);
-      // Fallback: just initialize realtime
+        // Fallback: just initialize realtime
         await get().initializeRealtime();
       }
     },
@@ -431,7 +437,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
       try {
         const savedMessage = await chatService.sendMessage({
           conversationId,
-          text: trimmed,
+          content: trimmed,
         });
         replaceMessage(conversationId, tempId, savedMessage);
 

@@ -12,7 +12,7 @@ const mapMessage = (message: ApiMessage): Message => ({
     id: message.id,
     conversationId: message.conversationId,
     senderId: message.senderId,
-    text: message.text,
+    text: message.content,
     timestamp: message.timestamp,
     status: message.status,
     read: message.status === MessageStatus.Seen,
@@ -43,7 +43,7 @@ export const chatService = {
     },
     async getMessages(conversationId: string): Promise<Message[]> {
         const data = await getMessagesApi({ conversationId });
-        return data.messages.map(mapMessage);
+        return data.map(mapMessage);
     },
     async sendMessage(payload: SendMessageDto): Promise<Message> {
         const data = await sendMessageApi(payload);

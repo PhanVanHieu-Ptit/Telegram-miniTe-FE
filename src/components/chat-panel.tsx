@@ -1,7 +1,6 @@
 
-
 import { useMemo } from "react";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/store/chat.store";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
@@ -12,13 +11,19 @@ import { useAuthStore } from "@/store/auth.store";
 export function ChatPanel() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
-  const openConversation = useChatStore((s) => s.openConversation);
+  const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
   const typingUsers = useChatStore((s) => s.typingUsers);
- const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+  const { id: currentUserId } = useAuthStore((state) => state.user) || {};
   const getUser = useChatStore((s) => s.getUser);
 
-  // Sort conversations by updatedAt descending
+  const handleBack = () => {
+    setActiveConversationId(null);
+    setSidebarOpen(true);
+  };
+
+  console.log("ChatPanel state:", { activeConversationId, conversationsCount: conversations.length });
+
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
   }, [conversations]);
@@ -36,10 +41,10 @@ export function ChatPanel() {
     // Map ConversationMember to User
     return {
       id: member.id,
-      name: member.fullName,
-      avatar: member.avatarUrl ?? "",
+      displayName: member.fullName,
+      avatarUrl: member.avatarUrl ?? "",
       online: false,
-      lastSeen: undefined,
+      lastSeenAt: undefined,
     };
   }, [activeConversation, currentUserId]);
 
@@ -49,11 +54,6 @@ export function ChatPanel() {
       .filter((userId) => userId !== currentUserId)
       .map((userId) => getUser(userId)?.name || "Someone")
     : [];
-
-  const handleBack = () => {
-    void openConversation(null);
-    setSidebarOpen(true);
-  };
 
   if (!activeConversation || !partner) {
     return (

@@ -1,7 +1,7 @@
 import { Input, Dropdown } from "antd";
 import type { MenuProps } from "antd";
 import { Menu, Search, Settings, Users, BookmarkIcon, Moon } from "lucide-react";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/store/chat.store";
 import { ChatListItem } from "./chat-list-item";
 
 const menuItems: MenuProps["items"] = [
@@ -14,17 +14,16 @@ const menuItems: MenuProps["items"] = [
 export function Sidebar() {
   const searchQuery = useChatStore((s) => s.searchQuery);
   const setSearchQuery = useChatStore((s) => s.setSearchQuery);
-  const getFilteredConversations = useChatStore((s) => s.getFilteredConversations);
+  const filteredConversations = useChatStore((s) => s.getFilteredConversations());
   const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const openConversation = useChatStore((s) => s.openConversation);
+  const setActiveConversationId = useChatStore((s) => s.setActiveConversationId); // Changed from openConversation
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
 
-  const filteredConversations = getFilteredConversations();
   const pinned = filteredConversations.filter((c) => c.pinned);
   const regular = filteredConversations.filter((c) => !c.pinned);
 
   const handleConversationClick = (id: string) => {
-    void openConversation(id);
+    setActiveConversationId(id); // Changed from openConversation
     setSidebarOpen(false);
   };
 

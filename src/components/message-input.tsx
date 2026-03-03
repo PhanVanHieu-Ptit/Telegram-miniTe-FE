@@ -3,7 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
 import { SendHorizontal, Smile } from "lucide-react";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/store/chat.store";
 
 interface MessageInputProps {
   conversationId: string;
@@ -69,7 +69,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     if (!trimmed) return;
 
     stopTyping();
-    void sendMessage(conversationId, trimmed);
+    void sendMessage({ conversationId, content: trimmed });
     setText("");
   }, [text, conversationId, sendMessage, stopTyping]);
 

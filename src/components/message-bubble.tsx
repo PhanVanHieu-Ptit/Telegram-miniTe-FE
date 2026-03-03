@@ -4,7 +4,7 @@ import { memo } from "react";
 import { Avatar } from "antd";
 import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Message, User } from "@/lib/types";
+import type { Message, User } from "@/types/chat.types";
 
 interface MessageBubbleProps {
   message: Message;
@@ -62,16 +62,16 @@ export const MessageBubble = memo(function MessageBubble({
         {!isOwnMessage && showAvatar && sender ? (
           <Avatar
             size={32}
-            src={sender.avatar || undefined}
+            src={sender.avatarUrl || undefined}
             style={{
-              backgroundColor: sender.avatar
+              backgroundColor: sender.avatarUrl
                 ? undefined
                 : getAvatarColor(sender.id),
               fontSize: 13,
               fontWeight: 600,
             }}
           >
-            {!sender.avatar && getInitials(sender.name)}
+            {!sender.avatarUrl && getInitials(sender.displayName)}
           </Avatar>
         ) : null}
       </div>
@@ -90,7 +90,7 @@ export const MessageBubble = memo(function MessageBubble({
               : "rounded-bl-2xl"
         )}
       >
-        <span className="whitespace-pre-wrap break-words">{message.text}</span>
+        <span className="whitespace-pre-wrap break-words">{message.content}</span>
 
         {/* Timestamp + seen indicator */}
         {showTimestamp && (

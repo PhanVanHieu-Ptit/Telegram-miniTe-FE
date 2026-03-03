@@ -17,9 +17,18 @@ export interface ITokenStorage {
     getRefreshToken(): string | null;
     setRefreshToken(token: string): void;
     removeRefreshToken(): void;
+    getUser(): any | null;
+    setUser(user: any): void;
+    removeUser(): void;
+    getWorkspaceId(): string | null;
+    setWorkspaceId(id: string): void;
+    removeWorkspaceId(): void;
     clearAllTokens(): void;
     hasToken(): boolean;
 }
+
+const USER_KEY = "auth_user";
+const WORKSPACE_KEY = "auth_workspace_id";
 
 /**
  * LocalStorage-based token storage implementation
@@ -34,7 +43,7 @@ class TokenStorage implements ITokenStorage {
     }
 
     removeToken(): void {
-        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(TOKEN_KEY)
     }
 
     getRefreshToken(): string | null {
@@ -49,9 +58,41 @@ class TokenStorage implements ITokenStorage {
         localStorage.removeItem(REFRESH_TOKEN_KEY);
     }
 
+    getUser(): any | null {
+        try {
+            const user = localStorage.getItem(USER_KEY);
+            return user ? JSON.parse(user) : null;
+        } catch (error) {
+            console.error("Failed to parse user from storage", error);
+            return null;
+        }
+    }
+
+    setUser(user: any): void {
+        localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
+
+    removeUser(): void {
+        localStorage.removeItem(USER_KEY);
+    }
+
+    getWorkspaceId(): string | null {
+        return localStorage.getItem(WORKSPACE_KEY);
+    }
+
+    setWorkspaceId(id: string): void {
+        localStorage.setItem(WORKSPACE_KEY, id);
+    }
+
+    removeWorkspaceId(): void {
+        localStorage.removeItem(WORKSPACE_KEY);
+    }
+
     clearAllTokens(): void {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        localStorage.removeItem(WORKSPACE_KEY);
     }
 
     hasToken(): boolean {

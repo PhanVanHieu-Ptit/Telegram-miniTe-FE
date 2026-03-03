@@ -1,8 +1,9 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
-import { useChatStore } from "@/lib/store";
+import { useChatStore } from "@/store/chat.store";
+import { useAuthStore } from "@/store/auth.store";
 import { MessageBubble } from "./message-bubble";
-import type { Message, User } from "@/lib/types";
+import type { Message, User } from "@/types/chat.types";
 
 const VIRTUALIZE_THRESHOLD = 100;
 const ESTIMATED_ITEM_HEIGHT = 76;
@@ -34,11 +35,7 @@ const MessageRow = memo(function MessageRow({
         isOwnMessage={isOwnMessage}
         showAvatar={!sameGroupNext}
         showTimestamp={!sameGroupNext}
-        seen={
-          isOwnMessage
-            ? (message.seenBy?.some((id) => id !== currentUserId) ?? false)
-            : Boolean(message.read)
-        }
+        seen={false} // Simplified for now
         sender={sender}
       />
     </div>
@@ -53,22 +50,17 @@ export const MessageList = memo(function MessageList() {
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  const { activeConversationId, currentUserId, messages, users } = useChatStore(
+  const { activeConversationId, messages, getUser } = useChatStore(
     useShallow((s) => ({
       activeConversationId: s.activeConversationId,
-      currentUserId: s.currentUserId,
-      messages: s.activeConversationId ? (s.messages[s.activeConversationId] ?? []) : [],
-      users: s.users,
+      messages: s.messages,
+      getUser: s.getUser,
     }))
   );
 
-  const userMap = useMemo(() => {
-    const map = new Map<string, User>();
-    for (const user of users) {
-      map.set(user.id, user);
-    }
-    return map;
-  }, [users]);
+  console.log("MessageList state:", { activeConversationId, messagesCount: messages.length });
+
+  const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -162,6 +154,8 @@ export const MessageList = memo(function MessageList() {
     );
   }
 
+  console.log("MessageList state:", { activeConversationId, messagesCount: messages, visibleMessages });
+
   return (
     <div
       ref={scrollContainerRef}
@@ -181,8 +175,8 @@ export const MessageList = memo(function MessageList() {
             <MessageRow
               key={message.id}
               message={message}
-              currentUserId={currentUserId}
-              sender={userMap.get(message.senderId)}
+              currentUserId={currentUserId || ""}
+              sender={getUser(message.senderId)}
               sameGroupPrev={prev?.senderId === message.senderId}
               sameGroupNext={next?.senderId === message.senderId}
               isFirst={actualIndex === 0}

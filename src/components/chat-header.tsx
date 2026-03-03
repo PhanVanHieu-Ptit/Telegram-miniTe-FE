@@ -3,13 +3,15 @@
 import { Avatar, Dropdown } from "antd";
 import type { MenuProps } from "antd";
 import { ArrowLeft, Search, Phone, MoreVertical, Trash2, VolumeOff, Pin } from "lucide-react";
-import type { User } from "@/lib/types";
+import type { User } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 
-function getInitials(name: string) {
+function getInitials(name: string = "") {
+  if (!name) return "";
   return name
     .split(" ")
     .map((w) => w[0])
+    .filter(Boolean)
     .join("")
     .slice(0, 2)
     .toUpperCase();
@@ -63,13 +65,13 @@ export function ChatHeader({ partner, onBack }: ChatHeaderProps) {
       <div className="flex flex-1 items-center gap-3">
         <Avatar
           size={40}
-          style={{ backgroundColor: getAvatarColor(partner.name), fontSize: 14, fontWeight: 600 }}
+          style={{ backgroundColor: getAvatarColor(partner.displayName || ""), fontSize: 14, fontWeight: 600 }}
         >
-          {getInitials(partner.name)}
+          {getInitials(partner.displayName)}
         </Avatar>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-semibold text-foreground">
-            {partner.name}
+            {partner.displayName}
           </span>
           <span
             className={cn(
@@ -77,7 +79,7 @@ export function ChatHeader({ partner, onBack }: ChatHeaderProps) {
               partner.online ? "text-online" : "text-muted-foreground"
             )}
           >
-            {partner.online ? "online" : `last seen ${partner.lastSeen ?? "recently"}`}
+            {partner.online ? "online" : `last seen ${partner.lastSeenAt ?? "recently"}`}
           </span>
         </div>
       </div>

@@ -1,8 +1,7 @@
 import { memo, useMemo } from "react";
 import { Avatar, Badge } from "antd";
 import { Pin, VolumeOff } from "lucide-react";
-import type { Conversation } from "@/lib/types";
-import { useChatStore } from "@/lib/store";
+import type { Conversation } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -41,7 +40,7 @@ interface ChatListItemProps {
 }
 
 const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemProps) => {
-// Connect to Zustand store to get conversation partner
+  // Connect to Zustand store to get conversation partner
   // Find the other member for 1-1 chat
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
   const otherMember = useMemo(() => {
@@ -92,21 +91,21 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className={cn("truncate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}> 
+          <span className={cn("truncate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>
             {otherMember.fullName}
           </span>
-          <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}> 
+          <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
             {conversation.updatedAt}
           </span>
         </div>
         <div className="flex items-center justify-between gap-1">
           <p className={cn("truncate text-sm", active ? "text-primary-foreground/80" : "text-muted-foreground")}>
             {conversation.lastMessage?.senderId === currentUserId && (
-              <span className={cn("mr-0.5 font-medium", active ? "text-primary-foreground/80" : "text-foreground")}> 
+              <span className={cn("mr-0.5 font-medium", active ? "text-primary-foreground/80" : "text-foreground")}>
                 {"You: "}
               </span>
             )}
-            {conversation.lastMessage?.text}
+            {conversation.lastMessage?.content}
           </p>
           <div className="flex shrink-0 items-center gap-1">
             {conversation.pinned && (
