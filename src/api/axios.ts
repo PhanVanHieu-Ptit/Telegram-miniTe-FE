@@ -37,9 +37,15 @@ const apiClient: AxiosInstance = axios.create({
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
     const token = tokenStorage.getToken();
+    const workspaceId = tokenStorage.getWorkspaceId();
+
     if (token) {
       // Attach Authorization header safely
       config.headers.Authorization = `Bearer ${token}`;
+    }
+
+    if (workspaceId) {
+      config.headers["X-Workspace-Id"] = workspaceId;
     }
     return config;
   },

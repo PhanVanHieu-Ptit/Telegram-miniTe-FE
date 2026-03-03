@@ -32,6 +32,7 @@ interface AuthState {
     // State
     user: User | null;
     accessToken: string | null;
+    workspaceId: string | null;
     loading: boolean;
     isAuthenticated: boolean;
     error: string | null;
@@ -58,6 +59,7 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Initial state
     user: null,
     accessToken: null,
+    workspaceId: null,
     loading: false,
     isAuthenticated: false,
     error: null,
@@ -90,11 +92,19 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             // Transform response to User domain model
             const user: User = transformAuthResponseToUser(response);
+            const workspaceId = (response as any).workspaceId || null;
+
+            // Save user and workspace to storage
+            tokenStorage.setUser(user);
+            if (workspaceId) {
+                tokenStorage.setWorkspaceId(workspaceId);
+            }
 
             // Update store state with response data
             set({
                 user,
                 accessToken: response.token,
+                workspaceId,
                 isAuthenticated: true,
                 loading: false,
                 error: null,
@@ -178,6 +188,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         set({
             user: null,
             accessToken: null,
+            workspaceId: null,
             isAuthenticated: false,
             loading: false,
             error: null,
@@ -195,14 +206,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     // Initialize Auth Action
     // ========================================================================
     initializeAuth: (): boolean => {
-        // Read token from localStorage
+        // Read from localStorage
         const token = tokenStorage.getToken();
+        const user = tokenStorage.getUser();
+        const workspaceId = tokenStorage.getWorkspaceId();
+
         let isAuthenticated = false;
-        if (token) {
+        if (token && user) {
             isAuthenticated = true;
         }
+
         set({
             accessToken: token || null,
+            user: user || null,
+            workspaceId: workspaceId || null,
             isAuthenticated,
             initialized: true,
             authInitialized: true,

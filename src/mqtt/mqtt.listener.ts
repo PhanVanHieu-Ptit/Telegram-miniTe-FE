@@ -1,5 +1,5 @@
-import type { Message } from "@/lib/types";
-import { useChatStore } from "@/lib/store";
+import type { Message } from "@/types/chat.types";
+import { useChatStore } from "@/store/chat.store";
 import type { AppMqttClient, MqttMessage } from "./mqtt.client";
 
 interface SeenEvent {
@@ -127,9 +127,11 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
         // Handle message events: chat/{conversationId}/message
         if (topic.includes("/message")) {
             const messageData = payload as Message;
-            useChatStore
-                .getState()
-                .addMessage(messageData.conversationId, messageData);
+            const state = useChatStore.getState();
+            // Only add message if it belongs to the active conversation
+            if (messageData.conversationId === state.activeConversationId) {
+                state.addMessage(messageData);
+            }
             return;
         }
 

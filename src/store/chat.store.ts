@@ -17,7 +17,9 @@ interface ChatState {
     hasMoreMessages: boolean;
     activeConversationId: string | null;
     sidebarOpen: boolean;
+    searchQuery: string;
     typingUsers: Record<string, string[]>; // conversationId -> userId[]
+    onlineUsers: string[];
 }
 
 interface ChatActions {
@@ -31,6 +33,11 @@ interface ChatActions {
     setTypingUser: (conversationId: string, userId: string) => void;
     removeTypingUser: (conversationId: string, userId: string) => void;
     setTypingActive: (conversationId: string, isTyping: boolean) => Promise<void>;
+    setSearchQuery: (query: string) => void;
+    getFilteredConversations: () => Conversation[];
+    getUser: (userId: string) => any;
+    markMessageSeen: (conversationId: string, messageId: string, userId: string) => void;
+    setOnlineUsers: (userIds: string[]) => void;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -44,13 +51,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     hasMoreMessages: false,
     activeConversationId: null,
     sidebarOpen: true,
+    searchQuery: "",
     typingUsers: {},
+    onlineUsers: [],
 
     // Actions
     fetchConversations: async () => {
         set({ loading: true });
         try {
-            console.log('useAuthStore.getState(): ', useAuthStore.getState())
             const userId = useAuthStore.getState().user?.id;
             if (!userId) throw new Error("User ID is missing");
             const conversations = await getConversations({ userId });
@@ -72,11 +80,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 limit,
             };
             const result = await getMessages(params);
+            const messagesArray = Array.isArray(result) ? result : ((result as any).data || (result as any).messages || []);
+            console.log(`Fetched ${messagesArray.length} messages for ${conversationId}`, messagesArray);
 
-            set((state) => ({
-                messages: cursor ? [...state.messages, ...result.messages] : result.messages,
-                messagesCursor: result.nextCursor,
-                hasMoreMessages: result.hasMore,
+            set(() => ({
+                messages: messagesArray
             }));
         } catch (error) {
             const message = error instanceof Error
@@ -120,7 +128,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             id: tempId,
             conversationId: payload.conversationId,
             senderId,
-            text: payload.text,
+            content: payload.content,
             timestamp: new Date().toISOString(),
             status: MessageStatus.Sending,
         };
@@ -152,6 +160,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     setActiveConversationId: (id: string | null) => {
         set({ activeConversationId: id });
+        if (id) {
+            void get().fetchMessages(id);
+        } else {
+            set({ messages: [] });
+        }
     },
 
     setSidebarOpen: (open: boolean) => {
@@ -202,5 +215,53 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } catch (error) {
             console.error("Failed to publish typing status:", error);
         }
+    },
+
+    setSearchQuery: (query: string) => {
+        set({ searchQuery: query });
+    },
+
+    getFilteredConversations: () => {
+        const { conversations, searchQuery } = get();
+        if (!searchQuery.trim()) return conversations;
+
+        const q = searchQuery.toLowerCase();
+        return conversations.filter((convo) => {
+            return convo.members.some((m) =>
+                m.fullName.toLowerCase().includes(q) ||
+                m.email.toLowerCase().includes(q)
+            );
+        });
+    },
+
+    getUser: (userId: string) => {
+        // Find user details from conversation members
+        const { conversations } = get();
+        for (const convo of conversations) {
+            const member = convo.members.find((m) => m.id === userId);
+            if (member) {
+                return {
+                    id: member.id,
+                    displayName: member.fullName,
+                    avatarUrl: member.avatarUrl,
+                    online: false,
+                };
+            }
+        }
+        return undefined;
+    },
+
+    markMessageSeen: (conversationId: string, messageId: string, _userId: string) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId && msg.conversationId === conversationId
+                    ? { ...msg, status: MessageStatus.Seen }
+                    : msg
+            ),
+        }));
+    },
+
+    setOnlineUsers: (userIds: string[]) => {
+        set({ onlineUsers: userIds });
     },
 }));

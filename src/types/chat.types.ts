@@ -22,7 +22,7 @@ export interface Message {
     id: string;
     conversationId: string;
     senderId: string;
-    text: string;
+    content: string;
     timestamp: ISODateString;
     status: MessageStatus;
 }

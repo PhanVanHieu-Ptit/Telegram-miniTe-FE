@@ -9,7 +9,7 @@ export type Message = MessageType;
 
 export interface SendMessageDto {
     conversationId: string;
-    text: string;
+    content: string;
 }
 
 export interface CreateConversationDto {
@@ -57,19 +57,12 @@ export interface GetMessagesParams {
     limit?: number;
 }
 
-export interface PaginatedMessages {
-    messages: Message[];
-    nextCursor?: string;
-    hasMore: boolean;
-}
 
-export const getMessages = (params: GetMessagesParams): Promise<PaginatedMessages> => {
+export const getMessages = (params: GetMessagesParams): Promise<Message[]> => {
     return apiClient
-        .get<PaginatedMessages>("/messages", {
+        .get<Message[]>("/messages", {
             params: {
                 conversationId: params.conversationId,
-                cursor: params.cursor,
-                limit: params.limit,
             },
         })
         .then((response) => response.data);
