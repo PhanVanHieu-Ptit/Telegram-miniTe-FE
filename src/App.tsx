@@ -21,6 +21,7 @@ function App(): JSX.Element {
 
   const initializeAuth = useAuthStore((state) => state.initializeAuth)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
+  const user = useAuthStore((state) => state.user)
   const fetchConversations = useChatStore((state) => state.fetchConversations)
 
   const connectMqtt = useCallback(async (): Promise<void> => {

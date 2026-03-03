@@ -1,12 +1,5 @@
-import { create } from "zustand";
 import { MessageStatus, type User, type Message, type Conversation } from "./types";
-import {
-  users,
-  conversations as mockConversations,
-  currentUserId,
-  buildMessagesRecord,
-  buildOnlineUsers,
-} from "./mock-data";
+import { create } from "zustand";
 import { chatService } from "@/services/chat.service";
 import {
   getChatRealtimeService,
@@ -14,7 +7,7 @@ import {
 } from "@/services/chat-realtime.service";
 
 const getMqttUrl = (): string =>
-  import.meta.env.VITE_MQTT_URL ?? "ws://localhost:1883";
+  import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001";
 
 // ─── State ────────────────────────────────────────────────────────────────────
 
@@ -149,24 +142,56 @@ export const useChatStore = create<ChatStore>((set, get) => {
 
   return {
     // State
-    currentUserId,
-    users,
-    conversations: mockConversations,
-    activeConversationId: "c1",
-    messages: buildMessagesRecord(),
-    onlineUsers: buildOnlineUsers(),
+    currentUserId: "", // Will be set from auth store or API
+    users: [],
+    conversations: [],
+    activeConversationId: null,
+    messages: {},
+    onlineUsers: [],
     typingUsers: {},
 
     searchQuery: "",
     sidebarOpen: true,
 
     // ─── Core Actions ─────────────────────────────────────────────────────
-
     initialize: async () => {
-      const activeId = get().activeConversationId;
-      if (activeId) {
-        await get().openConversation(activeId);
-      } else {
+      try {
+    // Fetch real users if API available (update this if you have user API)
+    // Example: const realUsers = await userService.getUsers(); set({ users: realUsers });
+
+        // Fetch real conversations
+        // You may want to get currentUserId from auth store
+        console.log('get(): ',get())
+        const userId = get().currentUserId;
+        if (!userId) return;
+        const realConversations = await chatService.getConversations(userId);
+        set({ conversations: realConversations });
+
+        // Fetch messages for each conversation
+        for (const convo of realConversations) {
+          try {
+            const messages = await chatService.getMessages(convo.id);
+            set((state) => ({
+              messages: {
+                ...state.messages,
+                [convo.id]: messages,
+              },
+            }));
+          } catch (error) {
+            console.error(`Failed to fetch messages for conversation ${convo.id}:`, error);
+          }
+        }
+
+        // Continue with original logic
+        const activeId = get().activeConversationId;
+        if (activeId) {
+          await get().openConversation(activeId);
+        } else {
+          await get().initializeRealtime();
+        }
+      } catch (error) {
+        console.error("Failed to initialize with real data:", error);
+      // Fallback: just initialize realtime
         await get().initializeRealtime();
       }
     },
@@ -188,6 +213,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         console.error("Failed to stop realtime:", error);
       }
     },
+
 
     openConversation: async (id: string | null) => {
       const previousId = get().activeConversationId;
@@ -369,6 +395,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
         users: allUsers,
         currentUserId: myId,
       } = get();
+      console.log('allConvos: ', allConvos)
+      console.log('searchQuery: ', searchQuery)
       if (!searchQuery.trim()) return allConvos;
       const q = searchQuery.toLowerCase();
       return allConvos.filter((convo) => {

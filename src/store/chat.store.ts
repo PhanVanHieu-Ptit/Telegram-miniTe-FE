@@ -50,6 +50,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     fetchConversations: async () => {
         set({ loading: true });
         try {
+            console.log('useAuthStore.getState(): ', useAuthStore.getState())
             const userId = useAuthStore.getState().user?.id;
             if (!userId) throw new Error("User ID is missing");
             const conversations = await getConversations({ userId });
@@ -195,7 +196,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         try {
             const client = getMqttClient({
-                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:1883",
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
             });
             await publishTyping(client, conversationId, userId, isTyping);
         } catch (error) {

@@ -16,7 +16,7 @@ import { transformHttpError } from "@/lib/http-error-handler";
 const transformAuthResponseToUser = (response: AuthResponse): User => {
     return {
         id: response.user.id,
-        displayName: response.user.name,
+        displayName: response.user.username,
         online: true,
     };
 };
@@ -81,6 +81,7 @@ export class AuthService {
                 tokenStorage.setRefreshToken(response.refreshToken);
             }
 
+            console.log('response: ', response)
             return {
                 user,
                 accessToken: response.token,

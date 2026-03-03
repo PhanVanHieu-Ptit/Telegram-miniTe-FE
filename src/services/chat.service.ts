@@ -22,10 +22,18 @@ const mapMessage = (message: ApiMessage): Message => ({
 const mapConversation = (conversation: ApiConversation): Conversation => ({
     id: conversation.id,
     participants: conversation.participantIds,
+    members: conversation.members.map((m) => ({
+        id: m.id,
+        fullName: m.fullName,
+        email: m.email,
+        role: m.role,
+        avatarUrl: m.avatarUrl ?? null,
+    })),
     lastMessage: conversation.lastMessage ? mapMessage(conversation.lastMessage) : undefined,
     unreadCount: conversation.unreadCount ?? 0,
     pinned: conversation.pinned ?? false,
     muted: conversation.muted ?? false,
+    updatedAt: conversation.updatedAt,
 });
 
 export const chatService = {

@@ -27,9 +27,18 @@ export interface Message {
     status: MessageStatus;
 }
 
+export interface ConversationMember {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    avatarUrl: string | null;
+}
+
 export interface Conversation {
     id: string;
     participantIds: string[];
+    members: ConversationMember[];
     lastMessage?: Message;
     unreadCount: number;
     pinned: boolean;

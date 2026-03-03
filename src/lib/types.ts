@@ -22,10 +22,18 @@ export interface Message {
 export interface Conversation {
   id: string;
   participants: string[];
+  members: {
+    id: string;
+    fullName: string;
+    email: string;
+    role: string;
+    avatarUrl: string | null;
+  }[];
   lastMessage?: Message;
   unreadCount: number;
   pinned: boolean;
   muted: boolean;
+  updatedAt: string;
 }
 
 export { MessageStatus };
