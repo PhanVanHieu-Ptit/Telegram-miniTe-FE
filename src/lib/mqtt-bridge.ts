@@ -7,6 +7,7 @@ import {
   getMqttClient,
 } from "./mqtt-client";
 import { useChatStore } from "./store";
+import { useAuthStore } from "@/store/auth.store";
 
 // ---------------------------------------------------------------------------
 // Topic schema
@@ -145,7 +146,7 @@ export class MqttStoreBridge {
   async publishTyping(conversationId: string, active: boolean): Promise<void> {
     const payload: TypingPayload = {
       conversationId,
-      userId: useChatStore.getState().currentUserId,
+      userId: useAuthStore.getState().user?.id || "",
       active,
     };
     await this.client.publish(TOPICS.typing(conversationId), payload, {
@@ -157,7 +158,7 @@ export class MqttStoreBridge {
   async publishSeen(conversationId: string): Promise<void> {
     const payload: SeenPayload = {
       conversationId,
-      userId: useChatStore.getState().currentUserId,
+      userId: useAuthStore.getState().user?.id || "",
     };
     await this.client.publish(TOPICS.seen(conversationId), payload, {
       qos: 0,

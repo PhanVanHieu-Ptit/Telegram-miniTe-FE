@@ -4,6 +4,7 @@ import { Pin, VolumeOff } from "lucide-react";
 import type { Conversation } from "@/lib/types";
 import { useChatStore } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth.store";
 
 function getInitials(name: string) {
   return name
@@ -41,21 +42,26 @@ interface ChatListItemProps {
 
 const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemProps) => {
 // Connect to Zustand store to get conversation partner
-  const getConversationPartner = useChatStore((s) => s.getConversationPartner);
+  // Find the other member for 1-1 chat
+  const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+  const otherMember = useMemo(() => {
+    if (!conversation.members || conversation.members.length === 0) return null;
+    if (conversation.members.length === 2) {
+      return conversation.members.find((m) => m.id !== currentUserId);
+    }
+    // For group chat, fallback to first member not current user
+    return conversation.members.find((m) => m.id !== currentUserId) || conversation.members[0];
+  }, [conversation.members, currentUserId]);
 
-  // Memoize partner to avoid recalculating on every render
-  const partner = useMemo(
-    () => getConversationPartner(conversation),
-    [getConversationPartner, conversation]
-  );
-
-  // Memoize avatar color
   const avatarColor = useMemo(() => {
-    if (!partner) return avatarColors[0];
-    return getAvatarColor(partner.name);
-  }, [partner]);
+    if (!otherMember) return avatarColors[0];
+    return getAvatarColor(otherMember.fullName);
+  }, [otherMember]);
 
-  if (!partner) return null;
+  if (!otherMember) return null;
+
+  // Temporary log for verification
+  console.log("ChatListItem conversation", conversation);
 
   return (
     <button
@@ -65,19 +71,20 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
         active
           ? "bg-primary text-primary-foreground"
           : "hover:bg-accent",
-        !active && partner.online ? "text-online" : "text-muted-foreground"
+        "text-muted-foreground"
       )}
       role="listitem"
       aria-current={active ? "true" : undefined}
     >
       {/* Avatar */}
       <div className="relative shrink-0">
-        <Badge dot={partner.online} color="var(--online)" offset={[-4, 36]}>
+        <Badge dot={false} color="var(--online)" offset={[-4, 36]}>
           <Avatar
             size={48}
+            src={otherMember.avatarUrl || undefined}
             style={{ backgroundColor: avatarColor, fontSize: 16, fontWeight: 600 }}
           >
-            {getInitials(partner.name)}
+            {!otherMember.avatarUrl && getInitials(otherMember.fullName)}
           </Avatar>
         </Badge>
       </div>
@@ -85,17 +92,17 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className={cn("truncate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>
-            {partner.name}
+          <span className={cn("truncate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}> 
+            {otherMember.fullName}
           </span>
-          <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
-            {conversation.lastMessage?.timestamp}
+          <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}> 
+            {conversation.updatedAt}
           </span>
         </div>
         <div className="flex items-center justify-between gap-1">
           <p className={cn("truncate text-sm", active ? "text-primary-foreground/80" : "text-muted-foreground")}>
-            {conversation.lastMessage?.senderId === "me" && (
-              <span className={cn("mr-0.5 font-medium", active ? "text-primary-foreground/80" : "text-foreground")}>
+            {conversation.lastMessage?.senderId === currentUserId && (
+              <span className={cn("mr-0.5 font-medium", active ? "text-primary-foreground/80" : "text-foreground")}> 
                 {"You: "}
               </span>
             )}

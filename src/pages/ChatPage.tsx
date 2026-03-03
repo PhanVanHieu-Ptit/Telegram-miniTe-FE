@@ -7,7 +7,7 @@ import { getMqttClient, type AppMqttClient, type MqttMessage } from "@/mqtt/mqtt
 import type { Message } from "@/types/chat.types";
 import { publishConversationSeen, subscribeToConversationSeen } from "@/mqtt/mqtt.service";
 
-const MQTT_URL = import.meta.env.VITE_MQTT_URL ?? "ws://localhost:1883";
+const MQTT_URL = import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001";
 
 export default function ChatPage() {
     const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -21,11 +21,13 @@ export default function ChatPage() {
     const currentSubscriptionRef = useRef<string | null>(null);
     const messageHandlerRef = useRef<(() => void) | null>(null);
 
+
     // Initialize MQTT client
     useEffect(() => {
         const initializeMqtt = async () => {
             try {
                 const client = getMqttClient({ url: MQTT_URL });
+                console.log('client: ', client)
                 await client.connect();
                 mqttClientRef.current = client;
 

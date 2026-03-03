@@ -23,7 +23,7 @@ import { ValidationError } from "@/types/error.types";
 const transformAuthResponseToUser = (response: AuthResponse): User => {
     return {
         id: response.user.id,
-        displayName: response.user.name,
+        displayName: response.user.username,
         online: true,
     };
 };

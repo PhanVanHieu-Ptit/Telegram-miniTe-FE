@@ -1,24 +1,47 @@
 
 
+import { useMemo } from "react";
 import { useChatStore } from "@/lib/store";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
 import { MessageSquare } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 
 export function ChatPanel() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
-  const getConversationPartner = useChatStore((s) => s.getConversationPartner);
   const openConversation = useChatStore((s) => s.openConversation);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
   const typingUsers = useChatStore((s) => s.typingUsers);
-  const currentUserId = useChatStore((s) => s.currentUserId);
+ const { id: currentUserId } = useAuthStore((state) => state.user) || {};
   const getUser = useChatStore((s) => s.getUser);
 
-  const activeConversation = conversations.find((c) => c.id === activeConversationId);
-  const partner = activeConversation ? getConversationPartner(activeConversation) : undefined;
+  // Sort conversations by updatedAt descending
+  const sortedConversations = useMemo(() => {
+    return [...conversations].sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+  }, [conversations]);
+
+  const activeConversation = sortedConversations.find((c: { id: string }) => c.id === activeConversationId);
+  const partner = useMemo(() => {
+    if (!activeConversation || !activeConversation.members || activeConversation.members.length === 0) return undefined;
+    let member;
+    if (activeConversation.members.length === 2) {
+      member = activeConversation.members.find((m: { id: string }) => m.id !== currentUserId);
+    } else {
+      member = activeConversation.members.find((m: { id: string }) => m.id !== currentUserId) || activeConversation.members[0];
+    }
+    if (!member) return undefined;
+    // Map ConversationMember to User
+    return {
+      id: member.id,
+      name: member.fullName,
+      avatar: member.avatarUrl ?? "",
+      online: false,
+      lastSeen: undefined,
+    };
+  }, [activeConversation, currentUserId]);
 
   // Get typing user names for the active conversation
   const typingUserNames = activeConversationId
