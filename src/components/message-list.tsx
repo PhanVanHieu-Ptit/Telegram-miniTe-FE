@@ -58,8 +58,6 @@ export const MessageList = memo(function MessageList() {
     }))
   );
 
-  console.log("MessageList state:", { activeConversationId, messagesCount: messages.length });
-
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
   useEffect(() => {
@@ -153,8 +151,6 @@ export const MessageList = memo(function MessageList() {
       </div>
     );
   }
-
-  console.log("MessageList state:", { activeConversationId, messagesCount: messages, visibleMessages });
 
   return (
     <div

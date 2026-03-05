@@ -38,6 +38,9 @@ interface ChatActions {
     getUser: (userId: string) => any;
     markMessageSeen: (conversationId: string, messageId: string, userId: string) => void;
     setOnlineUsers: (userIds: string[]) => void;
+    subscribeToConversation: (conversationId: string) => Promise<void>;
+    unsubscribeFromConversation: (conversationId: string) => Promise<void>;
+    publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -81,7 +84,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             };
             const result = await getMessages(params);
             const messagesArray = Array.isArray(result) ? result : ((result as any).data || (result as any).messages || []);
-            console.log(`Fetched ${messagesArray.length} messages for ${conversationId}`, messagesArray);
 
             set(() => ({
                 messages: messagesArray
@@ -211,6 +213,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
             });
+            await client.connect(); // Ensure MQTT client is connected
             await publishTyping(client, conversationId, userId, isTyping);
         } catch (error) {
             console.error("Failed to publish typing status:", error);
@@ -263,5 +266,60 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     setOnlineUsers: (userIds: string[]) => {
         set({ onlineUsers: userIds });
+    },
+
+    subscribeToConversation: async (conversationId: string) => {
+        try {
+            // Import dynamically to avoid circular dependency
+            const { subscribeToConversation } = await import("@/mqtt/mqtt.service");
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+            });
+
+            await client.connect(); // Ensure MQTT client is connected
+            await subscribeToConversation(client, conversationId);
+            console.log(`[ChatStore] Subscribed to conversation: ${conversationId}`);
+        } catch (error) {
+            console.error("Failed to subscribe to conversation:", error);
+        }
+    },
+
+    unsubscribeFromConversation: async (conversationId: string) => {
+        try {
+            // Import dynamically to avoid circular dependency  
+            const { unsubscribeFromConversation } = await import("@/mqtt/mqtt.service");
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+            });
+
+            if (client.connectionStatus === "connected") {
+                await unsubscribeFromConversation(client, conversationId);
+                console.log(`[ChatStore] Unsubscribed from conversation: ${conversationId}`);
+            }
+        } catch (error) {
+            console.error("Failed to unsubscribe from conversation:", error);
+        }
+    },
+
+    publishSeenStatus: async (conversationId: string, messageId: string) => {
+        try {
+            // Import dynamically to avoid circular dependency
+            const { publishConversationSeen } = await import("@/mqtt/mqtt.service");
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+            });
+
+            await client.connect(); // Ensure MQTT client is connected
+            await publishConversationSeen(client, conversationId, messageId);
+            console.log(`[ChatStore] Published seen status for message: ${messageId}`);
+        } catch (error) {
+            console.error("Failed to publish seen status:", error);
+        }
     },
 }));

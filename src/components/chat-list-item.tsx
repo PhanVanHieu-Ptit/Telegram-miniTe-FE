@@ -59,9 +59,6 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
 
   if (!otherMember) return null;
 
-  // Temporary log for verification
-  console.log("ChatListItem conversation", conversation);
-
   return (
     <button
       onClick={onClick}

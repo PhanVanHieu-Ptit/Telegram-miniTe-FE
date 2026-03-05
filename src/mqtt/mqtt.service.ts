@@ -140,11 +140,14 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
     const unsubscribe = client.onMessage((message: MqttMessage) => {
         const { topic, payload } = message;
 
+        console.log('[MQTT] Received message on topic:', topic, 'payload:', payload);
+
         if (!payload) return;
 
         // Handle message events: chat/{conversationId}/message
-        if (topic.includes("/message") && !topic.includes("/status") && !topic.includes("/delivered")) {
+        if (topic.match(/^chat\/[^/]+\/message$/)) {
             const messageData = payload as Message;
+            console.log('[MQTT] Processing message:', messageData);
             useChatStore.getState().addMessage(messageData);
 
             // Auto-publish delivered status and subscribe to message status
@@ -159,14 +162,14 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
         }
 
         // Handle message status events: message/{messageId}/status
-        if (topic.includes("/status")) {
+        if (topic.match(/^message\/[^/]+\/status$/)) {
             const statusData = payload as MessageStatusEvent;
             useChatStore.getState().updateMessageStatus(statusData.messageId, statusData.status);
             return;
         }
 
         // Handle online status events: user/{userId}/online
-        if (topic.includes("/online")) {
+        if (topic.match(/^user\/[^/]+\/online$/)) {
             const onlineData = payload as OnlineEvent;
             usePresenceStore
                 .getState()
@@ -174,16 +177,17 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
             return;
         }
 
-        // Handle seen update events: chat/{conversationId}/seen-update
-        if (topic.includes("/seen-update")) {
+        // Handle seen update events: chat/{conversationId}/seen
+        if (topic.match(/^chat\/[^/]+\/seen$/)) {
             const seenData = payload as SeenEvent;
             useChatStore.getState().updateMessageStatus(seenData.lastMessageId, "seen");
+            return;
         }
 
         // Handle typing events: chat/{conversationId}/typing
-        if (topic.includes("/typing")) {
+        if (topic.match(/^chat\/[^/]+\/typing$/)) {
             const typingData = payload as TypingEvent;
-            const conversationIdMatch = topic.match(/chat\/([^/]+)\/typing/);
+            const conversationIdMatch = topic.match(/^chat\/([^/]+)\/typing$/);
             if (conversationIdMatch) {
                 const conversationId = conversationIdMatch[1];
                 if (typingData.typing) {
@@ -192,6 +196,7 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
                     useChatStore.getState().removeTypingUser(conversationId, typingData.userId);
                 }
             }
+            return;
         }
     });
 

@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
 import { SendHorizontal, Smile } from "lucide-react";
 import { useChatStore } from "@/store/chat.store";
+import { useAuthStore } from "@/store/auth.store";
 
 interface MessageInputProps {
   conversationId: string;
@@ -13,6 +14,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   const [text, setText] = useState("");
   const typingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
   const sendMessage = useChatStore((s) => s.sendMessage);
   const setTypingActive = useChatStore((s) => s.setTypingActive);
@@ -66,12 +68,12 @@ export function MessageInput({ conversationId }: MessageInputProps) {
 
   const handleSend = useCallback(() => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed || !currentUserId) return;
 
     stopTyping();
-    void sendMessage({ conversationId, content: trimmed });
+    void sendMessage({ conversationId, content: trimmed, senderId: currentUserId });
     setText("");
-  }, [text, conversationId, sendMessage, stopTyping]);
+  }, [text, conversationId, sendMessage, stopTyping, currentUserId]);
 
   // ── Keyboard ─────────────────────────────────────────────────────
 

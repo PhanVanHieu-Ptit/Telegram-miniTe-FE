@@ -23,6 +23,7 @@ export function Sidebar() {
   const regular = filteredConversations.filter((c) => !c.pinned);
 
   const handleConversationClick = (id: string) => {
+    console.log('id: ', id)
     setActiveConversationId(id); // Changed from openConversation
     setSidebarOpen(false);
   };
@@ -78,7 +79,11 @@ export function Sidebar() {
             key={convo.id}
             conversation={convo}
             active={convo.id === activeConversationId}
-            onClick={() => handleConversationClick(convo.id)}
+            onClick={() => {
+              console.log('convo: ', convo)
+              handleConversationClick(convo.id)
+            }
+            }
           />
         ))}
         {filteredConversations.length === 0 && (

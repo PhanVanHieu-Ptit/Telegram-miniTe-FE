@@ -81,7 +81,6 @@ export class AuthService {
                 tokenStorage.setRefreshToken(response.refreshToken);
             }
 
-            console.log('response: ', response)
             return {
                 user,
                 accessToken: response.token,
