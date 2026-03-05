@@ -4,6 +4,7 @@ import mqtt, {
     type MqttClient,
     type Packet,
 } from "mqtt";
+import { Buffer } from 'buffer';
 
 export type QoS = 0 | 1 | 2;
 
@@ -129,6 +130,8 @@ export class AppMqttClient {
 
             this.client.on("message", (topic: string, payload: Buffer, packet: Packet) => {
                 const parsed = safeJsonParse(payload);
+                console.log('payload: ', payload.toString("utf-8"));
+                console.log('parsed: ', parsed)
                 const message: MqttMessage = {
                     topic,
                     payload: parsed,
@@ -168,13 +171,17 @@ export class AppMqttClient {
         options: SubscribeOptions = {},
     ): Promise<ISubscriptionGrant[]> {
         return new Promise((resolve, reject) => {
+            console.log('this.client: ', this.client)
             if (!this.client) {
                 reject(new Error("MQTT client is not connected"));
                 return;
             }
 
             const topics = Array.isArray(topic) ? topic : [topic];
+            console.log('topics: ', topics)
             const freshTopics = topics.filter((t) => !this.subscribedTopics.has(t));
+
+            console.log('freshTopics: ', freshTopics)
             if (freshTopics.length === 0) {
                 resolve([]);
                 return;

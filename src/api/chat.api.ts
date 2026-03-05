@@ -8,6 +8,7 @@ export type Conversation = ConversationType;
 export type Message = MessageType;
 
 export interface SendMessageDto {
+    senderId: string;
     conversationId: string;
     content: string;
 }

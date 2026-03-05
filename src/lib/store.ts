@@ -401,8 +401,6 @@ export const useChatStore = create<ChatStore>((set, get) => {
         users: allUsers,
         currentUserId: myId,
       } = get();
-      console.log('allConvos: ', allConvos)
-      console.log('searchQuery: ', searchQuery)
       if (!searchQuery.trim()) return allConvos;
       const q = searchQuery.toLowerCase();
       return allConvos.filter((convo) => {
@@ -438,6 +436,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         const savedMessage = await chatService.sendMessage({
           conversationId,
           content: trimmed,
+          senderId,
         });
         replaceMessage(conversationId, tempId, savedMessage);
 

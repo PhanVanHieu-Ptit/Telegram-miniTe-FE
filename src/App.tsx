@@ -1,13 +1,13 @@
-import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
-import Home from './app/page'
-import LoginPage from './pages/LoginPage'
-import RegisterPage from './pages/RegisterPage'
-import { ProtectedRoute } from './components/ProtectedRoute'
-import { useAuthStore } from '@/store/auth.store'
-import { useChatStore } from '@/store/chat.store'
 import { getMqttClient } from '@/mqtt/mqtt.client'
 import { setupMqttListeners } from '@/mqtt/mqtt.service'
+import { useAuthStore } from '@/store/auth.store'
+import { useChatStore } from '@/store/chat.store'
+import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
+import { Navigate, Route, Routes } from 'react-router-dom'
+import { ProtectedRoute } from './components/ProtectedRoute'
+import ChatPage from './pages/ChatPage'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -27,7 +27,7 @@ function App(): JSX.Element {
     if (mqttInitializedRef.current) return
 
     try {
-      const client = getMqttClient({ url: MQTT_URL })
+      const client = getMqttClient({ url: MQTT_URL });
       await client.connect()
       mqttCleanupRef.current?.()
       mqttCleanupRef.current = setupMqttListeners(client)
@@ -102,7 +102,7 @@ function App(): JSX.Element {
         path="/chat"
         element={
           <ProtectedRoute>
-            <Home />
+            <ChatPage />
           </ProtectedRoute>
         }
       />

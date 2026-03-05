@@ -22,7 +22,6 @@ export function ChatPanel() {
     setSidebarOpen(true);
   };
 
-  console.log("ChatPanel state:", { activeConversationId, conversationsCount: conversations.length });
 
   const sortedConversations = useMemo(() => {
     return [...conversations].sort((a: { updatedAt: string }, b: { updatedAt: string }) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
