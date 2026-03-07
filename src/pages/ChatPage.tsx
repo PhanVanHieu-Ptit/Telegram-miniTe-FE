@@ -16,7 +16,6 @@ export default function ChatPage() {
 
     // Subscribe to conversation when activeConversationId changes
     useEffect(() => {
-        console.log('ChatPage activeConversationId: ', activeConversationId)
         if (activeConversationId) {
             subscribeToConversation(activeConversationId);
         }

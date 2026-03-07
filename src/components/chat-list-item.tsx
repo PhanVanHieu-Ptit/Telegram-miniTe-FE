@@ -4,6 +4,12 @@ import { Pin, VolumeOff } from "lucide-react";
 import type { Conversation } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
+import dayjs from "dayjs";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+
+dayjs.extend(isSameOrBefore);
+dayjs.extend(isSameOrAfter);
 
 function getInitials(name: string) {
   return name
@@ -57,6 +63,7 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
     return getAvatarColor(otherMember.fullName);
   }, [otherMember]);
 
+
   if (!otherMember) return null;
 
   return (
@@ -92,7 +99,9 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
             {otherMember.fullName}
           </span>
           <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
-            {conversation.updatedAt}
+            {dayjs(conversation.updatedAt).isSame(dayjs(), "day")
+              ? dayjs(conversation.updatedAt).format("HH:mm")
+              : dayjs(conversation.updatedAt).format("MM/DD/YYYY")}
           </span>
         </div>
         <div className="flex items-center justify-between gap-1">

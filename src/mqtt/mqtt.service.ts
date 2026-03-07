@@ -140,14 +140,11 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
     const unsubscribe = client.onMessage((message: MqttMessage) => {
         const { topic, payload } = message;
 
-        console.log('[MQTT] Received message on topic:', topic, 'payload:', payload);
-
         if (!payload) return;
 
         // Handle message events: chat/{conversationId}/message
         if (topic.match(/^chat\/[^/]+\/message$/)) {
             const messageData = payload as Message;
-            console.log('[MQTT] Processing message:', messageData);
             useChatStore.getState().addMessage(messageData);
 
             // Auto-publish delivered status and subscribe to message status

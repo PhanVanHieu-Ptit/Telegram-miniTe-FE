@@ -5,6 +5,7 @@ import { Avatar } from "antd";
 import { Check, CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message, User } from "@/types/chat.types";
+import dayjs from "dayjs";
 
 interface MessageBubbleProps {
   message: Message;
@@ -102,7 +103,9 @@ export const MessageBubble = memo(function MessageBubble({
                 : "text-muted-foreground"
             )}
           >
-            {message.timestamp}
+            {dayjs(message.timestamp).isSame(dayjs(), "day")
+              ? dayjs(message.timestamp).format("HH:mm")
+              : dayjs(message.timestamp).format("MM/DD/YYYY")}
             {isOwnMessage &&
               (seen ? (
                 <CheckCheck className="h-3.5 w-3.5 text-primary" />

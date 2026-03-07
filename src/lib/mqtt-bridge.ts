@@ -81,8 +81,6 @@ export class MqttStoreBridge {
 
   constructor(options: MqttConnectionOptions) {
     this.client = getMqttClient(options);
-    // Debug: log client options
-    console.log('[MQTT] Client options:', options);
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────
@@ -90,8 +88,6 @@ export class MqttStoreBridge {
   async start(): Promise<void> {
     await this.client.connect();
     this.bind();
-    // Debug: log subscribe topic and QoS
-    console.log('[MQTT] Subscribing to topic:', TOPICS.online, 'QoS:', 1);
     await this.client.subscribe(TOPICS.online, { qos: 1 });
     await this.subscribeAllConversations();
   }
@@ -114,8 +110,6 @@ export class MqttStoreBridge {
   // ── Subscription management ───────────────────────────────────────
 
   async subscribeConversation(conversationId: string): Promise<void> {
-    console.log('[MQTT] Subscribing to conversation:', conversationId);
-    console.log('[MQTT] Topics:', [TOPICS.messageNew(conversationId), TOPICS.typing(conversationId), TOPICS.seen(conversationId)]);
     if (this.subscribedIds.has(conversationId)) return;
     await this.client.subscribe([
       TOPICS.messageNew(conversationId),
@@ -147,8 +141,6 @@ export class MqttStoreBridge {
       seenBy: message.seenBy,
       read: message.read ?? false,
     };
-    // Debug: log publish topic, payload, QoS, retain
-    console.log('[MQTT] Publishing message:', TOPICS.messageNew(conversationId), payload, 'QoS:', 1, 'Retain:', false);
     await this.client.publish(TOPICS.messageNew(conversationId), payload, { qos: 1, retain: false });
   }
 
@@ -158,8 +150,6 @@ export class MqttStoreBridge {
       userId: useAuthStore.getState().user?.id || "",
       active,
     };
-    // Debug: log publish topic, payload, QoS, retain
-    console.log('[MQTT] Publishing typing:', TOPICS.typing(conversationId), payload, 'QoS:', 1, 'Retain:', false);
     await this.client.publish(TOPICS.typing(conversationId), payload, {
       qos: 1,
       retain: false,
@@ -171,8 +161,6 @@ export class MqttStoreBridge {
       conversationId,
       userId: useAuthStore.getState().user?.id || "",
     };
-    // Debug: log publish topic, payload, QoS, retain
-    console.log('[MQTT] Publishing seen:', TOPICS.seen(conversationId), payload, 'QoS:', 1, 'Retain:', false);
     await this.client.publish(TOPICS.seen(conversationId), payload, {
       qos: 1,
       retain: false,
@@ -195,8 +183,6 @@ export class MqttStoreBridge {
 
   private onMessage = (topic: string, payload: Buffer, _packet: Packet): void => {
     const store = useChatStore.getState;
-    // Debug: log received message
-    console.log('[MQTT] Received message:', topic, payload.toString());
 
     // ── message:new ──
     const msgMatch = MESSAGE_RE.exec(topic);
