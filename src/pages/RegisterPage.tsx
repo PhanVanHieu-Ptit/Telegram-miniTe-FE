@@ -29,7 +29,7 @@ export default function RegisterPage() {
 
             // Redirect to login after 1 second
             setTimeout(() => {
-                navigate("/login");
+                navigate("/sign-in");
             }, 1000);
         } catch (error) {
             // Handle errors from store or validation
@@ -164,7 +164,7 @@ export default function RegisterPage() {
                         <Text type="secondary">
                             Already have an account?{" "}
                             <Link
-                                to="/login"
+                                to="/sign-in"
                                 className="font-medium text-blue-600 hover:text-blue-500"
                             >
                                 Sign in

@@ -3,6 +3,8 @@ import { Form, Input, Button, Card, Typography, message } from "antd";
 import { MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth.store";
+import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { Divider } from "antd";
 
 const { Title, Text } = Typography;
 
@@ -23,32 +25,15 @@ export default function LoginPage() {
     // Prevent unnecessary re-renders by checking both values in a single effect
     useEffect(() => {
         if (authInitialized && isAuthenticated) {
-            navigate("/chat");
+            navigate("/chat", { replace: true });
         }
     }, [authInitialized, isAuthenticated, navigate]);
+
     const onFinish = async (values: LoginFormValues) => {
         setLoading(true);
         try {
-            // Await login and Zustand state update
             await login(values);
-
-            // Ensure token is in localStorage before proceeding
-            const token = localStorage.getItem("auth_token");
-            if (!token) {
-                throw new Error("Token not saved. Please try again.");
-            }
-
-            // Force axios header update (if needed)
-            // This is handled by interceptor, but for safety:
-            // eslint-disable-next-line no-undef
-            const axios = (await import("@/api/axios")).default;
-            axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-
-            // Show success message
             message.success("Login successful!");
-
-            // Navigate only after all above steps
-            navigate("/chat");
         } catch (error) {
             message.error(
                 error instanceof Error ? error.message : "Login failed. Please check your credentials."
@@ -129,6 +114,13 @@ export default function LoginPage() {
                             Sign In
                         </Button>
                     </Form.Item>
+
+                    <div className="mb-6">
+                        <Divider plain>
+                            <span className="text-gray-400 font-normal">OR</span>
+                        </Divider>
+                        <GoogleLoginButton />
+                    </div>
 
                     <div className="text-center">
                         <Text type="secondary">

@@ -7,7 +7,7 @@
 import { create } from "zustand";
 import type { User } from "@/types/chat.types";
 import type { LoginDto, RegisterDto, AuthResponse } from "@/api/auth.api";
-import { login as apiLogin, register as apiRegister } from "@/api/auth.api";
+import { login as apiLogin, register as apiRegister, fetchMe as apiFetchMe } from "@/api/auth.api";
 import { authService } from "@/services/auth.service";
 import { tokenStorage } from "@/lib/token-storage";
 import { transformHttpError } from "@/lib/http-error-handler";
@@ -44,7 +44,8 @@ interface AuthState {
     register: (data: RegisterDto) => Promise<void>;
     logout: () => void;
     clearError: () => void;
-    initializeAuth: () => boolean;
+    initializeAuth: () => Promise<boolean>;
+    fetchMe: () => Promise<User | null>;
 }
 
 // ============================================================================
@@ -131,6 +132,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         }
     },
 
+
     // ========================================================================
     // Register Action
     // ========================================================================
@@ -205,25 +207,80 @@ export const useAuthStore = create<AuthState>((set) => ({
     // ========================================================================
     // Initialize Auth Action
     // ========================================================================
-    initializeAuth: (): boolean => {
-        // Read from localStorage
-        const token = tokenStorage.getToken();
-        const user = tokenStorage.getUser();
+    initializeAuth: async (): Promise<boolean> => {
         const workspaceId = tokenStorage.getWorkspaceId();
 
-        let isAuthenticated = false;
-        if (token && user) {
-            isAuthenticated = true;
-        }
+        try {
+            // Try to fetch user profile (supports both cookie-based and token-based auth)
+            const apiUser = await apiFetchMe();
+            const user = {
+                id: apiUser.id,
+                displayName: apiUser.username,
+                online: true,
+            };
 
-        set({
-            accessToken: token || null,
-            user: user || null,
-            workspaceId: workspaceId || null,
-            isAuthenticated,
-            initialized: true,
-            authInitialized: true,
-        });
-        return isAuthenticated;
+            // Sync storage with latest data
+            tokenStorage.setUser(user);
+
+            set({
+                user,
+                workspaceId: workspaceId || null,
+                isAuthenticated: true,
+                initialized: true,
+                authInitialized: true,
+                loading: false,
+            });
+            return true;
+        } catch (error) {
+            // If fetchMe fails, clear local data and set as not authenticated
+            tokenStorage.clearAllTokens();
+            set({
+                accessToken: null,
+                user: null,
+                workspaceId: null,
+                isAuthenticated: false,
+                initialized: true,
+                authInitialized: true,
+                loading: false,
+            });
+            return false;
+        }
+    },
+
+    /**
+     * Fetch user profile (used after backend redirect)
+     */
+    fetchMe: async (): Promise<User | null> => {
+        set({ loading: true, error: null });
+        try {
+            const apiUser = await apiFetchMe();
+            const user = {
+                id: apiUser.id,
+                displayName: apiUser.username,
+                online: true,
+            };
+
+            // Update storage and store
+            tokenStorage.setUser(user);
+
+            set({
+                user,
+                isAuthenticated: true,
+                loading: false,
+                initialized: true,
+                authInitialized: true,
+            });
+
+            return user;
+        } catch (error) {
+            const transformedError = transformHttpError(error);
+            set({
+                loading: false,
+                error: transformedError instanceof Error ? transformedError.message : "Session expired",
+                isAuthenticated: false,
+            });
+            tokenStorage.clearAllTokens();
+            return null;
+        }
     },
 }));

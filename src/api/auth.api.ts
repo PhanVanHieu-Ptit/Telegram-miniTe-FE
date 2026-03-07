@@ -28,6 +28,13 @@ export interface RegisterDto {
     confirmPassword: string;
 }
 
+/**
+ * Google Login callback data
+ */
+export interface GoogleLoginCallbackDto {
+    code: string;
+}
+
 // ============================================================================
 // Response Data Transfer Objects
 // ============================================================================
@@ -105,6 +112,31 @@ export const refreshToken = async (
     const response = await apiClient.post<RefreshTokenResponse>(
         "/refresh",
         { refreshToken }
+    );
+    return response.data;
+};
+
+/**
+ * Fetch current user profile
+ * @returns Promise of the current user's data
+ */
+export const fetchMe = async (): Promise<AuthUserDto> => {
+    const response = await apiClient.get<AuthUserDto>("/auth/me");
+    return response.data;
+};
+
+/**
+ * Handle Google OAuth2 callback
+ * @deprecated The backend handles the callback and redirects back to frontend
+ * @param payload - Authorization code from Google
+ * @returns Promise of AuthResponse
+ */
+export const googleLoginCallback = async (
+    payload: GoogleLoginCallbackDto
+): Promise<AuthResponse> => {
+    const response = await apiClient.post<AuthResponse>(
+        "/auth/google/callback",
+        payload
     );
     return response.data;
 };

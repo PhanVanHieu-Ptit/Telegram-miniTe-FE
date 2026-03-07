@@ -46,7 +46,7 @@ function App(): JSX.Element {
 
     const bootstrap = async (): Promise<void> => {
       setBootstrapPhase('loading')
-      const authenticated = initializeAuth()
+      const authenticated = await initializeAuth()
 
       if (authenticated) {
         try {
@@ -96,7 +96,8 @@ function App(): JSX.Element {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/sign-in" element={<LoginPage />} />
+      <Route path="/login" element={<Navigate to="/sign-in" replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route
         path="/chat"
@@ -107,9 +108,13 @@ function App(): JSX.Element {
         }
       />
       <Route
+        path="/dashboard"
+        element={<Navigate to="/chat" replace />}
+      />
+      <Route
         path="/"
         element={
-          isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/login" replace />
+          isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/sign-in" replace />
         }
       />
       <Route path="*" element={<Navigate to="/" replace />} />
