@@ -22,8 +22,7 @@ const apiClient: AxiosInstance = axios.create({
     "Accept": "application/json",
     "Content-Type": "application/json",
   },
-  // Uncomment if backend requires cookies for auth
-  // withCredentials: true,
+  withCredentials: true,
 });
 
 // ============================================================================
