@@ -169,8 +169,6 @@ export class TelegramMqttClient {
       });
 
       client.on("message", (topic: string, payload: Buffer, packet: Packet) => {
-        console.log('topic: ', topic)
-        console.log('payload: ', payload)
         this.messageCallbacks.forEach((cb) => {
           try {
             cb(topic, payload, packet);

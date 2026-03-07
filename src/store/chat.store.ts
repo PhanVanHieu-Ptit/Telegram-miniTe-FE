@@ -280,7 +280,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             await client.connect(); // Ensure MQTT client is connected
             await subscribeToConversation(client, conversationId);
-            console.log(`[ChatStore] Subscribed to conversation: ${conversationId}`);
         } catch (error) {
             console.error("Failed to subscribe to conversation:", error);
         }
@@ -298,7 +297,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             if (client.connectionStatus === "connected") {
                 await unsubscribeFromConversation(client, conversationId);
-                console.log(`[ChatStore] Unsubscribed from conversation: ${conversationId}`);
             }
         } catch (error) {
             console.error("Failed to unsubscribe from conversation:", error);
@@ -317,7 +315,6 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             await client.connect(); // Ensure MQTT client is connected
             await publishConversationSeen(client, conversationId, messageId);
-            console.log(`[ChatStore] Published seen status for message: ${messageId}`);
         } catch (error) {
             console.error("Failed to publish seen status:", error);
         }
