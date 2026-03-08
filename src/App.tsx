@@ -8,6 +8,7 @@ import { ProtectedRoute } from './components/ProtectedRoute'
 import ChatPage from './pages/ChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import GoogleCallbackPage from './pages/GoogleCallbackPage'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -97,6 +98,7 @@ function App(): JSX.Element {
   return (
     <Routes>
       <Route path="/sign-in" element={<LoginPage />} />
+      <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
       <Route path="/login" element={<Navigate to="/sign-in" replace />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route

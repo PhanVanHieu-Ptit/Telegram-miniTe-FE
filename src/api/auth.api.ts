@@ -121,7 +121,7 @@ export const refreshToken = async (
  * @returns Promise of the current user's data
  */
 export const fetchMe = async (): Promise<AuthUserDto> => {
-    const response = await apiClient.get<AuthUserDto>("/auth/me");
+    const response = await apiClient.get<AuthUserDto>("/me");
     return response.data;
 };
 

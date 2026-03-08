@@ -115,9 +115,8 @@ export const handleUnauthorizedError = async (
     } catch (refreshError) {
         processQueueOnError(refreshError);
 
-        // Clear tokens and redirect to login on refresh failure
+        // Clear tokens on refresh failure
         tokenStorage.clearAllTokens();
-        window.location.href = "/login";
 
         throw refreshError;
     } finally {
