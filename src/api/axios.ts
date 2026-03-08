@@ -66,8 +66,8 @@ apiClient.interceptors.response.use(
       error.config
     ) {
       const url = error.config.url || "";
-      // Do not handle 401 for login/register endpoints
-      if (url.includes("/login") || url.includes("/register")) {
+      // Do not handle 401 for login/auth/register endpoints
+      if (url.includes("/auth/login") || url.includes("/auth/register")) {
         // Return error as-is for caller to handle
         return Promise.reject(error);
       }
