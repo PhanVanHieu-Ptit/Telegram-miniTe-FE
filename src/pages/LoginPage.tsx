@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
-import { Form, Input, Button, Card, Typography, message } from "antd";
+import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
 import { MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/auth.store";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
+import { FacebookLoginButton } from "@/components/auth/FacebookLoginButton";
 import { Divider } from "antd";
 
 const { Title, Text } = Typography;
@@ -115,18 +116,21 @@ export default function LoginPage() {
                         </Button>
                     </Form.Item>
 
-                    <div className="mb-6">
+                    <div className="mb-6 space-y-2">
                         <Divider plain>
                             <span className="text-gray-400 font-normal">OR</span>
                         </Divider>
-                        <GoogleLoginButton />
+                        <Flex vertical justify="center" align="center" gap={10}>
+                            <GoogleLoginButton />
+                            <FacebookLoginButton />
+                        </Flex>
                     </div>
 
                     <div className="text-center">
                         <Text type="secondary">
                             Don't have an account?{" "}
                             <Link
-                                to="/register"
+                                to="/auth/register"
                                 className="font-medium text-blue-600 hover:text-blue-500"
                             >
                                 Create one

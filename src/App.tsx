@@ -99,8 +99,8 @@ function App(): JSX.Element {
     <Routes>
       <Route path="/sign-in" element={<LoginPage />} />
       <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
-      <Route path="/login" element={<Navigate to="/sign-in" replace />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Route path="/auth/login" element={<Navigate to="/sign-in" replace />} />
+      <Route path="/auth/register" element={<RegisterPage />} />
       <Route
         path="/chat"
         element={
@@ -112,6 +112,10 @@ function App(): JSX.Element {
       <Route
         path="/dashboard"
         element={<Navigate to="/chat" replace />}
+      />
+      <Route
+        path="/admin"
+        element={<Navigate to="/" replace />}
       />
       <Route
         path="/"

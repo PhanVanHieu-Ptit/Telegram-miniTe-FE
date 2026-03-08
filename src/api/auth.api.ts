@@ -79,7 +79,7 @@ export interface RefreshTokenResponse {
  * @throws Raw HTTP errors are caught and transformed by the service
  */
 export const login = async (payload: LoginDto): Promise<AuthResponse> => {
-    const response = await apiClient.post<AuthResponse>("/login", payload);
+    const response = await apiClient.post<AuthResponse>("/auth/login", payload);
     return response.data;
 };
 
@@ -94,7 +94,7 @@ export const register = async (
     payload: RegisterDto
 ): Promise<AuthResponse> => {
     const response = await apiClient.post<AuthResponse>(
-        "/register",
+        "/auth/register",
         payload
     );
     return response.data;
@@ -121,7 +121,7 @@ export const refreshToken = async (
  * @returns Promise of the current user's data
  */
 export const fetchMe = async (): Promise<AuthUserDto> => {
-    const response = await apiClient.get<AuthUserDto>("/me");
+    const response = await apiClient.get<AuthUserDto>("/auth/me");
     return response.data;
 };
 

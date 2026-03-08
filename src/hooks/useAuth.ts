@@ -32,6 +32,11 @@ export const useAuth = () => {
         window.location.href = `${apiBaseUrl}/auth/google`;
     }, [apiBaseUrl]);
 
+    const handleFacebookLogin = useCallback(() => {
+        // Redirect browser directly to backend Facebook auth endpoint
+        window.location.href = `${apiBaseUrl}/auth/facebook`;
+    }, [apiBaseUrl]);
+
     const handleRegister = useCallback(
         async (data: RegisterDto) => {
             await register(data);
@@ -50,6 +55,7 @@ export const useAuth = () => {
         error,
         login: handleLogin,
         loginWithGoogle: handleGoogleLogin,
+        loginWithFacebook: handleFacebookLogin,
         register: handleRegister,
         logout: handleLogout,
         clearError,
