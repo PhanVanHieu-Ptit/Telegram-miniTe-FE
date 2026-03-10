@@ -1,29 +1,37 @@
 import { Input, Dropdown } from "antd";
 import type { MenuProps } from "antd";
-import { Menu, Search, Settings, Users, BookmarkIcon, Moon } from "lucide-react";
+import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles } from "lucide-react";
 import { useChatStore } from "@/store/chat.store";
 import { ChatListItem } from "./chat-list-item";
-
-const menuItems: MenuProps["items"] = [
-  { key: "new-group", label: "New Group", icon: <Users className="h-4 w-4" /> },
-  { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" /> },
-  { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
-  { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" /> },
-];
+import { useNavigate } from "react-router-dom";
 
 export function Sidebar() {
+  const navigate = useNavigate();
   const searchQuery = useChatStore((s) => s.searchQuery);
   const setSearchQuery = useChatStore((s) => s.setSearchQuery);
   const filteredConversations = useChatStore((s) => s.getFilteredConversations());
   const activeConversationId = useChatStore((s) => s.activeConversationId);
-  const setActiveConversationId = useChatStore((s) => s.setActiveConversationId); // Changed from openConversation
+  const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
+
+  const menuItems: MenuProps["items"] = [
+    { 
+      key: "summarize", 
+      label: "Summarize Chat", 
+      icon: <Sparkles className="h-4 w-4" />,
+      onClick: () => navigate("/summarize")
+    },
+    { key: "new-group", label: "New Group", icon: <Users className="h-4 w-4" /> },
+    { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" /> },
+    { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
+    { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" /> },
+  ];
 
   const pinned = filteredConversations.filter((c) => c.pinned);
   const regular = filteredConversations.filter((c) => !c.pinned);
 
   const handleConversationClick = (id: string) => {
-    setActiveConversationId(id); // Changed from openConversation
+    setActiveConversationId(id);
     setSidebarOpen(false);
   };
 
