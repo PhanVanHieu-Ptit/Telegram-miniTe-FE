@@ -12,10 +12,12 @@ interface SummaryBubbleProps {
   onClose: () => void;
   isSummarizing: boolean;
   summary: string[] | null;
+  error: string | null;
   senderFilter: string | null;
   dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null;
   activeConversation: any;
   handleSummarize: () => void;
+  handleClear: () => void;
   setSenderFilter: (val: string | null) => void;
   setDateRange: (dates: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
   setQuickPreset: (preset: 'today' | '24h' | '7d') => void;
@@ -27,10 +29,12 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
   onClose,
   isSummarizing,
   summary,
+  error,
   senderFilter,
   dateRange,
   activeConversation,
   handleSummarize,
+  handleClear,
   setSenderFilter,
   setDateRange,
   setQuickPreset,
@@ -65,6 +69,7 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
               <SummaryResult 
                 summary={summary} 
                 loading={isSummarizing} 
+                error={error}
               />
             </>
           ) : (
@@ -75,18 +80,39 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
         </div>
 
         <div className="p-4 border-t border-border bg-muted/10">
-          <Button 
-            type="primary" 
-            block 
-            size="large" 
-            icon={<Sparkles className="h-4 w-4" />}
-            onClick={handleSummarize}
-            loading={isSummarizing}
-            disabled={!hasActiveConversation}
-            className="bg-primary hover:bg-primary/90 shadow-md h-12 text-base font-semibold"
-          >
-            Generate Summary
-          </Button>
+          {!summary ? (
+            <Button 
+              type="primary" 
+              block 
+              size="large" 
+              icon={<Sparkles className="h-4 w-4" />}
+              onClick={handleSummarize}
+              loading={isSummarizing}
+              disabled={!hasActiveConversation}
+              className="bg-primary hover:bg-primary/90 shadow-md h-12 text-base font-semibold"
+            >
+              Generate Summary
+            </Button>
+          ) : (
+            <div className="flex gap-2">
+              <Button 
+                className="flex-1 h-12 text-base"
+                onClick={handleClear}
+                disabled={isSummarizing}
+              >
+                Clear
+              </Button>
+              <Button 
+                type="primary"
+                className="flex-[2] h-12 text-base font-semibold bg-primary hover:bg-primary/90 shadow-md"
+                icon={<Sparkles className="h-4 w-4" />}
+                onClick={handleSummarize}
+                loading={isSummarizing}
+              >
+                Regenerate
+              </Button>
+            </div>
+          )}
         </div>
       </Card>
     </div>
