@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/sidebar";
 import { ChatPanel } from "@/components/chat-panel";
 import { useChatStore } from "@/store/chat.store";
 import { cn } from "@/lib/utils";
+import { SummaryWidget } from "@/components/summary";
 
 export default function ChatPage() {
     const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -73,6 +74,9 @@ export default function ChatPage() {
             >
                 <ChatPanel />
             </div>
+
+            {/* Floating Summary Widget */}
+            <SummaryWidget />
         </main>
     );
 }

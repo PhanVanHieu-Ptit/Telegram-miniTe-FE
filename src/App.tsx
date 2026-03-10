@@ -9,6 +9,7 @@ import ChatPage from './pages/ChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
+import MessageSummarizerPage from './pages/MessageSummarizerPage'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -106,6 +107,14 @@ function App(): JSX.Element {
         element={
           <ProtectedRoute>
             <ChatPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/summarize"
+        element={
+          <ProtectedRoute>
+            <MessageSummarizerPage />
           </ProtectedRoute>
         }
       />
