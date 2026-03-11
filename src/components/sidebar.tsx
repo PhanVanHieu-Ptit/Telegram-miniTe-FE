@@ -4,6 +4,9 @@ import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles } from "luc
 import { useChatStore } from "@/store/chat.store";
 import { ChatListItem } from "./chat-list-item";
 import { useNavigate } from "react-router-dom";
+import { CreateConversationButton } from "./chat/CreateConversationButton";
+import { CreateConversationModal } from "./chat/CreateConversationModal";
+import { useState } from "react";
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -13,6 +16,7 @@ export function Sidebar() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
+  const [createModalOpen, setCreateModalOpen] = useState(false);
 
   const menuItems: MenuProps["items"] = [
     { 
@@ -21,7 +25,12 @@ export function Sidebar() {
       icon: <Sparkles className="h-4 w-4" />,
       onClick: () => navigate("/summarize")
     },
-    { key: "new-group", label: "New Group", icon: <Users className="h-4 w-4" /> },
+    { 
+      key: "new-group", 
+      label: "New Group", 
+      icon: <Users className="h-4 w-4" />,
+      onClick: () => setCreateModalOpen(true)
+    },
     { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" /> },
     { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
     { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" /> },
@@ -67,6 +76,9 @@ export function Sidebar() {
         />
       </header>
 
+      {/* Action Button */}
+      <CreateConversationButton />
+
       {/* Chat list */}
       <nav className="flex-1 overflow-y-auto" role="list">
         {pinned.length > 0 && (
@@ -98,6 +110,11 @@ export function Sidebar() {
           </div>
         )}
       </nav>
+
+      <CreateConversationModal
+        open={createModalOpen}
+        onClose={() => setCreateModalOpen(false)}
+      />
     </aside>
   );
 }
