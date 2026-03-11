@@ -42,7 +42,7 @@ interface AuthState {
     // Actions
     login: (data: LoginDto) => Promise<void>;
     register: (data: RegisterDto) => Promise<void>;
-    logout: () => void;
+    logout: () => Promise<void>;
     clearError: () => void;
     initializeAuth: () => Promise<boolean>;
     fetchMe: () => Promise<User | null>;
@@ -182,9 +182,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     // ========================================================================
     // Logout Action
     // ========================================================================
-    logout: () => {
+    logout: async () => {
         // Delegate logout to service
-        authService.logout();
+        await authService.logout();
 
         // Clear store state
         set({

@@ -43,6 +43,7 @@ export interface Conversation {
     unreadCount: number;
     pinned: boolean;
     muted: boolean;
+    chatName: string;
     updatedAt: ISODateString;
 }
 

@@ -5,7 +5,6 @@ import type { MenuProps } from "antd";
 import { ArrowLeft, Search, Phone, MoreVertical, Trash2, VolumeOff, Pin } from "lucide-react";
 import type { User } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
-
 function getInitials(name: string = "") {
   if (!name) return "";
   return name
