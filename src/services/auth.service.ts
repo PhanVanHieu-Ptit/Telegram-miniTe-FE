@@ -6,7 +6,7 @@
 
 import type { User } from "@/types/chat.types";
 import type { LoginDto, RegisterDto, AuthResponse } from "@/api/auth.api";
-import { login as apiLogin, register as apiRegister } from "@/api/auth.api";
+import { login as apiLogin, register as apiRegister, logout as apiLogout } from "@/api/auth.api";
 import { tokenStorage } from "@/lib/token-storage";
 import { transformHttpError } from "@/lib/http-error-handler";
 
@@ -119,8 +119,14 @@ export class AuthService {
     /**
      * Logout: clear all tokens and auth data
      */
-    logout(): void {
-        tokenStorage.clearAllTokens();
+    async logout(): Promise<void> {
+        try {
+            await apiLogout();
+        } catch (error) {
+            console.error("Logout API call failed:", error);
+        } finally {
+            tokenStorage.clearAllTokens();
+        }
     }
 
     /**

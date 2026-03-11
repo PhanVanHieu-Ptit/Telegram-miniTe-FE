@@ -95,8 +95,8 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className={cn("truncate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>
-            {otherMember.fullName}
+          <span className={cn("trun1cate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>
+            {conversation?.chatName !== '' ? conversation?.chatName : otherMember.fullName}
           </span>
           <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
             {dayjs(conversation.updatedAt).isSame(dayjs(), "day")

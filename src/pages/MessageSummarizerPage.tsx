@@ -170,18 +170,18 @@ const MessageSummarizerPage = () => {
                 </Text>
               </div>
             </div>
-            <Button 
-              type="primary" 
-              size="large" 
-              icon={<Sparkles className="h-4 w-4" />}
-              onClick={handleSummarize}
-              loading={isSummarizing}
-              disabled={filteredMessages.length === 0}
-              className="bg-primary hover:bg-primary/90 flex items-center gap-2"
-              shape="round"
-            >
-              Summarize
-            </Button>
+              <Button 
+                type="primary" 
+                size="large" 
+                icon={<Sparkles className="h-4 w-4" />}
+                onClick={handleSummarize}
+                loading={isSummarizing}
+                disabled={filteredMessages.length === 0}
+                className="bg-primary hover:bg-primary/90 flex items-center gap-2"
+                shape="round"
+              >
+                Summarize
+              </Button>
           </div>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

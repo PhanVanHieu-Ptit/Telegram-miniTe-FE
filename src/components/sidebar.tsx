@@ -1,12 +1,15 @@
-import { Input, Dropdown } from "antd";
+import { Input, Dropdown, Typography, Avatar } from "antd";
 import type { MenuProps } from "antd";
-import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles } from "lucide-react";
+import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles, User as UserIcon, LogOut } from "lucide-react";
 import { useChatStore } from "@/store/chat.store";
 import { ChatListItem } from "./chat-list-item";
 import { useNavigate } from "react-router-dom";
 import { CreateConversationButton } from "./chat/CreateConversationButton";
 import { CreateConversationModal } from "./chat/CreateConversationModal";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useAuthStore } from "@/store/auth.store";
+
+const { Text } = Typography;
 
 export function Sidebar() {
   const navigate = useNavigate();
@@ -17,23 +20,92 @@ export function Sidebar() {
   const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const { user, logout } = useAuthStore();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/sign-in");
+  };
+
+  function getInitials(name: string = "") {
+    if (!name) return "";
+    return name
+      .split(" ")
+      .map((w) => w[0])
+      .filter(Boolean)
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  }
+
+  const avatarColors = [
+    "#5B8DEF",
+    "#E17076",
+    "#FAA05A",
+    "#7BC862",
+    "#6EC9CB",
+    "#EE7AAE",
+    "#E8A64A",
+    "#65AADD",
+  ];
+
+  function getAvatarColor(name: string) {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return avatarColors[Math.abs(hash) % avatarColors.length];
+  }
+
+  const avatarColor = useMemo(() => {
+    return getAvatarColor(user?.displayName || "");
+  }, [user?.displayName]);
 
   const menuItems: MenuProps["items"] = [
-    { 
-      key: "summarize", 
-      label: "Summarize Chat", 
+    {
+      key: "user-info",
+      label: (
+        <div className="px-1 py-1 flex items-center">
+          <Avatar
+            size={32}
+            src={user?.avatarUrl}
+            style={{
+              backgroundColor: avatarColor,
+              fontSize: 12,
+              fontWeight: 600,
+              border: "none"
+            }}
+          >
+            {getInitials(user?.displayName)}
+          </Avatar>
+          <Text strong style={{ fontSize: '12px', lineHeight: '1', marginLeft: '8px' }}>{user?.displayName}</Text>
+        </div>
+      ),
+    },
+    { type: "divider" },
+    {
+      key: "summarize",
+      label: "Summarize Chat",
       icon: <Sparkles className="h-4 w-4" />,
       onClick: () => navigate("/summarize")
     },
-    { 
-      key: "new-group", 
-      label: "New Group", 
+    {
+      key: "new-group",
+      label: "New Group",
       icon: <Users className="h-4 w-4" />,
       onClick: () => setCreateModalOpen(true)
     },
     { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" /> },
     { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
     { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" /> },
+    { type: "divider" },
+    {
+      key: "logout",
+      label: "Logout",
+      icon: <LogOut className="h-4 w-4" />,
+      danger: true,
+      onClick: handleLogout,
+    },
   ];
 
   const pinned = filteredConversations.filter((c) => c.pinned);

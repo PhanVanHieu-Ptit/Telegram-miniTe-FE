@@ -7,7 +7,6 @@ import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
 import { MessageSquare } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
-
 export function ChatPanel() {
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
@@ -56,14 +55,14 @@ export function ChatPanel() {
 
   if (!activeConversation || !partner) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center bg-background text-muted-foreground">
-        <div className="flex flex-col items-center gap-3">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-            <MessageSquare className="h-8 w-8" />
+        <div className="flex flex-1 flex-col items-center justify-center bg-background text-muted-foreground">
+          <div className="flex flex-col items-center gap-3">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+              <MessageSquare className="h-8 w-8" />
+            </div>
+            <p className="text-sm">Select a chat to start messaging</p>
           </div>
-          <p className="text-sm">Select a chat to start messaging</p>
         </div>
-      </div>
     );
   }
 

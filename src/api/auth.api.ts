@@ -140,3 +140,10 @@ export const googleLoginCallback = async (
     );
     return response.data;
 };
+
+/**
+ * Logout from the server
+ */
+export const logout = async (): Promise<void> => {
+    await apiClient.post("/auth/logout");
+};
