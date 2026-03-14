@@ -44,7 +44,7 @@ export class AuthService {
         try {
             const refreshTokenValue = this.getRefreshToken();
             if (!refreshTokenValue) {
-                throw new Error("No refresh token available");
+                throw new Error("Missing refresh token");
             }
 
             const { refreshToken: apiRefresh } = await import("@/api/auth.api");

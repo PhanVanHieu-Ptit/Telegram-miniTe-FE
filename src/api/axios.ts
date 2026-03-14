@@ -66,11 +66,21 @@ apiClient.interceptors.response.use(
       error.config
     ) {
       const url = error.config.url || "";
-      // Do not handle 401 for login/auth/register endpoints
-      if (url.includes("/auth/login") || url.includes("/auth/register")) {
+      // Do not handle 401 for login/auth/register/refresh endpoints
+      if (
+        url.includes("/auth/login") || 
+        url.includes("/auth/register") || 
+        url.includes("/refresh")
+      ) {
         // Return error as-is for caller to handle
         return Promise.reject(error);
       }
+
+      // Only attempt refresh if we have a refresh token
+      if (!tokenStorage.getRefreshToken()) {
+        return Promise.reject(error);
+      }
+
       try {
         await handleUnauthorizedError(
           error as AxiosError,
