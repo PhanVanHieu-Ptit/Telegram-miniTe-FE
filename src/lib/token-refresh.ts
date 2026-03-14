@@ -49,7 +49,7 @@ export const performTokenRefresh = async (): Promise<string> => {
     const refreshTokenValue = tokenStorage.getRefreshToken();
 
     if (!refreshTokenValue) {
-        throw new Error("No refresh token available");
+        throw new Error("Missing refresh token");
     }
 
     const response = await apiRefreshToken(refreshTokenValue);

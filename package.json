@@ -44,6 +44,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "embla-carousel-react": "^8.0.0",
+    "firebase": "^12.10.0",
     "input-otp": "^1.2.0",
     "lucide-react": "^0.575.0",
     "mqtt": "^5.15.0",
