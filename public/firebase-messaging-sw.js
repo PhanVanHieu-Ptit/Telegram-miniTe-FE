@@ -7,15 +7,15 @@ importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-comp
 
 // Initialize the Firebase app in the service worker by passing in the messagingSenderId
 // Note: These values must match the ones in your firebase.ts file
-firebase.initializeApp({
-  apiKey: "AIzaSyASRUgF6NG0dg7QbodolJiqDIXOu7h-AxM",
-  authDomain: "app-3hchat.firebaseapp.com",
-  projectId: "app-3hchat",
-  storageBucket: "app-3hchat.firebasestorage.app",
-  messagingSenderId: "476840902328",
-  appId: "1:476840902328:web:1da8137c88eb032bdb7e4d",
-  measurementId: "G-FL671WGM62"
-});
+const urlParams = new URLSearchParams(location.search);
+const configStr = urlParams.get('config');
+
+if (configStr) {
+  const firebaseConfig = JSON.parse(configStr);
+  firebase.initializeApp(firebaseConfig);
+} else {
+  console.error("Firebase config missing from service worker url");
+}
 
 // Retrieve an instance of Firebase Messaging so that it can handle background messages
 const messaging = firebase.messaging();
