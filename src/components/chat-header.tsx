@@ -1,10 +1,23 @@
-
-
+import { useState } from "react";
 import { Avatar, Dropdown } from "antd";
 import type { MenuProps } from "antd";
-import { ArrowLeft, Search, Phone, MoreVertical, Trash2, VolumeOff, Pin } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Phone,
+  MoreVertical,
+  Trash2,
+  VolumeOff,
+  Pin,
+} from "lucide-react";
 import type { User } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
+import VideoCall from "@/components/VideoCall";
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
 function getInitials(name: string = "") {
   if (!name) return "";
   return name
@@ -36,76 +49,130 @@ function getAvatarColor(name: string) {
 }
 
 const dropdownItems: MenuProps["items"] = [
-  { key: "search", label: "Search messages", icon: <Search className="h-4 w-4" /> },
-  { key: "pin", label: "Pin conversation", icon: <Pin className="h-4 w-4" /> },
-  { key: "mute", label: "Mute notifications", icon: <VolumeOff className="h-4 w-4" /> },
+  {
+    key: "search",
+    label: "Search messages",
+    icon: <Search className="h-4 w-4" />,
+  },
+  {
+    key: "pin",
+    label: "Pin conversation",
+    icon: <Pin className="h-4 w-4" />,
+  },
+  {
+    key: "mute",
+    label: "Mute notifications",
+    icon: <VolumeOff className="h-4 w-4" />,
+  },
   { type: "divider" },
-  { key: "delete", label: "Delete chat", icon: <Trash2 className="h-4 w-4" />, danger: true },
+  {
+    key: "delete",
+    label: "Delete chat",
+    icon: <Trash2 className="h-4 w-4" />,
+    danger: true,
+  },
 ];
+
+// ---------------------------------------------------------------------------
+// Props
+// ---------------------------------------------------------------------------
 
 interface ChatHeaderProps {
   partner: User;
   onBack: () => void;
 }
 
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export function ChatHeader({ partner, onBack }: ChatHeaderProps) {
+  const [callOpen, setCallOpen] = useState(false);
+
   return (
-    <header className="flex items-center gap-3 border-b border-border bg-card px-3 py-2.5">
-      {/* Mobile back button */}
-      <button
-        onClick={onBack}
-        className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent md:hidden"
-        aria-label="Back to chats"
-      >
-        <ArrowLeft className="h-5 w-5" />
-      </button>
-
-      {/* User info */}
-      <div className="flex flex-1 items-center gap-3">
-        <Avatar
-          size={40}
-          style={{ backgroundColor: getAvatarColor(partner.displayName || ""), fontSize: 14, fontWeight: 600 }}
+    <>
+      <header className="flex items-center gap-3 border-b border-border bg-card px-3 py-2.5">
+        {/* Mobile back button */}
+        <button
+          onClick={onBack}
+          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent md:hidden"
+          aria-label="Back to chats"
         >
-          {getInitials(partner.displayName)}
-        </Avatar>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold text-foreground">
-            {partner.displayName}
-          </span>
-          <span
-            className={cn(
-              "text-xs",
-              partner.online ? "text-online" : "text-muted-foreground"
-            )}
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+
+        {/* User info */}
+        <div className="flex flex-1 items-center gap-3">
+          <Avatar
+            size={40}
+            style={{
+              backgroundColor: getAvatarColor(partner.displayName || ""),
+              fontSize: 14,
+              fontWeight: 600,
+            }}
           >
-            {partner.online ? "online" : `last seen ${partner.lastSeenAt ?? "recently"}`}
-          </span>
+            {getInitials(partner.displayName)}
+          </Avatar>
+          <div className="flex min-w-0 flex-col">
+            <span className="truncate text-sm font-semibold text-foreground">
+              {partner.displayName}
+            </span>
+            <span
+              className={cn(
+                "text-xs",
+                partner.online ? "text-online" : "text-muted-foreground"
+              )}
+            >
+              {partner.online
+                ? "online"
+                : `last seen ${partner.lastSeenAt ?? "recently"}`}
+            </span>
+          </div>
         </div>
-      </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1">
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Call"
-        >
-          <Phone className="h-5 w-5" />
-        </button>
-        <button
-          className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Search"
-        >
-          <Search className="h-5 w-5" />
-        </button>
-        <Dropdown menu={{ items: dropdownItems }} trigger={["click"]} placement="bottomRight">
+        {/* Actions */}
+        <div className="flex items-center gap-1">
+          {/* ── Video call button ───────────────────────────────────────── */}
+          <button
+            id="video-call-open-btn"
+            onClick={() => setCallOpen(true)}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
+            aria-label="Video call"
+          >
+            <Phone className="h-5 w-5" />
+          </button>
+
           <button
             className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-            aria-label="More options"
+            aria-label="Search"
           >
-            <MoreVertical className="h-5 w-5" />
+            <Search className="h-5 w-5" />
           </button>
-        </Dropdown>
-      </div>
-    </header>
+
+          <Dropdown
+            menu={{ items: dropdownItems }}
+            trigger={["click"]}
+            placement="bottomRight"
+          >
+            <button
+              className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
+              aria-label="More options"
+            >
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          </Dropdown>
+        </div>
+      </header>
+
+      {/* VideoCall overlay — only mounted while open (unmount = cleanup) */}
+      {callOpen && (
+        <VideoCall
+          isOpen={callOpen}
+          onClose={() => setCallOpen(false)}
+          targetUserId={partner.id}
+          targetUserName={partner.displayName}
+        />
+      )}
+    </>
   );
 }
