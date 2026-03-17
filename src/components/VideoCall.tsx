@@ -13,7 +13,7 @@
  * Mount it only when needed (it will immediately request camera/mic on mount).
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWebRTC } from "@/hooks/useWebRTC";
 import {
   Phone,
@@ -21,6 +21,8 @@ import {
   PhoneCall,
   Video,
   VideoOff,
+  Mic,
+  MicOff,
   X,
   Wifi,
   WifiOff,
@@ -78,6 +80,35 @@ const VideoCall: React.FC<VideoCallProps> = ({
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
 
+  // Media toggle state
+  const [isAudioMuted, setIsAudioMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+
+  // Call duration timer
+  const [callDuration, setCallDuration] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    if (callStatus === 'connected') {
+      setCallDuration(0);
+      timerRef.current = setInterval(() => setCallDuration((d) => d + 1), 1000);
+    } else {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [callStatus]);
+
+  const formatDuration = (seconds: number) => {
+    const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+    const s = (seconds % 60).toString().padStart(2, '0');
+    return `${m}:${s}`;
+  };
+
   // ──────────────────────────────────────────────────────────────────────────
   // Request camera+mic on mount
   // ──────────────────────────────────────────────────────────────────────────
@@ -109,18 +140,28 @@ const VideoCall: React.FC<VideoCallProps> = ({
 
   const handleStartCall = async () => {
     if (!targetUserId) return;
-    await startCall(targetUserId, currentUser?.displayName ?? "You");
+    await startCall(targetUserId, currentUser?.displayName ?? 'You');
   };
 
   const handleHangUp = () => {
-    hangUp();
+    void hangUp();
     onClose();
   };
 
   const handleReject = () => {
-    rejectCall();
+    void rejectCall();
     onClose();
   };
+
+  const toggleAudio = useCallback(() => {
+    localStream?.getAudioTracks().forEach((t) => (t.enabled = !t.enabled));
+    setIsAudioMuted((prev) => !prev);
+  }, [localStream]);
+
+  const toggleVideo = useCallback(() => {
+    localStream?.getVideoTracks().forEach((t) => (t.enabled = !t.enabled));
+    setIsVideoOff((prev) => !prev);
+  }, [localStream]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Status helpers
@@ -171,6 +212,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
               }`}
             >
               · {statusLabel[callStatus]}
+              {callStatus === "connected" && ` · ${formatDuration(callDuration)}`}
             </span>
           </div>
 
@@ -237,10 +279,15 @@ const VideoCall: React.FC<VideoCallProps> = ({
             <button
               id="start-call-btn"
               onClick={handleStartCall}
-              className="flex items-center gap-2 rounded-full bg-emerald-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-emerald-600 active:scale-95"
+              disabled={!isSocketConnected}
+              className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition active:scale-95 ${
+                isSocketConnected
+                  ? 'bg-emerald-500 hover:bg-emerald-600'
+                  : 'bg-gray-500 cursor-not-allowed opacity-60'
+              }`}
             >
               <Phone className="h-4 w-4" />
-              Start Video Call
+              {isSocketConnected ? 'Start Video Call' : 'Connecting…'}
             </button>
           )}
 
@@ -262,16 +309,36 @@ const VideoCall: React.FC<VideoCallProps> = ({
             </>
           )}
 
-          {/* ── CONNECTED: hang up ────────────────────────────────────────── */}
+          {/* ── CONNECTED: media toggles + hang up ───────────────────────── */}
           {callStatus === "connected" && (
-            <button
-              id="hang-up-btn"
-              onClick={handleHangUp}
-              className="flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600 active:scale-95"
-            >
-              <PhoneOff className="h-4 w-4" />
-              Hang Up
-            </button>
+            <>
+              <button
+                id="toggle-audio-btn"
+                onClick={toggleAudio}
+                className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 ${isAudioMuted ? "bg-rose-500/80 hover:bg-rose-600" : "bg-white/10 hover:bg-white/20"
+                  }`}
+                aria-label={isAudioMuted ? "Unmute" : "Mute"}
+              >
+                {isAudioMuted ? <MicOff className="h-5 w-5" /> : <Mic className="h-5 w-5" />}
+              </button>
+              <button
+                id="hang-up-btn"
+                onClick={handleHangUp}
+                className="flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600 active:scale-95"
+              >
+                <PhoneOff className="h-4 w-4" />
+                Hang Up
+              </button>
+              <button
+                id="toggle-video-btn"
+                onClick={toggleVideo}
+                className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 ${isVideoOff ? "bg-rose-500/80 hover:bg-rose-600" : "bg-white/10 hover:bg-white/20"
+                  }`}
+                aria-label={isVideoOff ? "Turn camera on" : "Turn camera off"}
+              >
+                {isVideoOff ? <VideoOff className="h-5 w-5" /> : <Video className="h-5 w-5" />}
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -292,7 +359,9 @@ const VideoCall: React.FC<VideoCallProps> = ({
                 <p className="text-lg font-semibold text-white">
                   {incomingCall.callerName}
                 </p>
-                <p className="mt-1 text-sm text-gray-400">Incoming video call…</p>
+                <p className="mt-1 text-sm text-gray-400">
+                  Incoming {incomingCall.callType ?? 'video'} call…
+                </p>
               </div>
             </div>
 
