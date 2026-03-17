@@ -1,16 +1,28 @@
 /**
- * useWebRTC — Custom hook for WebRTC peer-to-peer video calling
+ * useWebRTC — Custom hook for WebRTC peer-to-peer video/audio calling.
  *
  * Responsibilities:
- *  - Connect to rtc-service (Socket.io signaling) with JWT auth
- *  - Manage RTCPeerConnection lifecycle
- *  - Handle call flow: start → offer → answer → ICE → connected → hangup
- *  - Expose local and remote MediaStreams to the consumer
+ *  - Connect to CallWebRTC (rtc-service) via Socket.io with JWT auth
+ *  - Persist call records via backend-api REST calls
+ *  - Manage RTCPeerConnection lifecycle (offer → answer → ICE → connected)
+ *  - Expose local/remote MediaStreams and call controls to consumers
+ *
+ * Signaling flow (outgoing call):
+ *   1. startCall()        → POST /calls/start  (backend persists, notifies callee)
+ *   2. socket: start-call → rtc-service routes offer to callee
+ *   3. socket: call-answered ← callee answered → setRemoteDescription
+ *   4. Trickle ICE via ice-candidate events
+ *
+ * Signaling flow (incoming call):
+ *   1. socket: incoming-call ← rtc-service (forwarded from caller)
+ *   2. acceptCall()       → POST /calls/accept + join-room + send SDP answer
+ *   3. Trickle ICE
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { io, type Socket } from "socket.io-client";
-import { tokenStorage } from "@/lib/token-storage";
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { io, type Socket } from 'socket.io-client';
+import { tokenStorage } from '@/lib/token-storage';
+import { callApi, type CallDTO } from '@/services/call.api';
 import type {
   AcceptCallPayload,
   CallStatus,
@@ -20,20 +32,26 @@ import type {
   JoinRoomPayload,
   RejectCallPayload,
   StartCallPayload,
-} from "@/types/webrtc.types";
+} from '@/types/webrtc.types';
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const RTC_SERVICE_URL =
-  import.meta.env.VITE_RTC_SERVICE_URL ?? "http://localhost:3001";
+  import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
 
-/** Public STUN servers — swap in TURN creds for production */
+/** Public STUN — swap in TURN credentials for production NAT traversal */
 const ICE_CONFIG: RTCConfiguration = {
   iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    { urls: "stun:stun1.l.google.com:19302" },
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    // Uncomment and fill in for production TURN:
+    // {
+    //   urls: import.meta.env.VITE_TURN_URL,
+    //   username: import.meta.env.VITE_TURN_USERNAME,
+    //   credential: import.meta.env.VITE_TURN_CREDENTIAL,
+    // },
   ],
 };
 
@@ -50,17 +68,19 @@ export interface UseWebRTCReturn {
   callStatus: CallStatus;
   /** Populated only when an incoming call arrives before it's accepted */
   incomingCall: IncomingCall | null;
-  /** Request camera+mic access — call this on component mount */
-  getMedia: () => Promise<MediaStream | null>;
-  /** Initiate a call to a remote user */
-  startCall: (targetUserId: string, callerName: string) => Promise<void>;
+  /** Current persisted call record from backend */
+  activeCall: CallDTO | null;
+  /** Request camera+mic access — call this before startCall */
+  getMedia: (type?: 'audio' | 'video') => Promise<MediaStream | null>;
+  /** Initiate an outgoing call */
+  startCall: (targetUserId: string, callerName: string, callType?: 'audio' | 'video') => Promise<void>;
   /** Accept an incoming call */
   acceptCall: () => Promise<void>;
-  /** Decline an incoming call without answering */
-  rejectCall: () => void;
+  /** Decline an incoming call */
+  rejectCall: () => Promise<void>;
   /** End the active call and release all resources */
-  hangUp: () => void;
-  /** Whether the socket is currently connected to rtc-service */
+  hangUp: () => Promise<void>;
+  /** Whether the socket is connected to rtc-service */
   isSocketConnected: boolean;
 }
 
@@ -69,115 +89,128 @@ export interface UseWebRTCReturn {
 // ---------------------------------------------------------------------------
 
 export const useWebRTC = (): UseWebRTCReturn => {
-  // ──────────────────────────────────────────────────────────────────────────
-  // State
-  // ──────────────────────────────────────────────────────────────────────────
-
+  // ── State ──────────────────────────────────────────────────────────────────
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
-  const [callStatus, setCallStatus] = useState<CallStatus>("idle");
+  const [callStatus, setCallStatus] = useState<CallStatus>('idle');
   const [incomingCall, setIncomingCall] = useState<IncomingCall | null>(null);
+  const [activeCall, setActiveCall] = useState<CallDTO | null>(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Refs (mutable, do NOT trigger re-renders)
-  // ──────────────────────────────────────────────────────────────────────────
-
+  // ── Refs ───────────────────────────────────────────────────────────────────
   const socketRef = useRef<Socket | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
-  const localStreamRef = useRef<MediaStream | null>(null); // sync access in callbacks
+  const localStreamRef = useRef<MediaStream | null>(null);
   const roomIdRef = useRef<string | null>(null);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 1. Socket initialisation
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── 1. Socket initialization ────────────────────────────────────────────────
 
   useEffect(() => {
     const token = tokenStorage.getToken();
     if (!token) {
-      console.warn("[useWebRTC] No JWT found — socket will not connect");
+      console.warn('[useWebRTC] No JWT — socket will not connect');
       return;
     }
 
     const socket = io(RTC_SERVICE_URL, {
       auth: { token },
-      transports: ["websocket"],
+      // Allow fallback if websocket fails
+      // transports: ['websocket'],
       reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
     });
 
     socketRef.current = socket;
 
-    // ── Connection lifecycle ──────────────────────────────────────────────
-    socket.on("connect", () => {
-      console.log("[useWebRTC] Socket connected:", socket.id);
+    // ── Connection lifecycle ────────────────────────────────────────────────
+    if (socket.connected) {
+      setIsSocketConnected(true);
+    }
+    
+    socket.on('connect', () => {
+      console.log('[useWebRTC] Socket connected:', socket.id);
       setIsSocketConnected(true);
     });
 
-    socket.on("disconnect", (reason) => {
-      console.warn("[useWebRTC] Socket disconnected:", reason);
+    socket.on('disconnect', (reason) => {
+      console.warn('[useWebRTC] Socket disconnected:', reason);
       setIsSocketConnected(false);
     });
 
-    // ── Signaling events ──────────────────────────────────────────────────
+    socket.on('connect_error', (err) => {
+      console.error('[useWebRTC] Socket connection error:', err.message);
+      setIsSocketConnected(false); // Make sure it stays false on error
+    });
 
-    /** Remote peer is calling us */
+    // ── Incoming call ───────────────────────────────────────────────────────
     socket.on(
-      "incoming-call",
-      (data: {
-        callerId: string;
-        callerName: string;
-        roomId: string;
-        offer: RTCSessionDescriptionInit;
-      }) => {
-        console.log("[useWebRTC] Incoming call from", data.callerId);
-        setIncomingCall({
-          callerId: data.callerId,
-          callerName: data.callerName,
-          roomId: data.roomId,
-          offer: data.offer,
+      'incoming-call',
+      (data: { callId?: string; callerId: string; callerName: string; roomId: string; offer?: RTCSessionDescriptionInit; callType?: 'audio' | 'video' }) => {
+        console.log('[useWebRTC] Incoming call from', data.callerId);
+        // Merge with any previous incoming-call data for the same room to
+        // handle the two notifications (backend REST + socket start-call)
+        // arriving in either order without losing the SDP offer or callId.
+        setIncomingCall((prev) => {
+          if (prev && prev.roomId === data.roomId) {
+            return {
+              callId: data.callId ?? prev.callId,
+              callerId: data.callerId ?? prev.callerId,
+              callerName: data.callerName ?? prev.callerName,
+              roomId: data.roomId,
+              offer: data.offer ?? prev.offer,
+              callType: data.callType ?? prev.callType ?? 'video',
+            };
+          }
+          return {
+            callId: data.callId,
+            callerId: data.callerId,
+            callerName: data.callerName,
+            roomId: data.roomId,
+            offer: data.offer,
+            callType: data.callType ?? 'video',
+          };
         });
-        setCallStatus("ringing");
-      }
-    );
-
-    /** Callee accepted — we receive their SDP answer */
-    socket.on(
-      "call-answered",
-      async (data: { answer: RTCSessionDescriptionInit }) => {
-        console.log("[useWebRTC] Call answered — applying remote description");
-        const pc = peerConnectionRef.current;
-        if (!pc) return;
-        try {
-          await pc.setRemoteDescription(
-            new RTCSessionDescription(data.answer)
-          );
-          setCallStatus("connected");
-        } catch (err) {
-          console.error("[useWebRTC] setRemoteDescription (answer) failed", err);
+        // Store callId if provided by backend
+        if (data.callId) {
+          setActiveCall((prev) => prev ?? ({ id: data.callId } as CallDTO));
         }
+        setCallStatus('ringing');
       }
     );
 
-    /** Remote ICE candidate received */
-    socket.on("ice-candidate", async (data: IceCandidate) => {
+    // ── Call answered (caller side) ─────────────────────────────────────────
+    socket.on('call-answered', async (data: { answer: RTCSessionDescriptionInit }) => {
+      console.log('[useWebRTC] Call answered — applying remote description');
+      const pc = peerConnectionRef.current;
+      if (!pc) return;
+      try {
+        await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        setCallStatus('connected');
+      } catch (err) {
+        console.error('[useWebRTC] setRemoteDescription (answer) failed', err);
+      }
+    });
+
+    // ── ICE candidate ───────────────────────────────────────────────────────
+    socket.on('ice-candidate', async (data: IceCandidate) => {
       const pc = peerConnectionRef.current;
       if (!pc || !data.candidate) return;
       try {
         await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       } catch (err) {
-        console.error("[useWebRTC] addIceCandidate failed", err);
+        console.warn('[useWebRTC] addIceCandidate failed', err);
       }
     });
 
-    /** Remote peer rejected our call */
-    socket.on("call-rejected", () => {
-      console.log("[useWebRTC] Call rejected by remote");
+    // ── Call rejected ───────────────────────────────────────────────────────
+    socket.on('call-rejected', (data?: { reason?: string }) => {
+      console.log('[useWebRTC] Call rejected:', data?.reason);
       cleanupCall();
     });
 
-    /** Remote peer hung up */
-    socket.on("call-ended", () => {
-      console.log("[useWebRTC] Remote peer ended the call");
+    // ── Call ended by remote ────────────────────────────────────────────────
+    socket.on('call-ended', (data?: { endedBy?: string; duration?: number }) => {
+      console.log('[useWebRTC] Remote ended the call', data);
       cleanupCall();
     });
 
@@ -190,47 +223,43 @@ export const useWebRTC = (): UseWebRTCReturn => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 2. RTCPeerConnection factory
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── 2. RTCPeerConnection factory ────────────────────────────────────────────
 
   const createPeerConnection = useCallback((): RTCPeerConnection => {
     const pc = new RTCPeerConnection(ICE_CONFIG);
 
-    // Add local media tracks so the remote peer receives our stream
+    // Add local tracks
     const stream = localStreamRef.current;
     if (stream) {
       stream.getTracks().forEach((track) => pc.addTrack(track, stream));
     } else {
-      console.warn(
-        "[useWebRTC] createPeerConnection called before getMedia() — no local tracks added"
-      );
+      console.warn('[useWebRTC] createPeerConnection called before getMedia()');
     }
 
     // Receive remote tracks
     pc.ontrack = (event: RTCTrackEvent) => {
-      console.log("[useWebRTC] Remote track received");
+      console.log('[useWebRTC] Remote track received');
       setRemoteStream(event.streams[0] ?? null);
     };
 
-    // Trickle ICE: send each candidate to signaling server as it's gathered
+    // Trickle ICE
     pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
       if (event.candidate && roomIdRef.current && socketRef.current) {
         const payload: IceCandidate = {
           roomId: roomIdRef.current,
           candidate: event.candidate.toJSON(),
         };
-        socketRef.current.emit("ice-candidate", payload);
+        socketRef.current.emit('ice-candidate', payload);
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log("[useWebRTC] Connection state:", pc.connectionState);
-      if (
-        pc.connectionState === "disconnected" ||
-        pc.connectionState === "failed" ||
-        pc.connectionState === "closed"
-      ) {
+      console.log('[useWebRTC] Connection state:', pc.connectionState);
+      if (pc.connectionState === 'disconnected') {
+        // Attempt ICE restart before giving up
+        console.log('[useWebRTC] Connection disconnected — attempting ICE restart');
+        pc.restartIce();
+      } else if (pc.connectionState === 'failed' || pc.connectionState === 'closed') {
         cleanupCall();
       }
     };
@@ -239,21 +268,19 @@ export const useWebRTC = (): UseWebRTCReturn => {
     return pc;
   }, []);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 3. Media helpers
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── 3. Media helpers ────────────────────────────────────────────────────────
 
-  const getMedia = useCallback(async (): Promise<MediaStream | null> => {
+  const getMedia = useCallback(async (type: 'audio' | 'video' = 'video'): Promise<MediaStream | null> => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
         audio: true,
+        video: type === 'video',
       });
       localStreamRef.current = stream;
       setLocalStream(stream);
       return stream;
     } catch (err) {
-      console.error("[useWebRTC] getUserMedia failed", err);
+      console.error('[useWebRTC] getUserMedia failed', err);
       return null;
     }
   }, []);
@@ -263,103 +290,146 @@ export const useWebRTC = (): UseWebRTCReturn => {
     localStreamRef.current = null;
   }, []);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 4. Cleanup
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── 4. Cleanup ──────────────────────────────────────────────────────────────
 
   const cleanupCall = useCallback((): void => {
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
+    peerConnectionRef.current?.close();
+    peerConnectionRef.current = null;
     roomIdRef.current = null;
     setRemoteStream(null);
     setIncomingCall(null);
-    setCallStatus("idle");
+    setActiveCall(null);
+    setCallStatus('idle');
   }, []);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 5. Call actions
-  // ──────────────────────────────────────────────────────────────────────────
+  // ── 5. Call actions ─────────────────────────────────────────────────────────
 
-  /** Caller: create offer and notify remote peer */
+  /**
+   * CALLER: persist call in backend, then send WebRTC offer via socket.
+   */
   const startCall = useCallback(
-    async (targetUserId: string, callerName: string): Promise<void> => {
+    async (targetUserId: string, callerName: string, callType: 'audio' | 'video' = 'video'): Promise<void> => {
       const socket = socketRef.current;
       if (!socket) {
-        console.error("[useWebRTC] Socket not ready");
+        console.error('[useWebRTC] Socket not initialized');
         return;
       }
 
-      // Ensure we have media before starting
-      if (!localStreamRef.current) {
-        await getMedia();
+      // Wait for connection if not yet connected (up to 5 s)
+      if (!socket.connected) {
+        console.log('[useWebRTC] Waiting for socket connection…');
+        await new Promise<void>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            socket.off('connect', onConnect);
+            reject(new Error('Socket connection timeout'));
+          }, 5000);
+          const onConnect = () => {
+            clearTimeout(timeout);
+            resolve();
+          };
+          socket.once('connect', onConnect);
+        }).catch((err) => {
+          console.error('[useWebRTC]', err.message);
+          return;
+        });
+        if (!socket.connected) return;
       }
 
-      const roomId = `room_${Date.now()}_${Math.random()
-        .toString(36)
-        .slice(2, 8)}`;
-      roomIdRef.current = roomId;
+      setCallStatus('calling');
 
-      // Join the room first
-      const joinPayload: JoinRoomPayload = { roomId };
-      socket.emit("join-room", joinPayload);
+      try {
+        // Step 1: Acquire media
+        if (!localStreamRef.current) {
+          await getMedia(callType);
+        }
 
-      const pc = createPeerConnection();
+        // Step 2: Create PeerConnection + offer
+        const pc = createPeerConnection();
+        const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: callType === 'video' });
+        await pc.setLocalDescription(offer);
 
-      // Create and send offer
-      const offer = await pc.createOffer();
-      await pc.setLocalDescription(offer);
+        // Step 3: Persist in backend (backend notifies callee via rtc-service internal API)
+        const callRecord = await callApi.startCall(targetUserId, callType);
+        setActiveCall(callRecord);
 
-      const payload: StartCallPayload = {
-        targetUserId,
-        roomId,
-        callerName,
-        offer,
-      };
-      socket.emit("start-call", payload);
-      setCallStatus("calling");
+        // Step 4: Join room on rtc-service
+        const roomId = callRecord.roomName;
+        roomIdRef.current = roomId;
+        const joinPayload: JoinRoomPayload = { roomId };
+        socket.emit('join-room', joinPayload);
+
+        // Step 5: Send offer via socket (rtc-service routes it to callee)
+        const startPayload: StartCallPayload = {
+          targetUserId,
+          roomId,
+          callerName,
+          offer: pc.localDescription as RTCSessionDescriptionInit,
+          callType,
+          callId: callRecord.id,
+        };
+        socket.emit('start-call', startPayload);
+      } catch (err) {
+        console.error('[useWebRTC] startCall failed', err);
+        cleanupCall();
+      }
     },
-    [getMedia, createPeerConnection]
+    [getMedia, createPeerConnection, cleanupCall]
   );
 
-  /** Callee: accept incoming call, send answer */
+  /**
+   * CALLEE: accept incoming call — send SDP answer, notify backend.
+   */
   const acceptCall = useCallback(async (): Promise<void> => {
     const socket = socketRef.current;
     if (!socket || !incomingCall) return;
 
-    // Ensure we have local media
-    if (!localStreamRef.current) {
-      await getMedia();
+    if (!incomingCall.offer) {
+      console.error('[useWebRTC] Cannot accept call — SDP offer not yet received');
+      return;
     }
 
-    roomIdRef.current = incomingCall.roomId;
+    try {
+      // Step 1: Acquire media (match incoming call type)
+      const mediaType = incomingCall.callType ?? 'video';
+      if (!localStreamRef.current) {
+        await getMedia(mediaType);
+      }
 
-    const joinPayload: JoinRoomPayload = { roomId: incomingCall.roomId };
-    socket.emit("join-room", joinPayload);
+      // Step 2: Join call room
+      roomIdRef.current = incomingCall.roomId;
+      socket.emit('join-room', { roomId: incomingCall.roomId } as JoinRoomPayload);
 
-    const pc = createPeerConnection();
+      // Step 3: Build PeerConnection + SDP answer
+      const pc = createPeerConnection();
+      await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      const answer = await pc.createAnswer();
+      await pc.setLocalDescription(answer);
 
-    await pc.setRemoteDescription(
-      new RTCSessionDescription(incomingCall.offer)
-    );
+      // Step 4: Send answer via socket
+      const payload: AcceptCallPayload = {
+        callerId: incomingCall.callerId,
+        roomId: incomingCall.roomId,
+        answer,
+      };
+      socket.emit('accept-call', payload);
 
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
+      // Step 5: Persist in backend (non-blocking — best effort)
+      if (activeCall?.id) {
+        callApi.acceptCall(activeCall.id).then(setActiveCall).catch(console.error);
+      }
 
-    const payload: AcceptCallPayload = {
-      callerId: incomingCall.callerId,
-      roomId: incomingCall.roomId,
-      answer,
-    };
-    socket.emit("accept-call", payload);
+      setIncomingCall(null);
+      setCallStatus('connected');
+    } catch (err) {
+      console.error('[useWebRTC] acceptCall failed', err);
+      cleanupCall();
+    }
+  }, [incomingCall, activeCall, getMedia, createPeerConnection, cleanupCall]);
 
-    setIncomingCall(null);
-    setCallStatus("connected");
-  }, [incomingCall, getMedia, createPeerConnection]);
-
-  /** Callee: decline without answering */
-  const rejectCall = useCallback((): void => {
+  /**
+   * CALLEE: decline without answering.
+   */
+  const rejectCall = useCallback(async (): Promise<void> => {
     const socket = socketRef.current;
     if (!socket || !incomingCall) return;
 
@@ -367,29 +437,43 @@ export const useWebRTC = (): UseWebRTCReturn => {
       callerId: incomingCall.callerId,
       roomId: incomingCall.roomId,
     };
-    socket.emit("reject-call", payload);
-    cleanupCall();
-  }, [incomingCall, cleanupCall]);
+    socket.emit('reject-call', payload);
 
-  /** Either side: end active call */
-  const hangUp = useCallback((): void => {
+    // Notify backend (non-blocking)
+    if (activeCall?.id) {
+      callApi.rejectCall(activeCall.id).catch(console.error);
+    }
+
+    cleanupCall();
+  }, [incomingCall, activeCall, cleanupCall]);
+
+  /**
+   * Either side: end the active call.
+   */
+  const hangUp = useCallback(async (): Promise<void> => {
     const socket = socketRef.current;
     if (socket && roomIdRef.current) {
       const payload: EndCallPayload = { roomId: roomIdRef.current };
-      socket.emit("end-call", payload);
+      socket.emit('end-call', payload);
     }
-    cleanupCall();
-  }, [cleanupCall]);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // 6. Public API
-  // ──────────────────────────────────────────────────────────────────────────
+    // Persist in backend (non-blocking)
+    if (activeCall?.id) {
+      callApi.endCall(activeCall.id).catch(console.error);
+    }
+
+    cleanupCall();
+    stopLocalTracks();
+  }, [activeCall, cleanupCall, stopLocalTracks]);
+
+  // ── 6. Public API ────────────────────────────────────────────────────────────
 
   return {
     localStream,
     remoteStream,
     callStatus,
     incomingCall,
+    activeCall,
     getMedia,
     startCall,
     acceptCall,

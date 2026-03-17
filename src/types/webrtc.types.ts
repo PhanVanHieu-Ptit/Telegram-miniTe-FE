@@ -11,10 +11,12 @@ export type CallStatus =
   | "ended";
 
 export interface IncomingCall {
+  callId?: string;
   callerId: string;
   callerName: string;
   roomId: string;
-  offer: RTCSessionDescriptionInit;
+  offer?: RTCSessionDescriptionInit;
+  callType?: 'audio' | 'video';
 }
 
 export interface IceCandidate {
@@ -29,6 +31,8 @@ export interface StartCallPayload {
   roomId: string;
   callerName: string;
   offer: RTCSessionDescriptionInit;
+  callType: 'audio' | 'video';
+  callId?: string;
 }
 
 export interface AcceptCallPayload {
