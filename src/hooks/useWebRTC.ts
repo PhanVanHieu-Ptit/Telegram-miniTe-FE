@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, type Socket } from 'socket.io-client';
 import { tokenStorage } from '@/lib/token-storage';
+import { useAuthStore } from '@/store/auth.store';
 import { callApi, type CallDTO } from '@/services/call.api';
 import type {
   AcceptCallPayload,
@@ -43,16 +44,32 @@ const RTC_SERVICE_URL =
 
 /** Public STUN — swap in TURN credentials for production NAT traversal */
 const ICE_CONFIG: RTCConfiguration = {
+  // iceServers: [
+  //   { urls: 'stun:stun.l.google.com:19302' },
+  //   { urls: 'stun:stun1.l.google.com:19302' },
+  //   // Uncomment and fill in for production TURN:
+  //   // {
+  //   //   urls: import.meta.env.VITE_TURN_URL,
+  //   //   username: import.meta.env.VITE_TURN_USERNAME,
+  //   //   credential: import.meta.env.VITE_TURN_CREDENTIAL,
+  //   // },
+  // ],
   iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    // Uncomment and fill in for production TURN:
-    // {
-    //   urls: import.meta.env.VITE_TURN_URL,
-    //   username: import.meta.env.VITE_TURN_USERNAME,
-    //   credential: import.meta.env.VITE_TURN_CREDENTIAL,
-    // },
+    {
+      urls: "stun:openrelay.metered.ca:80"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp", // Vượt firewall qua cổng HTTPS
+      username: "openrelayproject",
+      credential: "openrelayproject"
+    }
   ],
+  iceTransportPolicy: 'relay'
 };
 
 // ---------------------------------------------------------------------------
@@ -89,6 +106,8 @@ export interface UseWebRTCReturn {
 // ---------------------------------------------------------------------------
 
 export const useWebRTC = (): UseWebRTCReturn => {
+  const accessToken = useAuthStore((state) => state.accessToken);
+
   // ── State ──────────────────────────────────────────────────────────────────
   const [localStream, setLocalStream] = useState<MediaStream | null>(null);
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null);
@@ -106,7 +125,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
   // ── 1. Socket initialization ────────────────────────────────────────────────
 
   useEffect(() => {
-    const token = tokenStorage.getToken();
+    const token = accessToken || tokenStorage.getToken();
     if (!token) {
       console.warn('[useWebRTC] No JWT — socket will not connect');
       return;
@@ -126,7 +145,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
     if (socket.connected) {
       setIsSocketConnected(true);
     }
-    
+
     socket.on('connect', () => {
       console.log('[useWebRTC] Socket connected:', socket.id);
       setIsSocketConnected(true);
@@ -221,7 +240,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
       stopLocalTracks();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [accessToken]);
 
   // ── 2. RTCPeerConnection factory ────────────────────────────────────────────
 

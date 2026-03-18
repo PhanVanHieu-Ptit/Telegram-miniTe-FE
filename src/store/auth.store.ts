@@ -224,6 +224,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             set({
                 user,
+                accessToken: tokenStorage.getToken(),
                 workspaceId: workspaceId || null,
                 isAuthenticated: true,
                 initialized: true,
@@ -265,6 +266,7 @@ export const useAuthStore = create<AuthState>((set) => ({
 
             set({
                 user,
+                accessToken: tokenStorage.getToken(),
                 isAuthenticated: true,
                 loading: false,
                 initialized: true,

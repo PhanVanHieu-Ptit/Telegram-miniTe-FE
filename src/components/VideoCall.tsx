@@ -14,7 +14,7 @@
  */
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useWebRTC } from "@/hooks/useWebRTC";
+import { useWebRTCContext } from "@/contexts/webrtc.context";
 import {
   Phone,
   PhoneOff,
@@ -69,7 +69,7 @@ const VideoCall: React.FC<VideoCallProps> = ({
     rejectCall,
     hangUp,
     isSocketConnected,
-  } = useWebRTC();
+  } = useWebRTCContext();
 
   const currentUser = useAuthStore((s) => s.user);
 
