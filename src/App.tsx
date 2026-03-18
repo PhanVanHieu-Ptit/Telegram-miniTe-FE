@@ -11,6 +11,8 @@ import RegisterPage from './pages/RegisterPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import MessageSummarizerPage from './pages/MessageSummarizerPage'
 import NotificationProvider from './components/NotificationProvider'
+import { WebRTCProvider } from '@/contexts/webrtc.context'
+import IncomingCallOverlay from '@/components/IncomingCallOverlay'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -99,43 +101,47 @@ function App(): JSX.Element {
 
   return (
     <NotificationProvider>
-      <Routes>
-        <Route path="/sign-in" element={<LoginPage />} />
-        <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
-        <Route path="/auth/login" element={<Navigate to="/sign-in" replace />} />
-        <Route path="/auth/register" element={<RegisterPage />} />
-        <Route
-          path="/chat"
-          element={
-            <ProtectedRoute>
-              <ChatPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/summarize"
-          element={
-            <ProtectedRoute>
-              <MessageSummarizerPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={<Navigate to="/chat" replace />}
-        />
-        <Route
-          path="/admin"
-          element={<Navigate to="/" replace />}
-        />
-        <Route
-          path="/"
-          element={
-            isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/sign-in" replace />
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      <WebRTCProvider>
+        {/* Global incoming call popup — always visible regardless of page */}
+        <IncomingCallOverlay />
+        <Routes>
+          <Route path="/sign-in" element={<LoginPage />} />
+          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+          <Route path="/auth/login" element={<Navigate to="/sign-in" replace />} />
+          <Route path="/auth/register" element={<RegisterPage />} />
+          <Route
+            path="/chat"
+            element={
+              <ProtectedRoute>
+                <ChatPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/summarize"
+            element={
+              <ProtectedRoute>
+                <MessageSummarizerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/dashboard"
+            element={<Navigate to="/chat" replace />}
+          />
+          <Route
+            path="/admin"
+            element={<Navigate to="/" replace />}
+          />
+          <Route
+            path="/"
+            element={
+              isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/sign-in" replace />
+            }
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </WebRTCProvider>
     </NotificationProvider>
   )
 }
