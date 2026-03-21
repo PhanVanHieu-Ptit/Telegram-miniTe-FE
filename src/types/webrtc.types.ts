@@ -14,6 +14,7 @@ export interface IncomingCall {
   callId?: string;
   callerId: string;
   callerName: string;
+  callerAvatar?: string | null;
   roomId: string;
   offer?: RTCSessionDescriptionInit;
   callType?: 'audio' | 'video';

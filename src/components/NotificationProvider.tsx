@@ -50,7 +50,18 @@ const NotificationProvider: React.FC<NotificationProviderProps> = ({ children })
     let actionPath = '';
 
     // Example logic to determine type based on data
-    if (data?.type === 'CHAT_MESSAGE' || data?.conversationId) {
+    if (data?.type === 'CALL_INCOMING') {
+      type = 'alert';
+      actionPath = '';
+      return {
+        title: note?.title || 'Incoming Call',
+        message: note?.body || `${data?.callerName ?? 'Someone'} is calling you`,
+        type,
+        avatarUrl,
+        actionPath,
+        timestamp: data?.timestamp || new Date(),
+      };
+    } else if (data?.type === 'CHAT_MESSAGE' || data?.type === 'chat_message' || data?.conversationId) {
       type = 'chat';
       avatarUrl = data?.senderAvatar || avatarUrl;
       actionPath = `/chat?id=${data.conversationId}`;

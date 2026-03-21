@@ -1,7 +1,9 @@
 import type { Message, MessageStatus } from "@/types/chat.types";
 import { useChatStore } from "@/store/chat.store";
+import { useAuthStore } from "@/store/auth.store";
 import { usePresenceStore } from "@/store/presence.store";
 import type { AppMqttClient, MqttMessage } from "./mqtt.client";
+import { playMessageSound } from "@/lib/notification-sound";
 
 interface OnlineEvent {
     userId: string;
@@ -145,7 +147,29 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
         // Handle message events: chat/{conversationId}/message
         if (topic.match(/^chat\/[^/]+\/message$/)) {
             const messageData = payload as Message;
-            useChatStore.getState().addMessage(messageData);
+            const store = useChatStore.getState();
+
+            // Deduplicate: skip if message already exists (e.g. sender already
+            // added it via the optimistic → API-response flow)
+            if (store.messages.some((m) => m.id === messageData.id)) {
+                // Still update sidebar lastMessage even for own messages
+                store.updateConversationLastMessage(messageData.conversationId, messageData);
+                return;
+            }
+
+            // Only add to the messages list if it belongs to the active conversation
+            if (messageData.conversationId === store.activeConversationId) {
+                store.addMessage(messageData);
+            }
+
+            // Always update the sidebar's lastMessage preview
+            store.updateConversationLastMessage(messageData.conversationId, messageData);
+
+            // Play notification sound for messages from other users
+            const currentUserId = useAuthStore.getState().user?.id;
+            if (messageData.senderId !== currentUserId) {
+                playMessageSound();
+            }
 
             // Auto-publish delivered status and subscribe to message status
             publishMessageDelivered(client, messageData.id).catch((err) => {

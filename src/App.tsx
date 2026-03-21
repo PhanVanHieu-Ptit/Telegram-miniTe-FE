@@ -27,6 +27,7 @@ function App(): JSX.Element {
   const initializeAuth = useAuthStore((state) => state.initializeAuth)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated)
   const fetchConversations = useChatStore((state) => state.fetchConversations)
+  const subscribeToAllConversations = useChatStore((state) => state.subscribeToAllConversations)
 
   const connectMqtt = useCallback(async (): Promise<void> => {
     if (mqttInitializedRef.current) return
@@ -44,7 +45,10 @@ function App(): JSX.Element {
 
   const bootstrapChat = useCallback(async (): Promise<void> => {
     await Promise.all([connectMqtt(), fetchConversations()])
-  }, [connectMqtt, fetchConversations])
+    // Subscribe to message topics for ALL conversations so incoming
+    // messages are received even when the conversation is not active.
+    await subscribeToAllConversations()
+  }, [connectMqtt, fetchConversations, subscribeToAllConversations])
 
   useEffect(() => {
     let active = true
@@ -88,22 +92,23 @@ function App(): JSX.Element {
     }
   }, [])
 
-  if (bootstrapPhase !== 'ready') {
-    return (
-      <div className="flex items-center justify-center h-dvh w-full bg-background">
-        <div className="flex flex-col items-center gap-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-          <p className="text-sm text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <NotificationProvider>
+      {/* WebRTCProvider is intentionally outside the bootstrap guard so the
+          socket connects as soon as the token is available — not after MQTT
+          and conversations finish loading. This prevents missing incoming
+          calls during the app bootstrap window. */}
       <WebRTCProvider>
         {/* Global incoming call popup — always visible regardless of page */}
         <IncomingCallOverlay />
+        {bootstrapPhase !== 'ready' ? (
+          <div className="flex items-center justify-center h-dvh w-full bg-background">
+            <div className="flex flex-col items-center gap-2">
+              <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <p className="text-sm text-muted-foreground">Loading...</p>
+            </div>
+          </div>
+        ) : (
         <Routes>
           <Route path="/sign-in" element={<LoginPage />} />
           <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
@@ -141,6 +146,7 @@ function App(): JSX.Element {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        )}
       </WebRTCProvider>
     </NotificationProvider>
   )

@@ -40,6 +40,8 @@ interface ChatActions {
     setOnlineUsers: (userIds: string[]) => void;
     subscribeToConversation: (conversationId: string) => Promise<void>;
     unsubscribeFromConversation: (conversationId: string) => Promise<void>;
+    subscribeToAllConversations: () => Promise<void>;
+    updateConversationLastMessage: (conversationId: string, message: Message) => void;
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
 }
 
@@ -142,6 +144,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             set((state) => ({
                 messages: state.messages.map((item) =>
                     item.id === tempId ? message : item
+                ),
+                conversations: state.conversations.map((c) =>
+                    c.id === payload.conversationId
+                        ? { ...c, lastMessage: message, updatedAt: message.timestamp }
+                        : c
                 ),
             }));
             return message;
@@ -301,6 +308,36 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } catch (error) {
             console.error("Failed to unsubscribe from conversation:", error);
         }
+    },
+
+    subscribeToAllConversations: async () => {
+        try {
+            const { subscribeToMessages } = await import("@/mqtt/mqtt.service");
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+            });
+
+            await client.connect();
+
+            const { conversations } = get();
+            await Promise.all(
+                conversations.map((c) => subscribeToMessages(client, c.id))
+            );
+        } catch (error) {
+            console.error("Failed to subscribe to all conversations:", error);
+        }
+    },
+
+    updateConversationLastMessage: (conversationId: string, message: Message) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId
+                    ? { ...c, lastMessage: message, updatedAt: message.timestamp }
+                    : c
+            ),
+        }));
     },
 
     publishSeenStatus: async (conversationId: string, messageId: string) => {
