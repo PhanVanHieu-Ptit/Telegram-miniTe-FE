@@ -48,6 +48,8 @@ export interface AuthUserDto {
     email: string;
     createdAt: string;
     updatedAt: string;
+    /** JWT returned by /auth/me so cookie-only auth users get a usable token */
+    token?: string;
 }
 
 /**

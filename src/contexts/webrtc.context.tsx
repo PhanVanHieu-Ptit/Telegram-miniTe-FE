@@ -98,6 +98,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
     children,
 }) => {
     const accessToken = useAuthStore((s) => s.accessToken);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
     // ── State ────────────────────────────────────────────────────────────────
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -135,7 +136,15 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
 
     useEffect(() => {
         const token = accessToken || tokenStorage.getToken();
-        if (!token) return;
+        if (!token) {
+            if (isAuthenticated) {
+                console.warn(
+                    '[WebRTC] Authenticated but no JWT available for RTC socket. ' +
+                    'Token will be fetched on next auth refresh.',
+                );
+            }
+            return;
+        }
 
         const socket = io(RTC_SERVICE_URL, {
             auth: { token },
@@ -169,6 +178,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 callId?: string;
                 callerId: string;
                 callerName: string;
+                callerAvatar?: string | null;
                 roomId: string;
                 offer?: RTCSessionDescriptionInit;
                 callType?: 'audio' | 'video';
@@ -180,6 +190,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                             callId: data.callId ?? prev.callId,
                             callerId: data.callerId ?? prev.callerId,
                             callerName: data.callerName ?? prev.callerName,
+                            callerAvatar: data.callerAvatar ?? prev.callerAvatar,
                             roomId: data.roomId,
                             offer: data.offer ?? prev.offer,
                             callType: data.callType ?? prev.callType ?? 'video',
@@ -189,6 +200,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                         callId: data.callId,
                         callerId: data.callerId,
                         callerName: data.callerName,
+                        callerAvatar: data.callerAvatar,
                         roomId: data.roomId,
                         offer: data.offer,
                         callType: data.callType ?? 'video',
@@ -239,7 +251,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             stopLocalTracks();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accessToken]);
+    }, [accessToken, isAuthenticated]);
 
     // ── 2. PeerConnection factory ───────────────────────────────────────────
 
@@ -311,10 +323,50 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             callerName: string,
             callType: 'audio' | 'video' = 'video',
         ): Promise<void> => {
-            const socket = socketRef.current;
+            let socket = socketRef.current;
+
+            // ── Lazy socket recovery ────────────────────────────────────────
+            // If the socket was never created (e.g. token arrived after the
+            // initial effect ran), try to create it on-demand so the call is
+            // not silently dropped.
             if (!socket) {
-                console.error('[WebRTC] Socket not initialized');
-                return;
+                const token =
+                    useAuthStore.getState().accessToken || tokenStorage.getToken();
+                if (!token) {
+                    console.error(
+                        '[WebRTC] Cannot start call — no authentication token available',
+                    );
+                    return;
+                }
+                console.log('[WebRTC] Socket not found, creating on-demand…');
+                socket = io(RTC_SERVICE_URL, {
+                    auth: { token },
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000,
+                });
+                socketRef.current = socket;
+
+                // Wait for connection before proceeding
+                try {
+                    await new Promise<void>((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Socket connection timeout'));
+                        }, 5000);
+                        socket!.once('connect', () => {
+                            clearTimeout(timeout);
+                            setIsSocketConnected(true);
+                            resolve();
+                        });
+                        socket!.once('connect_error', (err) => {
+                            clearTimeout(timeout);
+                            reject(err);
+                        });
+                    });
+                } catch (err) {
+                    console.error('[WebRTC] On-demand socket failed:', err);
+                    socketRef.current = null;
+                    return;
+                }
             }
 
             if (!socket.connected) {
