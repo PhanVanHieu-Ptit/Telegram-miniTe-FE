@@ -1,13 +1,13 @@
-import { Input, Dropdown, Typography, Avatar } from "antd";
-import type { MenuProps } from "antd";
-import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles, User as UserIcon, LogOut } from "lucide-react";
+import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
-import { ChatListItem } from "./chat-list-item";
+import type { MenuProps } from "antd";
+import { Avatar, Dropdown, Input, Typography } from "antd";
+import { BookmarkIcon, LogOut, Menu, Moon, Search, Settings, Sparkles, Users } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChatListItem } from "./chat-list-item";
 import { CreateConversationButton } from "./chat/CreateConversationButton";
 import { CreateConversationModal } from "./chat/CreateConversationModal";
-import { useMemo, useState } from "react";
-import { useAuthStore } from "@/store/auth.store";
 
 const { Text } = Typography;
 
