@@ -22,6 +22,7 @@ import { io, type Socket } from 'socket.io-client';
 import { tokenStorage } from '@/lib/token-storage';
 import { useAuthStore } from '@/store/auth.store';
 import { callApi, type CallDTO } from '@/services/call.api';
+import { fetchIceServers } from '@/api/ice-server.api';
 import type {
     AcceptCallPayload,
     CallStatus,
@@ -40,22 +41,7 @@ import type {
 const RTC_SERVICE_URL =
     import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
 
-const ICE_CONFIG: RTCConfiguration = {
-    iceServers: [
-        { urls: 'stun:openrelay.metered.ca:80' },
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-    ],
-    iceTransportPolicy: 'relay',
-};
+// Không dùng ICE_CONFIG hardcode nữa
 
 // ---------------------------------------------------------------------------
 // Context value type
@@ -255,8 +241,20 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
 
     // ── 2. PeerConnection factory ───────────────────────────────────────────
 
-    const createPeerConnection = useCallback((): RTCPeerConnection => {
-        const pc = new RTCPeerConnection(ICE_CONFIG);
+    const createPeerConnection = useCallback(async (): Promise<RTCPeerConnection> => {
+        let iceServers: RTCIceServer[] = [];
+        try {
+            const data = await fetchIceServers();
+            if (Array.isArray(data.iceServers)) {
+                iceServers = data.iceServers;
+            }
+        } catch (err) {
+            console.warn('[WebRTC] Failed to fetch ICE servers, fallback to default', err);
+            iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' },
+            ];
+        }
+        const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'relay' });
 
         const stream = localStreamRef.current;
         if (stream) {
@@ -392,7 +390,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             try {
                 if (!localStreamRef.current) await getMedia(callType);
 
-                const pc = createPeerConnection();
+                const pc = await createPeerConnection();
                 const offer = await pc.createOffer({
                     offerToReceiveAudio: true,
                     offerToReceiveVideo: callType === 'video',
@@ -441,7 +439,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 roomId: incomingCall.roomId,
             } satisfies JoinRoomPayload);
 
-            const pc = createPeerConnection();
+            const pc = await createPeerConnection();
             await pc.setRemoteDescription(
                 new RTCSessionDescription(incomingCall.offer),
             );
