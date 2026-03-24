@@ -24,6 +24,7 @@ import { io, type Socket } from 'socket.io-client';
 import { tokenStorage } from '@/lib/token-storage';
 import { useAuthStore } from '@/store/auth.store';
 import { callApi, type CallDTO } from '@/services/call.api';
+import { fetchIceServers } from '@/api/ice-server.api';
 import type {
   AcceptCallPayload,
   CallStatus,
@@ -35,42 +36,13 @@ import type {
   StartCallPayload,
 } from '@/types/webrtc.types';
 
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const RTC_SERVICE_URL =
   import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
-
-/** Public STUN — swap in TURN credentials for production NAT traversal */
-const ICE_CONFIG: RTCConfiguration = {
-  // iceServers: [
-  //   { urls: 'stun:stun.l.google.com:19302' },
-  //   { urls: 'stun:stun1.l.google.com:19302' },
-  //   // Uncomment and fill in for production TURN:
-  //   // {
-  //   //   urls: import.meta.env.VITE_TURN_URL,
-  //   //   username: import.meta.env.VITE_TURN_USERNAME,
-  //   //   credential: import.meta.env.VITE_TURN_CREDENTIAL,
-  //   // },
-  // ],
-  iceServers: [
-    {
-      urls: "stun:openrelay.metered.ca:80"
-    },
-    {
-      urls: "turn:openrelay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    },
-    {
-      urls: "turn:openrelay.metered.ca:443?transport=tcp", // Vượt firewall qua cổng HTTPS
-      username: "openrelayproject",
-      credential: "openrelayproject"
-    }
-  ],
-  iceTransportPolicy: 'relay'
-};
 
 // ---------------------------------------------------------------------------
 // Return type
@@ -244,8 +216,22 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
   // ── 2. RTCPeerConnection factory ────────────────────────────────────────────
 
-  const createPeerConnection = useCallback((): RTCPeerConnection => {
-    const pc = new RTCPeerConnection(ICE_CONFIG);
+
+  const createPeerConnection = useCallback(async (): Promise<RTCPeerConnection> => {
+    let iceServers: RTCIceServer[] = [];
+    try {
+      const data = await fetchIceServers();
+      if (Array.isArray(data.iceServers)) {
+        iceServers = data.iceServers;
+      }
+    } catch (err) {
+      console.warn('[useWebRTC] Failed to fetch ICE servers, fallback to default', err);
+      // fallback: public STUN
+      iceServers = [
+        { urls: 'stun:stun.l.google.com:19302' },
+      ];
+    }
+    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'relay' });
 
     // Add local tracks
     const stream = localStreamRef.current;
@@ -363,7 +349,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
         }
 
         // Step 2: Create PeerConnection + offer
-        const pc = createPeerConnection();
+        const pc = await createPeerConnection();
         const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: callType === 'video' });
         await pc.setLocalDescription(offer);
 
@@ -419,7 +405,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
       socket.emit('join-room', { roomId: incomingCall.roomId } as JoinRoomPayload);
 
       // Step 3: Build PeerConnection + SDP answer
-      const pc = createPeerConnection();
+      const pc = await createPeerConnection();
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
