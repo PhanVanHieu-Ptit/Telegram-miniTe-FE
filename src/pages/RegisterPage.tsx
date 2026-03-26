@@ -62,8 +62,8 @@ export default function RegisterPage() {
                     autoComplete="off"
                 >
                     <Form.Item
-                        name="name"
-                        label="Full Name"
+                        name="username"
+                        label="Username"
                         rules={[
                             {
                                 required: true,
@@ -73,7 +73,7 @@ export default function RegisterPage() {
                     >
                         <Input
                             prefix={<UserOutlined className="text-gray-400" />}
-                            placeholder="Full Name"
+                            placeholder="Username"
                             autoComplete="off"
                         />
                     </Form.Item>
