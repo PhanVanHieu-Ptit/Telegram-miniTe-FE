@@ -22,7 +22,7 @@ export interface LoginDto {
  * Registration request data
  */
 export interface RegisterDto {
-    name: string;
+    username: string;
     email: string;
     password: string;
     confirmPassword: string;
@@ -95,9 +95,11 @@ export const login = async (payload: LoginDto): Promise<AuthResponse> => {
 export const register = async (
     payload: RegisterDto
 ): Promise<AuthResponse> => {
+    // Only send username, email, password to backend
+    const { username, email, password } = payload;
     const response = await apiClient.post<AuthResponse>(
         "/auth/register",
-        payload
+        { username, email, password }
     );
     return response.data;
 };
