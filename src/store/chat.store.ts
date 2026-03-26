@@ -219,6 +219,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         try {
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
             });
             await client.connect(); // Ensure MQTT client is connected
             await publishTyping(client, conversationId, userId, isTyping);
@@ -283,6 +285,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
             });
 
             await client.connect(); // Ensure MQTT client is connected
@@ -300,6 +304,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
             });
 
             if (client.connectionStatus === "connected") {
@@ -317,6 +323,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
             });
 
             await client.connect();
@@ -348,6 +356,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
             });
 
             await client.connect(); // Ensure MQTT client is connected

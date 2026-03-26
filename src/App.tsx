@@ -17,6 +17,8 @@ import IncomingCallOverlay from '@/components/IncomingCallOverlay'
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
 const MQTT_URL = import.meta.env.VITE_MQTT_URL ?? 'ws://localhost:1883'
+const MQTT_USER = import.meta.env.VITE_MQTT_USER
+const MQTT_PASS = import.meta.env.VITE_MQTT_PASS
 
 function App(): JSX.Element {
   const [bootstrapPhase, setBootstrapPhase] = useState<BootstrapPhase>('idle')
@@ -33,7 +35,11 @@ function App(): JSX.Element {
     if (mqttInitializedRef.current) return
 
     try {
-      const client = getMqttClient({ url: MQTT_URL });
+      const client = getMqttClient({
+        url: MQTT_URL,
+        username: MQTT_USER,
+        password: MQTT_PASS,
+      });
       await client.connect()
       mqttCleanupRef.current?.()
       mqttCleanupRef.current = setupMqttListeners(client)
