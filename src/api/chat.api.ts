@@ -59,20 +59,28 @@ export interface GetMessagesParams {
 }
 
 
-export const getMessages = (params: GetMessagesParams): Promise<Message[]> => {
-    return apiClient
-        .get<Message[]>("/messages", {
+export const getMessages = async (params: GetMessagesParams): Promise<Message[]> => {
+    try {
+        const response = await apiClient.get<Message[]>("/messages", {
             params: {
                 conversationId: params.conversationId,
             },
-        })
-        .then((response) => response.data);
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error in getMessages /messages:", error);
+        throw error;
+    }
 };
 
-export const sendMessage = (payload: SendMessageDto): Promise<Message> => {
-    return apiClient
-        .post<Message>("/messages", payload)
-        .then((response) => response.data);
+export const sendMessage = async (payload: SendMessageDto): Promise<Message> => {
+    try {
+        const response = await apiClient.post<Message>("/messages", payload);
+        return response.data;
+    } catch (error) {
+        console.error("Error in sendMessage /messages:", error);
+        throw error;
+    }
 };
 
 export interface SendTypingDto {
