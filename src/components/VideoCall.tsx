@@ -126,13 +126,13 @@ const VideoCall: React.FC<VideoCallProps> = ({
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+  }, [localStream, callStatus]);
 
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
-  }, [remoteStream]);
+  }, [remoteStream, callStatus]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Handlers

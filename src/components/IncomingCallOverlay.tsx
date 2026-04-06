@@ -99,12 +99,16 @@ const IncomingCallOverlay: React.FC = () => {
 
     // Sync video elements
     useEffect(() => {
-        if (localVideoRef.current) localVideoRef.current.srcObject = localStream;
-    }, [localStream]);
+        if (localVideoRef.current) {
+            localVideoRef.current.srcObject = localStream;
+        }
+    }, [localStream, callStatus]);
 
     useEffect(() => {
-        if (remoteVideoRef.current) remoteVideoRef.current.srcObject = remoteStream;
-    }, [remoteStream]);
+        if (remoteVideoRef.current) {
+            remoteVideoRef.current.srcObject = remoteStream;
+        }
+    }, [remoteStream, callStatus]);
 
     const formatDuration = (seconds: number) => {
         const m = Math.floor(seconds / 60).toString().padStart(2, '0');
