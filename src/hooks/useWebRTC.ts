@@ -161,7 +161,6 @@ export const useWebRTC = (): UseWebRTCReturn => {
             callType: data.callType ?? 'video',
           };
         });
-        // Store callId if provided by backend
         if (data.callId) {
           setActiveCall((prev) => prev ?? ({ id: data.callId } as CallDTO));
         }
@@ -169,13 +168,18 @@ export const useWebRTC = (): UseWebRTCReturn => {
       }
     );
 
-    // ── Call answered (caller side) ─────────────────────────────────────────
+    // ── Call accepted (caller side) ─────────────────────────────────────────
     socket.on('call-answered', async (data: { answer: RTCSessionDescriptionInit }) => {
       console.log('[useWebRTC] Call answered — applying remote description');
       const pc = peerConnectionRef.current;
-      if (!pc) return;
+      if (!pc) {
+        console.warn('[useWebRTC] Received answer but no peer connection exists');
+        return;
+      }
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        // Note: callStatus 'connected' is set when ICE connection succeeds
+        // but we can set it here too for UI feedback as negotiation is complete.
         setCallStatus('connected');
       } catch (err) {
         console.error('[useWebRTC] setRemoteDescription (answer) failed', err);
@@ -221,7 +225,10 @@ export const useWebRTC = (): UseWebRTCReturn => {
     let iceServers: RTCIceServer[] = [];
     try {
       const data = await fetchIceServers();
-      if (Array.isArray(data.iceServers)) {
+      // Handle both { iceServers: [...] } and [...] formats
+      if (Array.isArray(data)) {
+        iceServers = data;
+      } else if (data && Array.isArray(data.iceServers)) {
         iceServers = data.iceServers;
       }
     } catch (err) {
@@ -231,7 +238,9 @@ export const useWebRTC = (): UseWebRTCReturn => {
         { urls: 'stun:stun.l.google.com:19302' },
       ];
     }
-    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'relay' });
+    // Remove iceTransportPolicy: 'relay' to allow direct connections (STUN/host)
+    // combined with TURN if available. Forced relay is often too restrictive.
+    const pc = new RTCPeerConnection({ iceServers });
 
     // Add local tracks
     const stream = localStreamRef.current;
@@ -348,20 +357,21 @@ export const useWebRTC = (): UseWebRTCReturn => {
           await getMedia(callType);
         }
 
-        // Step 2: Create PeerConnection + offer
+        // Step 2: Persist in backend FIRST to get roomId
+        const callRecord = await callApi.startCall(targetUserId, callType);
+        setActiveCall(callRecord);
+        const roomId = callRecord.roomName;
+        roomIdRef.current = roomId;
+
+        // Step 3: Join room on rtc-service
+        const joinPayload: JoinRoomPayload = { roomId };
+        socket.emit('join-room', joinPayload);
+
+        // Step 4: Create PeerConnection + offer
+        // (Setting roomIdRef.current BEFORE this ensures early ICE candidates are relayed)
         const pc = await createPeerConnection();
         const offer = await pc.createOffer({ offerToReceiveAudio: true, offerToReceiveVideo: callType === 'video' });
         await pc.setLocalDescription(offer);
-
-        // Step 3: Persist in backend (backend notifies callee via rtc-service internal API)
-        const callRecord = await callApi.startCall(targetUserId, callType);
-        setActiveCall(callRecord);
-
-        // Step 4: Join room on rtc-service
-        const roomId = callRecord.roomName;
-        roomIdRef.current = roomId;
-        const joinPayload: JoinRoomPayload = { roomId };
-        socket.emit('join-room', joinPayload);
 
         // Step 5: Send offer via socket (rtc-service routes it to callee)
         const startPayload: StartCallPayload = {
