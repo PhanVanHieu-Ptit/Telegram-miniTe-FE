@@ -71,7 +71,13 @@ export class AppMqttClient {
     connect(): Promise<void> {
         return new Promise((resolve, reject) => {
             if (this.client) {
-                resolve();
+                if (this.status === "connected") {
+                    resolve();
+                } else {
+                    // Already connecting/reconnecting — wait for result
+                    this.client.once("connect", () => resolve());
+                    this.client.once("error", (err: Error) => reject(err));
+                }
                 return;
             }
 

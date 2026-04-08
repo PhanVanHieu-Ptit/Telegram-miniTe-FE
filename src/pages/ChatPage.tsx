@@ -11,7 +11,6 @@ export default function ChatPage() {
     const messages = useChatStore((s) => s.messages);
     const fetchConversations = useChatStore((s) => s.fetchConversations);
     const subscribeToConversation = useChatStore((s) => s.subscribeToConversation);
-    const unsubscribeFromConversation = useChatStore((s) => s.unsubscribeFromConversation);
     const publishSeenStatus = useChatStore((s) => s.publishSeenStatus);
 
 
@@ -20,13 +19,7 @@ export default function ChatPage() {
         if (activeConversationId) {
             subscribeToConversation(activeConversationId);
         }
-
-        return () => {
-            if (activeConversationId) {
-                unsubscribeFromConversation(activeConversationId);
-            }
-        };
-    }, [activeConversationId, subscribeToConversation, unsubscribeFromConversation]);
+    }, [activeConversationId, subscribeToConversation]);
 
     // Publish seen status when new messages arrive in active conversation
     useEffect(() => {
