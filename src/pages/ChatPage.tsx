@@ -47,7 +47,7 @@ export default function ChatPage() {
     }, [fetchConversations]);
 
     return (
-        <main className="flex h-dvh w-full overflow-hidden">
+        <main className="flex h-dvh w-full overflow-hidden bg-transparent">
             {/* Sidebar */}
             <div
                 className={cn(
@@ -61,7 +61,7 @@ export default function ChatPage() {
             {/* Chat panel */}
             <div
                 className={cn(
-                    "h-full flex-1",
+                    "h-full flex-1 bg-transparent backdrop-blur-sm",
                     !activeConversationId || sidebarOpen ? "hidden md:flex" : "flex"
                 )}
             >

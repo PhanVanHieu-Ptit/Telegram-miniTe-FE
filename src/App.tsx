@@ -108,7 +108,7 @@ function App(): JSX.Element {
         {/* Global incoming call popup — always visible regardless of page */}
         <IncomingCallOverlay />
         {bootstrapPhase !== 'ready' ? (
-          <div className="flex items-center justify-center h-dvh w-full bg-background">
+          <div className="flex items-center justify-center h-dvh w-full bg-transparent">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <p className="text-sm text-muted-foreground">Loading...</p>

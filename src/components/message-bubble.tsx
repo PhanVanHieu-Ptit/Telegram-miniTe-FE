@@ -80,10 +80,10 @@ export const MessageBubble = memo(function MessageBubble({
       {/* Bubble */}
       <div
         className={cn(
-          "relative max-w-[75%] px-3 py-2 text-sm leading-relaxed md:max-w-[60%]",
+          "relative max-w-[75%] px-3 py-2 text-sm leading-relaxed md:max-w-[60%] backdrop-blur-md",
           isOwnMessage
-            ? "rounded-2xl rounded-br-sm bg-bubble-out text-bubble-out-foreground"
-            : "rounded-2xl rounded-bl-sm bg-bubble-in text-bubble-in-foreground shadow-[0_1px_2px_rgba(0,0,0,0.06)]",
+            ? "rounded-2xl rounded-br-sm bg-bubble-out text-white shadow-[0_4px_15px_rgba(168,85,247,0.2)]"
+            : "rounded-2xl rounded-bl-sm bg-white/5 text-white shadow-sm border border-white/5",
           showAvatar
             ? ""
             : isOwnMessage

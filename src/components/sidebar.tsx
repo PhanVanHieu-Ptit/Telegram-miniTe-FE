@@ -117,7 +117,7 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
+    <aside className="flex h-full flex-col text-sidebar-foreground backdrop-blur-xl border-r border-white/10" style={{ background: "rgba(10, 15, 25, 0.5)" }}>
       {/* Header */}
       <header className="flex items-center gap-2 px-3 py-3">
         <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomLeft">
@@ -129,21 +129,19 @@ export function Sidebar() {
           </button>
         </Dropdown>
         <Input
-          placeholder="Search"
-          prefix={<Search className="h-4 w-4 text-muted-foreground" />}
+          placeholder="Search transmissions..."
+          prefix={<Search className="h-4 w-4 text-primary/60" />}
           variant="filled"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           allowClear
-          className="flex-1"
+          className="flex-1 text-white elevated-input"
           styles={{
-            input: { backgroundColor: "transparent" },
+            input: { color: "white" },
           }}
           style={{
-            backgroundColor: "var(--input)",
-            borderColor: "transparent",
-            borderRadius: "20px",
-            height: "36px",
+            borderRadius: "12px",
+            height: "40px",
           }}
         />
       </header>

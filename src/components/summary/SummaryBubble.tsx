@@ -50,14 +50,15 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
       )}
     >
       <Card 
-        className="shadow-2xl border-border overflow-hidden flex flex-col h-[520px] md:h-[600px]"
+        className="glass-card rounded-[2rem] overflow-hidden flex flex-col h-[560px] md:h-[640px] shadow-[0_30px_60px_rgba(0,0,0,0.6)]"
         styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column', height: '100%' } }}
+        style={{ border: 'none' }}
       >
         <SummaryHeader onClose={onClose} />
         
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto scrollbar-none bg-[#0a0f1d]/20">
           {hasActiveConversation ? (
-            <>
+            <div className="flex flex-col min-h-full">
               <SummaryFilters 
                 senderFilter={senderFilter}
                 setSenderFilter={setSenderFilter}
@@ -66,50 +67,57 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
                 members={activeConversation?.members || []}
                 onPresetClick={setQuickPreset}
               />
-              <SummaryResult 
-                summary={summary} 
-                loading={isSummarizing} 
-                error={error}
-              />
-            </>
+              <div className="flex-1 bg-white/[0.03]">
+                <SummaryResult 
+                  summary={summary} 
+                  loading={isSummarizing} 
+                  error={error}
+                />
+              </div>
+            </div>
           ) : (
-            <div className="p-12 text-center text-muted-foreground">
-              Select a conversation to use the AI summarizer.
+            <div className="p-16 text-center space-y-4">
+              <div className="h-16 w-16 mx-auto flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 opacity-20">
+                <Sparkles className="h-8 w-8" />
+              </div>
+              <Text style={{ color: 'rgba(255,255,255,0.3)', display: 'block' }}>
+                Select a conversation terminal to engage AI summarizer.
+              </Text>
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-border bg-muted/10">
+        <div className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-md">
           {!summary ? (
             <Button 
               type="primary" 
               block 
               size="large" 
-              icon={<Sparkles className="h-4 w-4" />}
+              icon={<Sparkles className="h-5 w-5" />}
               onClick={handleSummarize}
               loading={isSummarizing}
               disabled={!hasActiveConversation}
-              className="bg-primary hover:bg-primary/90 shadow-md h-12 text-base font-semibold"
+              className="h-14 primary-gradient border-none rounded-2xl font-bold tracking-widest text-white shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-all"
             >
-              Generate Summary
+              GENERATE SUMMARY
             </Button>
           ) : (
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button 
-                className="flex-1 h-12 text-base"
+                className="flex-1 h-14 rounded-2xl bg-white/5 border-white/10 text-white font-bold hover:bg-white/10 hover:border-white/20 transition-all"
                 onClick={handleClear}
                 disabled={isSummarizing}
               >
-                Clear
+                CLEAR
               </Button>
               <Button 
                 type="primary"
-                className="flex-[2] h-12 text-base font-semibold bg-primary hover:bg-primary/90 shadow-md"
-                icon={<Sparkles className="h-4 w-4" />}
+                className="flex-[2] h-14 primary-gradient border-none rounded-2xl font-bold tracking-widest text-white shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-all"
+                icon={<Sparkles className="h-5 w-5" />}
                 onClick={handleSummarize}
                 loading={isSummarizing}
               >
-                Regenerate
+                REGENERATE
               </Button>
             </div>
           )}

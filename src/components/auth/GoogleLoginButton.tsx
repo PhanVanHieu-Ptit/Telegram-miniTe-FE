@@ -21,8 +21,8 @@ export const GoogleLoginButton = () => {
             loading={loading}
             icon={
                 <svg
-                    width="18"
-                    height="18"
+                    width="20"
+                    height="20"
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 48 48"
                 >
@@ -45,7 +45,7 @@ export const GoogleLoginButton = () => {
                     <path fill="none" d="M0 0h48v48H0z" />
                 </svg>
             }
-            className="flex items-center justify-center gap-2 border-gray-300! hover:border-gray-400! hover:bg-gray-50!"
+            className="flex items-center justify-center gap-3 bg-white/5! border-white/10! hover:border-primary/50! hover:bg-white/10! text-white! h-12 rounded-xl transition-all duration-300 font-medium"
             block
             size="large"
         >

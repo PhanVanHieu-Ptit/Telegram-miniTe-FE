@@ -20,8 +20,8 @@ export const FacebookLoginButton = () => {
         <Button
             onClick={handleLogin}
             loading={loading}
-            icon={<FacebookFilled style={{ color: "#1877F2", fontSize: "18px" }} />}
-            className="flex items-center justify-center gap-2 border-gray-300! hover:border-gray-400! hover:bg-gray-50!"
+            icon={<FacebookFilled style={{ color: "#1877F2", fontSize: "20px" }} />}
+            className="flex items-center justify-center gap-3 bg-white/5! border-white/10! hover:border-primary/50! hover:bg-white/10! text-white! h-12 rounded-xl transition-all duration-300 font-medium"
             block
             size="large"
         >

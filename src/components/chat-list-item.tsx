@@ -1,4 +1,5 @@
 import { memo, useMemo } from "react";
+import { motion } from "framer-motion";
 import { Avatar, Badge } from "antd";
 import { Pin, VolumeOff } from "lucide-react";
 import type { Conversation } from "@/types/chat.types";
@@ -67,13 +68,18 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
   if (!otherMember) return null;
 
   return (
-    <button
+    <motion.button
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ duration: 0.3 }}
       onClick={onClick}
       className={cn(
-        "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors",
+        "flex w-full items-center gap-3 px-3 py-2 text-left transition-colors duration-300 rounded-xl my-0.5 border border-transparent",
         active
-          ? "bg-primary text-primary-foreground"
-          : "hover:bg-accent",
+          ? "bg-primary text-white shadow-[0_10px_20px_rgba(0,0,0,0.3)] scale-[1.02] z-10"
+          : "hover:bg-white/5 hover:border-white/10",
         "text-muted-foreground"
       )}
       role="listitem"
@@ -140,7 +146,7 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
           </div>
         </div>
       </div>
-    </button>
+    </motion.button>
   );
 };
 

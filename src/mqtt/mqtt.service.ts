@@ -43,7 +43,7 @@ export async function subscribeToOnlineStatus(
     client: AppMqttClient,
     userId: string
 ): Promise<void> {
-    await client.subscribe(`user/${userId}/online`);
+    await client.subscribe([`user/${userId}/online`, `user/${userId}/events`]);
 }
 
 /**
@@ -216,6 +216,43 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
                 } else {
                     useChatStore.getState().removeTypingUser(conversationId, typingData.userId);
                 }
+            }
+            return;
+        }
+
+        // Handle system events: user/{userId}/events
+        if (topic.match(/^user\/[^/]+\/events$/)) {
+            const eventData = payload as any;
+            if (eventData?.type === 'CONVERSATION_UPDATED') {
+                const store = useChatStore.getState();
+                const conversationId = eventData.conversationId;
+                
+                // Fetch conversations to ensure we have the newly created conversation in the UI list
+                if (!store.conversations.some(c => c.id === conversationId)) {
+                    store.fetchConversations().then(() => {
+                        // Subscribe to the new conversation's events after list is updated
+                        subscribeToConversation(client, conversationId).catch(console.error);
+                    }).catch(console.error);
+                } else {
+                    // Just update its presence
+                    subscribeToConversation(client, conversationId).catch(console.error);
+                }
+            } else if (eventData?.type === 'CONVERSATION_DELETED') {
+                const store = useChatStore.getState();
+                const conversationId = eventData.conversationId;
+                
+                // If it's the active conversation, clear it
+                if (store.activeConversationId === conversationId) {
+                    store.setActiveConversationId(null);
+                }
+                
+                // Update local state by re-fetching conversations or manually filtering
+                // Manually filtering is faster if we just want to remove one item
+                const updatedConversations = store.conversations.filter(c => c.id !== conversationId);
+                useChatStore.setState({ conversations: updatedConversations });
+                
+                // Unsubscribe from its events
+                unsubscribeFromConversation(client, conversationId).catch(console.error);
             }
             return;
         }

@@ -55,20 +55,26 @@ export function ChatPanel() {
 
   if (!activeConversation || !partner) {
     return (
-        <div className="flex flex-1 flex-col items-center justify-center bg-background text-muted-foreground">
-          <div className="flex flex-col items-center gap-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
-              <MessageSquare className="h-8 w-8" />
+      <div className="flex flex-1 flex-col items-center justify-center bg-transparent text-white/40">
+        <div className="flex flex-col items-center gap-6 max-w-sm text-center px-4">
+          <div className="relative">
+            <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full" />
+            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
+              <MessageSquare className="h-10 w-10 text-primary/60" />
             </div>
-            <p className="text-sm">Select a chat to start messaging</p>
+          </div>
+          <div className="space-y-2">
+            <h3 className="text-xl font-bold tracking-tight text-white/80">Celestial Messaging</h3>
+            <p className="text-sm leading-relaxed">Select a transmission terminal from the sidebar to establish a secure link and begin communication.</p>
           </div>
         </div>
+      </div>
     );
   }
 
   return (
-    <div className="flex flex-1 flex-col bg-background">
-      <ChatHeader partner={partner} onBack={handleBack} />
+    <div className="flex flex-1 flex-col bg-transparent">
+      <ChatHeader partner={partner} onBack={handleBack} conversationId={activeConversation.id} />
       <MessageList />
       <TypingIndicator usersTyping={typingUserNames} />
       <MessageInput key={activeConversation.id} conversationId={activeConversation.id} />

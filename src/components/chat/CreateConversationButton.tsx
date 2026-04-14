@@ -21,7 +21,7 @@ export const CreateConversationButton = () => {
             type="primary"
             icon={<MessageSquarePlus className="h-5 w-5 mr-1.5" />}
             onClick={toggleModal}
-            className="w-full flex items-center justify-center font-bold h-11 rounded-xl shadow-md bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 border-none group"
+            className="w-full flex items-center justify-center font-bold h-11 rounded-xl primary-gradient border-none shadow-[0_4px_15px_rgba(168,85,247,0.3)] hover:shadow-[0_6px_20px_rgba(168,85,247,0.4)] transition-all hover:scale-[1.02]"
             size="large"
           >
             Create New Chat

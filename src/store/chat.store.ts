@@ -43,6 +43,7 @@ interface ChatActions {
     subscribeToAllConversations: () => Promise<void>;
     updateConversationLastMessage: (conversationId: string, message: Message) => void;
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
+    deleteConversation: (conversationId: string) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -318,7 +319,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     subscribeToAllConversations: async () => {
         try {
-            const { subscribeToMessages } = await import("@/mqtt/mqtt.service");
+            const { subscribeToMessages, subscribeToOnlineStatus } = await import("@/mqtt/mqtt.service");
             const { getMqttClient } = await import("@/mqtt/mqtt.client");
 
             const client = getMqttClient({
@@ -330,9 +331,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await client.connect();
 
             const { conversations } = get();
-            await Promise.all(
-                conversations.map((c) => subscribeToMessages(client, c.id))
-            );
+            const userId = useAuthStore.getState().user?.id;
+            
+            const subs: Promise<void>[] = conversations.map((c) => subscribeToMessages(client, c.id));
+            if (userId) {
+                subs.push(subscribeToOnlineStatus(client, userId));
+            }
+            await Promise.all(subs);
         } catch (error) {
             console.error("Failed to subscribe to all conversations:", error);
         }
@@ -364,6 +369,24 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await publishConversationSeen(client, conversationId, messageId);
         } catch (error) {
             console.error("Failed to publish seen status:", error);
+        }
+    },
+
+    deleteConversation: async (conversationId: string) => {
+        set({ loading: true });
+        try {
+            const { deleteConversation } = await import("@/api/chat.api");
+            await deleteConversation(conversationId);
+            set((state) => ({
+                conversations: state.conversations.filter((c) => c.id !== conversationId),
+                activeConversationId: state.activeConversationId === conversationId ? null : state.activeConversationId,
+                messages: state.activeConversationId === conversationId ? [] : state.messages,
+            }));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to delete conversation";
+            throw new Error(message);
+        } finally {
+            set({ loading: false });
         }
     },
 }));

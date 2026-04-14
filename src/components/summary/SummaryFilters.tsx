@@ -1,8 +1,8 @@
-import React from 'react';
-import { Select, DatePicker, Button, Typography } from 'antd';
+import { DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 interface SummaryFiltersProps {
@@ -23,11 +23,11 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
   onPresetClick,
 }) => {
   return (
-    <div className="p-4 space-y-4 border-b border-border">
-      <div className="space-y-1">
-        <Text strong style={{ fontSize: '13px' }}>Filter by Sender</Text>
+    <div className="p-6 space-y-6 border-b border-white/5 bg-white/2">
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60 ml-1">Transmission Source</label>
         <Select
-          className="w-full"
+          className="w-full elevated-input border-none! custom-select"
           placeholder="All Senders"
           allowClear
           value={senderFilter}
@@ -36,16 +36,23 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
             label: m.fullName,
             value: m.id,
           }))}
+          dropdownStyle={{
+            backgroundColor: 'rgba(20, 25, 45, 0.98)',
+            backdropFilter: 'blur(30px)',
+            border: '1px solid rgba(255,255,255,0.1)',
+            padding: '4px'
+          }}
         />
       </div>
 
-      <div className="space-y-1">
-        <Text strong style={{ fontSize: '13px' }}>Time Range</Text>
+      <div className="space-y-2">
+        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60 ml-1">Temporal Window</label>
         <RangePicker
-          className="w-full"
+          className="w-full elevated-input border-none! custom-range-picker"
           showTime
           format="YYYY-MM-DD HH:mm"
           value={dateRange}
+          placeholder={['Start detection', 'End detection']}
           onChange={(dates) => {
             if (dates && dates[0] && dates[1]) {
               setDateRange([dates[0], dates[1]]);
@@ -53,13 +60,28 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
               setDateRange(null);
             }
           }}
+          dropdownClassName="custom-datepicker-dropdown"
         />
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Button size="small" type="dashed" onClick={() => onPresetClick('today')}>Today</Button>
-        <Button size="small" type="dashed" onClick={() => onPresetClick('24h')}>Last 24h</Button>
-        <Button size="small" type="dashed" onClick={() => onPresetClick('7d')}>Last 7 days</Button>
+      <div className="flex flex-wrap gap-2 pt-1">
+        {[
+          { key: 'today', label: 'TODAY' },
+          { key: '24h', label: 'LAST 24H' },
+          { key: '7d', label: 'LAST 7 DAYS' }
+        ].map((item) => (
+          <button
+            key={item.key}
+            className={cn(
+              "px-4 h-8 rounded-lg text-[10px] font-black tracking-[0.1em] transition-all duration-300",
+              "bg-white/10 border border-white/20 text-white! hover:text-white! hover:bg-primary/40 hover:border-primary shadow-lg",
+              "active:scale-95 active:bg-primary/20"
+            )}
+            onClick={() => onPresetClick(item.key as any)}
+          >
+            {item.label}
+          </button>
+        ))}
       </div>
     </div>
   );

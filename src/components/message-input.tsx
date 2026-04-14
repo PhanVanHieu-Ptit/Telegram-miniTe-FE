@@ -96,7 +96,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   // ── Render ───────────────────────────────────────────────────────
 
   return (
-    <footer className="shrink-0 border-t border-border bg-card px-3 py-2.5 md:px-6">
+    <footer className="shrink-0 border-t border-white/10 px-3 py-2.5 md:px-6 backdrop-blur-md" style={{ background: "rgba(10, 15, 25, 0.4)" }}>
       <div className="mx-auto flex max-w-2xl items-end gap-2">
         <button
           type="button"
@@ -110,17 +110,18 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder="Message"
+          placeholder="Type a message..."
           autoSize={{ minRows: 1, maxRows: 5 }}
           variant="filled"
+          className="elevated-input"
           styles={{
             textarea: {
-              backgroundColor: "var(--input)",
-              borderRadius: "18px",
-              padding: "8px 14px",
+              backgroundColor: "transparent",
+              padding: "10px 16px",
               resize: "none",
               fontSize: "14px",
               lineHeight: "1.5",
+              color: "white",
               border: "none",
             },
           }}
@@ -130,7 +131,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           type="button"
           onClick={handleSend}
           disabled={!text.trim()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-primary transition-all hover:bg-accent disabled:scale-90 disabled:opacity-40"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-[0_4px_12px_rgba(168,85,247,0.4)] transition-all hover:scale-110 disabled:scale-90 disabled:opacity-40 disabled:bg-white/10"
           aria-label="Send message"
         >
           <SendHorizontal className="h-5 w-5" />
