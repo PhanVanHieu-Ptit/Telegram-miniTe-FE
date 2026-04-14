@@ -86,7 +86,17 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
       destroyOnClose
       width={500}
       centered
-      className="create-conversation-modal"
+      styles={{
+        body: {
+          background: "transparent",
+          color: "var(--foreground)"
+        },
+        header: {
+          background: "transparent",
+          borderBottom: "1px solid rgba(255,255,255,0.1)",
+          paddingBottom: "16px"
+        }
+      }}
     >
       <Form
         form={form}

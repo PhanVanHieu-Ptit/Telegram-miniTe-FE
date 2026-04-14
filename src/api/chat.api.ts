@@ -105,3 +105,9 @@ export const markAsSeen = (payload: MarkAsSeenDto): Promise<void> => {
         .post<void>("/seen", payload)
         .then((response) => response.data);
 };
+
+export const deleteConversation = (conversationId: string): Promise<void> => {
+    return apiClient
+        .delete<void>(`/conversations/${conversationId}`)
+        .then((response) => response.data);
+};

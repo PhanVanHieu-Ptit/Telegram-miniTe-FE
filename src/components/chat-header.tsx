@@ -80,22 +80,49 @@ const dropdownItems: MenuProps["items"] = [
 interface ChatHeaderProps {
   partner: User;
   onBack: () => void;
+  conversationId: string;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ChatHeader({ partner, onBack }: ChatHeaderProps) {
+import { Modal, message } from "antd";
+import { useChatStore } from "@/store/chat.store";
+
+export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps) {
   const { startCall } = useWebRTCContext();
   const currentUser = useAuthStore((s) => s.user);
+  const deleteConversation = useChatStore((s) => s.deleteConversation);
 
   const handleCallClick = () => {
     void startCall(partner.id, currentUser?.displayName ?? 'You');
   };
 
+  const handleMenuClick: MenuProps["onClick"] = ({ key }) => {
+    if (key === "delete") {
+      Modal.confirm({
+        title: "Delete Chat",
+        content: "Are you sure you want to delete this chat? This action cannot be undone.",
+        okText: "Delete",
+        okType: "danger",
+        cancelText: "Cancel",
+        onOk: async () => {
+          try {
+            await deleteConversation(conversationId);
+            message.success("Chat deleted successfully");
+            onBack();
+          } catch (error) {
+            message.error("Failed to delete chat");
+            console.error(error);
+          }
+        },
+      });
+    }
+  };
+
   return (
-    <header className="flex items-center gap-3 border-b border-border bg-card px-3 py-2.5">
+    <header className="flex items-center gap-3 border-b border-white/10 px-3 py-2.5 backdrop-blur-md" style={{ background: "rgba(10, 15, 25, 0.4)" }}>
       {/* Mobile back button */}
       <button
         onClick={onBack}
@@ -154,7 +181,10 @@ export function ChatHeader({ partner, onBack }: ChatHeaderProps) {
         </button>
 
         <Dropdown
-          menu={{ items: dropdownItems }}
+          menu={{ 
+            items: dropdownItems,
+            onClick: handleMenuClick 
+          }}
           trigger={["click"]}
           placement="bottomRight"
         >
