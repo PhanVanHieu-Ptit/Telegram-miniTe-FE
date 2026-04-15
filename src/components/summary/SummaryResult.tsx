@@ -1,9 +1,9 @@
-import React from 'react';
-import { Typography, Empty, Spin } from 'antd';
-import { Sparkles, AlertCircle, Filter } from 'lucide-react';
+import { Spin, Typography } from 'antd';
 import { motion } from 'framer-motion';
+import { AlertCircle, Filter, Sparkles } from 'lucide-react';
+import React from 'react';
 
-const { Paragraph, Text } = Typography;
+const { Text } = Typography;
 
 interface SummaryResultProps {
   summary: string[] | null;
@@ -52,14 +52,14 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({ summary, loading, 
   return (
     <div className="p-6 space-y-5 overflow-y-auto max-h-[350px]">
       <div className="flex items-center gap-2 mb-2">
-         <div className="h-1 w-8 bg-primary rounded-full" />
-         <Text strong style={{ color: 'var(--primary)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Intelligence Extract</Text>
+        <div className="h-1 w-8 bg-primary rounded-full" />
+        <Text strong style={{ color: 'var(--primary)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Intelligence Extract</Text>
       </div>
       {summary.map((line, idx) => (
-        <motion.div 
-          key={idx} 
-          initial={{ opacity: 0, x: -10 }} 
-          animate={{ opacity: 1, x: 0 }} 
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, x: -10 }}
+          animate={{ opacity: 1, x: 0 }}
           transition={{ delay: idx * 0.1 }}
           className="flex gap-4 items-start bg-white/5 p-4 rounded-xl border border-white/5 hover:border-primary/20 transition-all"
         >

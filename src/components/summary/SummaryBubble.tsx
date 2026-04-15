@@ -1,5 +1,6 @@
 import React from 'react';
-import { Button, Card } from 'antd';
+import { Button, Card, Typography } from 'antd';
+const { Text } = Typography;
 import { Sparkles } from 'lucide-react';
 import { SummaryHeader } from './SummaryHeader';
 import { SummaryFilters } from './SummaryFilters';
