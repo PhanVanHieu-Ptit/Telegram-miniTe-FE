@@ -101,19 +101,19 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
       {/* Content */}
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
-          <span className={cn("trun1cate text-sm font-semibold", active ? "text-primary-foreground" : "text-foreground")}>
+          <span className={cn("truncate text-sm font-semibold", active ? "text-white" : "text-white")}>
             {conversation?.chatName !== '' ? conversation?.chatName : otherMember.fullName}
           </span>
-          <span className={cn("shrink-0 text-xs", active ? "text-primary-foreground/70" : "text-muted-foreground")}>
+          <span className={cn("shrink-0 text-[10px] font-medium tracking-wide opacity-60", active ? "text-white/80" : "text-secondary")}>
             {dayjs(conversation.updatedAt).isSame(dayjs(), "day")
               ? dayjs(conversation.updatedAt).format("HH:mm")
               : dayjs(conversation.updatedAt).format("MM/DD/YYYY")}
           </span>
         </div>
         <div className="flex items-center justify-between gap-1">
-          <p className={cn("truncate text-sm", active ? "text-primary-foreground/80" : "text-muted-foreground")}>
+          <p className={cn("truncate text-[13px] leading-relaxed", active ? "text-white/70 font-medium" : "text-secondary")}>
             {conversation.lastMessage?.senderId === currentUserId && (
-              <span className={cn("mr-0.5 font-medium", active ? "text-primary-foreground/80" : "text-foreground")}>
+              <span className={cn("mr-0.5 font-semibold", active ? "text-white/90" : "text-white/40")}>
                 {"You: "}
               </span>
             )}
@@ -121,10 +121,10 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
           </p>
           <div className="flex shrink-0 items-center gap-1">
             {conversation.pinned && (
-              <Pin className={cn("h-3.5 w-3.5 rotate-45", active ? "text-primary-foreground/60" : "text-muted-foreground")} />
+              <Pin strokeWidth={1.5} className={cn("h-3 w-3 rotate-45", active ? "text-white" : "text-secondary opacity-60")} />
             )}
             {conversation.muted && (
-              <VolumeOff className={cn("h-3.5 w-3.5", active ? "text-primary-foreground/60" : "text-muted-foreground")} />
+              <VolumeOff strokeWidth={1.5} className={cn("h-3 w-3", active ? "text-white" : "text-secondary opacity-60")} />
             )}
             {conversation.unreadCount > 0 && (
               <Badge
@@ -132,14 +132,17 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
                 size="small"
                 style={{
                   backgroundColor: active
-                    ? "rgba(255,255,255,0.3)"
+                    ? "rgba(255,255,255,0.2)"
                     : conversation.muted
-                      ? "var(--muted-foreground)"
-                      : "var(--primary)",
-                  fontSize: 11,
+                      ? "rgba(255,255,255,0.1)"
+                      : "#2563eb",
+                  fontSize: 10,
+                  fontWeight: 700,
                   minWidth: 18,
                   height: 18,
                   lineHeight: "18px",
+                  border: 'none',
+                  color: 'white'
                 }}
               />
             )}

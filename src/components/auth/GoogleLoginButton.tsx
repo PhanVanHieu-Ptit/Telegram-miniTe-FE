@@ -1,12 +1,13 @@
 import { Button } from "antd";
 import { useAuth } from "@/hooks/useAuth";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 /**
  * Google Login Button component
  * Follows Google's branding guidelines
  */
-export const GoogleLoginButton = () => {
+export const GoogleLoginButton = ({ className }: { className?: string }) => {
     const { loginWithGoogle } = useAuth();
     const [loading, setLoading] = useState(false);
 
@@ -45,7 +46,7 @@ export const GoogleLoginButton = () => {
                     <path fill="none" d="M0 0h48v48H0z" />
                 </svg>
             }
-            className="flex items-center justify-center gap-3 bg-white/5! border-white/10! hover:border-primary/50! hover:bg-white/10! text-white! h-12 rounded-xl transition-all duration-300 font-medium"
+            className={cn("flex items-center justify-center gap-3 h-12 rounded-xl transition-all duration-300 font-medium", className)}
             block
             size="large"
         >

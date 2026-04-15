@@ -52,23 +52,23 @@ const dropdownItems: MenuProps["items"] = [
   {
     key: "search",
     label: "Search messages",
-    icon: <Search className="h-4 w-4" />,
+    icon: <Search className="h-4 w-4" strokeWidth={1.5} />,
   },
   {
     key: "pin",
     label: "Pin conversation",
-    icon: <Pin className="h-4 w-4" />,
+    icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
   },
   {
     key: "mute",
     label: "Mute notifications",
-    icon: <VolumeOff className="h-4 w-4" />,
+    icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
   },
   { type: "divider" },
   {
     key: "delete",
-    label: "Delete chat",
-    icon: <Trash2 className="h-4 w-4" />,
+    label: <span className="item-destructive">Delete chat</span>,
+    icon: <Trash2 className="h-4 w-4 item-destructive" strokeWidth={1.5} />,
     danger: true,
   },
 ];
@@ -122,14 +122,14 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
   };
 
   return (
-    <header className="flex items-center gap-3 border-b border-white/10 px-3 py-2.5 backdrop-blur-md" style={{ background: "rgba(10, 15, 25, 0.4)" }}>
+    <header className="flex items-center gap-3 border-b border-white/5 px-4 py-3 bg-black/10 backdrop-blur-2xl">
       {/* Mobile back button */}
       <button
         onClick={onBack}
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent md:hidden"
         aria-label="Back to chats"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
       </button>
 
       {/* User info */}
@@ -170,20 +170,20 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
           aria-label="Video call"
         >
-          <Phone className="h-5 w-5" />
+          <Phone className="h-5 w-5" strokeWidth={1.5} />
         </button>
 
         <button
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
           aria-label="Search"
         >
-          <Search className="h-5 w-5" />
+          <Search className="h-5 w-5" strokeWidth={1.5} />
         </button>
 
         <Dropdown
-          menu={{ 
+          menu={{
             items: dropdownItems,
-            onClick: handleMenuClick 
+            onClick: handleMenuClick
           }}
           trigger={["click"]}
           placement="bottomRight"
@@ -192,7 +192,7 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
             className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
             aria-label="More options"
           >
-            <MoreVertical className="h-5 w-5" />
+            <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
           </button>
         </Dropdown>
       </div>

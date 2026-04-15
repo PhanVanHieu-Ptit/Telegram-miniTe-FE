@@ -157,9 +157,9 @@ const IncomingCallOverlay: React.FC = () => {
                                     className="relative h-20 w-20 rounded-full object-cover ring-2 ring-emerald-500/40"
                                 />
                             ) : (
-                                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/40">
-                                        <UserIcon className="h-10 w-10 text-emerald-400" />
-                                    </div>
+                                <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-emerald-500/20 ring-2 ring-emerald-500/40">
+                                    <UserIcon className="h-10 w-10 text-emerald-400" />
+                                </div>
                             )}
                         </div>
                         <div className="text-center">
@@ -222,8 +222,8 @@ const IncomingCallOverlay: React.FC = () => {
                             </span>
                             <span
                                 className={`text-xs font-medium ${callStatus === 'connected'
-                                        ? 'text-emerald-400'
-                                        : 'text-amber-400'
+                                    ? 'text-emerald-400'
+                                    : 'text-amber-400'
                                     }`}
                             >
                                 · {statusLabel[callStatus]}
@@ -292,8 +292,8 @@ const IncomingCallOverlay: React.FC = () => {
                                 <button
                                     onClick={toggleAudio}
                                     className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 ${isAudioMuted
-                                            ? 'bg-rose-500/80 hover:bg-rose-600'
-                                            : 'bg-white/10 hover:bg-white/20'
+                                        ? 'bg-rose-500/80 hover:bg-rose-600'
+                                        : 'bg-white/10 hover:bg-white/20'
                                         }`}
                                 >
                                     {isAudioMuted ? (
@@ -312,8 +312,8 @@ const IncomingCallOverlay: React.FC = () => {
                                 <button
                                     onClick={toggleVideo}
                                     className={`flex h-12 w-12 items-center justify-center rounded-full text-white shadow-lg transition active:scale-95 ${isVideoOff
-                                            ? 'bg-rose-500/80 hover:bg-rose-600'
-                                            : 'bg-white/10 hover:bg-white/20'
+                                        ? 'bg-rose-500/80 hover:bg-rose-600'
+                                        : 'bg-white/10 hover:bg-white/20'
                                         }`}
                                 >
                                     {isVideoOff ? (

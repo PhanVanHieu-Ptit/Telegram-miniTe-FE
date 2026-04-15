@@ -13,12 +13,24 @@ const { Text } = Typography;
 
 export function Sidebar() {
   const navigate = useNavigate();
+  const conversations = useChatStore((s) => s.conversations);
   const searchQuery = useChatStore((s) => s.searchQuery);
   const setSearchQuery = useChatStore((s) => s.setSearchQuery);
-  const filteredConversations = useChatStore((s) => s.getFilteredConversations());
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
+
+  const filteredConversations = useMemo(() => {
+    if (!searchQuery.trim()) return conversations;
+    const q = searchQuery.toLowerCase();
+    return conversations.filter((convo) =>
+      (convo.chatName && convo.chatName.toLowerCase().includes(q)) ||
+      convo.members.some((m) =>
+        m.fullName.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q)
+      )
+    );
+  }, [conversations, searchQuery]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const { user, logout } = useAuthStore();
 
@@ -86,23 +98,23 @@ export function Sidebar() {
     {
       key: "summarize",
       label: "Summarize Chat",
-      icon: <Sparkles className="h-4 w-4" />,
+      icon: <Sparkles className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => navigate("/summarize")
     },
     {
       key: "new-group",
       label: "New Group",
-      icon: <Users className="h-4 w-4" />,
+      icon: <Users className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => setCreateModalOpen(true)
     },
-    { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" /> },
-    { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" /> },
-    { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" /> },
+    { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" strokeWidth={1.5} /> },
+    { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" strokeWidth={1.5} /> },
+    { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" strokeWidth={1.5} /> },
     { type: "divider" },
     {
       key: "logout",
-      label: "Logout",
-      icon: <LogOut className="h-4 w-4" />,
+      label: <span className="item-destructive">Logout</span>,
+      icon: <LogOut className="h-4 w-4 item-destructive" strokeWidth={1.5} />,
       danger: true,
       onClick: handleLogout,
     },
@@ -117,40 +129,35 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="flex h-full flex-col text-sidebar-foreground backdrop-blur-xl border-r border-white/10" style={{ background: "rgba(10, 15, 25, 0.5)" }}>
+    <aside className="flex h-full flex-col border-r border-white/10 bg-black/20 backdrop-blur-3xl">
       {/* Header */}
-      <header className="flex items-center gap-2 px-3 py-3">
+      <header className="flex items-center gap-2 px-3 py-4">
         <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomLeft">
           <button
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-secondary transition-colors hover:bg-white/5"
             aria-label="Menu"
           >
-            <Menu className="h-5 w-5" />
+            <Menu className="h-5 w-5" strokeWidth={1.5} />
           </button>
         </Dropdown>
         <Input
-          placeholder="Search transmissions..."
-          prefix={<Search className="h-4 w-4 text-primary/60" />}
+          placeholder="Search neural grid..."
+          prefix={<Search className="h-4 w-4 text-secondary" strokeWidth={1.5} />}
           variant="filled"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           allowClear
-          className="flex-1 text-white elevated-input"
-          styles={{
-            input: { color: "white" },
-          }}
-          style={{
-            borderRadius: "12px",
-            height: "40px",
-          }}
+          className="flex-1 premium-input h-10"
         />
       </header>
 
       {/* Action Button */}
-      <CreateConversationButton />
+      <div className="px-3 mb-2">
+        <CreateConversationButton />
+      </div>
 
       {/* Chat list */}
-      <nav className="flex-1 overflow-y-auto" role="list">
+      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-2 pt-2 pb-4 scrollbar-hide" role="list">
         {pinned.length > 0 && (
           <div>
             {pinned.map((convo) => (

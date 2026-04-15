@@ -23,7 +23,7 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
   onPresetClick,
 }) => {
   return (
-    <div className="p-6 space-y-6 border-b border-white/5 bg-white/2">
+    <div className="p-6 space-y-6 border-b border-white/10 bg-transparent">
       <div className="space-y-2">
         <label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60 ml-1">Transmission Source</label>
         <Select
@@ -73,9 +73,9 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
           <button
             key={item.key}
             className={cn(
-              "px-4 h-8 rounded-lg text-[10px] font-black tracking-[0.1em] transition-all duration-300",
-              "bg-white/10 border border-white/20 text-white! hover:text-white! hover:bg-primary/40 hover:border-primary shadow-lg",
-              "active:scale-95 active:bg-primary/20"
+              "px-4 h-8 rounded-lg text-[9px] font-black tracking-widest transition-all duration-300",
+              "bg-white/5 border border-white/10 text-white/70 hover:text-white hover:bg-white/10 hover:border-primary/50 shadow-sm",
+              "active:scale-95"
             )}
             onClick={() => onPresetClick(item.key as any)}
           >

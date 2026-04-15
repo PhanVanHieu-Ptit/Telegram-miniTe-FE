@@ -50,24 +50,21 @@ export default function LoginPage() {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-md"
             >
-                <Card className="w-full glass-card rounded-3xl relative overflow-hidden" style={{ border: 'none' }}>
-                    
-                    {/* Futuristic top glow line */}
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
-
-                    <div className="mb-10 text-center relative z-10 pt-6">
+                <Card className="w-full glass-card neon-border rounded-3xl relative overflow-hidden border-none" style={{ backdropFilter: 'blur(30px)', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent opacity-50" />
+                    <div className="mb-10 text-center relative z-10 pt-10">
                         <motion.div
-                           initial={{ opacity: 0, y: 20 }}
-                           animate={{ opacity: 1, y: 0 }}
-                           transition={{ delay: 0.2, duration: 0.6 }}
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
                         >
-                            <Title level={1} className="mb-2! font-bold tracking-tight text-glow" style={{ color: "white", fontSize: '2.5rem' }}>
+                            <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.75rem' }}>
                                 Welcome Back
                             </Title>
                             <div className="flex items-center justify-center gap-2">
-                                <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/30"></div>
-                                <Text className="text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold">Initiate Link</Text>
-                                <div className="h-px w-8 bg-gradient-to-l from-transparent to-white/30"></div>
+                                <div className="h-px w-8 bg-gradient-to-r from-transparent to-primary/50" />
+                                <Text className="sub-header-premium">Access Neural Link</Text>
+                                <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/50" />
                             </div>
                         </motion.div>
                     </div>
@@ -79,21 +76,21 @@ export default function LoginPage() {
                         layout="vertical"
                         size="large"
                         autoComplete="off"
-                        className="relative z-10"
+                        className="relative z-10 px-4"
                     >
                         <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
                             <Form.Item
                                 name="email"
                                 rules={[
-                                    { required: true, message: "Please enter your email" },
-                                    { type: "email", message: "Please enter a valid email address" },
+                                    { required: true, message: "Designation required" },
+                                    { type: "email", message: "Invalid frequency format" },
                                 ]}
                             >
                                 <Input
-                                    prefix={<MailOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Email address"
+                                    prefix={<MailOutlined className="mr-2 text-primary/70" />}
+                                    placeholder="Neural ID (Email)"
                                     autoComplete="email"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-4 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
@@ -102,28 +99,28 @@ export default function LoginPage() {
                             <Form.Item
                                 name="password"
                                 rules={[
-                                    { required: true, message: "Please enter your password" },
-                                    { min: 6, message: "Password must be at least 6 characters" },
+                                    { required: true, message: "Security key required" },
+                                    { min: 6, message: "Insecure key length (min 6)" },
                                 ]}
                             >
                                 <Input.Password
-                                    prefix={<LockOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Password"
+                                    prefix={<LockOutlined className="mr-2 text-primary/70" />}
+                                    placeholder="Encryption Key"
                                     autoComplete="current-password"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-4 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
 
                         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
-                            <Form.Item className="mb-8!">
+                            <Form.Item className="mb-10!">
                                 <Button
                                     type="primary"
                                     htmlType="submit"
                                     loading={loading}
                                     block
                                     size="large"
-                                    className="h-14 primary-gradient border-none rounded-xl font-bold tracking-widest text-white shadow-[0_10px_20px_rgba(168,85,247,0.3)] transition-all hover:scale-[1.01] hover:shadow-[0_15px_30px_rgba(168,85,247,0.4)]"
+                                    className="h-14 mesh-btn rounded-2xl tracking-widest text-white shadow-xl"
                                 >
                                     ACCESS LINK
                                 </Button>
@@ -133,22 +130,22 @@ export default function LoginPage() {
                         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
                             <div className="mb-8 space-y-6">
                                 <div className="flex items-center justify-center gap-4">
-                                    <div className="h-px bg-white/10 flex-1"></div>
-                                    <span className="text-white/20 text-[10px] font-bold tracking-[0.2em] uppercase">Secure Access</span>
-                                    <div className="h-px bg-white/10 flex-1"></div>
+                                    <div className="h-px flex-1 bg-white/5"></div>
+                                    <span className="sub-header-premium text-[10px] whitespace-nowrap opacity-60">SECURE PROTOCOLS</span>
+                                    <div className="h-px flex-1 bg-white/5"></div>
                                 </div>
                                 <Flex vertical justify="center" align="center" gap={16}>
-                                    <GoogleLoginButton />
-                                    <FacebookLoginButton />
+                                    <GoogleLoginButton className="w-full h-12 rounded-xl font-semibold bg-white/5! border-white/10! hover:bg-white/10! transition-colors" />
+                                    <FacebookLoginButton className="w-full h-12 rounded-xl font-semibold bg-white/5! border-white/10! hover:bg-white/10! transition-colors" />
                                 </Flex>
                             </div>
 
-                            <div className="text-center mt-10">
+                            <div className="text-center mt-12 pb-6">
                                 <Text className="text-white/40 text-sm">
-                                    New to the system?{" "}
+                                    Unconnected to the grid?{" "}
                                     <Link
                                         to="/auth/register"
-                                        className="font-bold text-primary hover:text-white transition-all duration-300 underline-offset-4 hover:underline"
+                                        className="font-bold text-primary hover:text-accent transition-all duration-300 underline-offset-8 hover:underline"
                                     >
                                         Establish Connection
                                     </Link>
