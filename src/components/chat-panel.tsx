@@ -56,16 +56,17 @@ export function ChatPanel() {
   if (!activeConversation || !partner) {
     return (
       <div className="flex flex-1 flex-col items-center justify-center bg-transparent text-white/40">
-        <div className="flex flex-col items-center gap-6 max-w-sm text-center px-4">
+        <div className="flex flex-col items-center gap-8 max-w-md text-center px-8">
           <div className="relative">
-            <div className="absolute inset-0 bg-primary/20 blur-[40px] rounded-full" />
-            <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-              <MessageSquare className="h-10 w-10 text-primary/60" />
+            <div className="absolute inset-0 bg-primary/20 blur-[60px] rounded-full animate-pulse" />
+            <div className="relative flex h-32 w-32 items-center justify-center rounded-3xl bg-white/5 border border-white/10 backdrop-blur-3xl shadow-2xl neon-border">
+              <MessageSquare className="h-12 w-12 text-primary/80" />
             </div>
           </div>
-          <div className="space-y-2">
-            <h3 className="text-xl font-bold tracking-tight text-white/80">Celestial Messaging</h3>
-            <p className="text-sm leading-relaxed">Select a transmission terminal from the sidebar to establish a secure link and begin communication.</p>
+          <div className="space-y-3">
+            <h3 className="headline-premium text-3xl">Neural Interface</h3>
+            <p className="sub-header-premium !text-white/40 !tracking-widest !normal-case">Select a terminal to establish connection</p>
+            <p className="text-sm leading-relaxed text-white/30 max-w-xs mx-auto">All transmissions are encrypted via multi-layered kinetic protocols.</p>
           </div>
         </div>
       </div>

@@ -21,17 +21,17 @@ export const CreateConversationButton = () => {
             type="primary"
             icon={<MessageSquarePlus className="h-5 w-5 mr-1.5" />}
             onClick={toggleModal}
-            className="w-full flex items-center justify-center font-bold h-11 rounded-xl primary-gradient border-none shadow-[0_4px_15px_rgba(168,85,247,0.3)] hover:shadow-[0_6px_20px_rgba(168,85,247,0.4)] transition-all hover:scale-[1.02]"
+            className="w-full flex items-center justify-center font-bold h-12 rounded-xl mesh-btn shadow-lg transition-all"
             size="large"
           >
-            Create New Chat
+            START CHAT
           </Button>
         </Tooltip>
       </div>
 
-      <CreateConversationModal 
-        open={modalOpen} 
-        onClose={closeModal} 
+      <CreateConversationModal
+        open={modalOpen}
+        onClose={closeModal}
       />
     </>
   );

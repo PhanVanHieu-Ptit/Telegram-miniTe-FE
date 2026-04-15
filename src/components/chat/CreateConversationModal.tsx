@@ -1,10 +1,11 @@
 import { useState, useCallback, useMemo } from "react";
-import { Modal, Form, Input, Radio, Button, Space, Typography, Tooltip } from "antd";
+import { Modal, Form, Input, Button, Space, Typography, Tooltip } from "antd";
 import { Camera, Users, User as UserIcon, HelpCircle } from "lucide-react";
 import { UserSelector } from "./UserSelector";
 import { SelectedUsers } from "./SelectedUsers";
 import { useCreateConversation } from "@/hooks/useCreateConversation";
 import type { User } from "@/types/chat.types";
+import { cn } from "@/lib/utils";
 
 const { Text } = Typography;
 
@@ -13,10 +14,6 @@ interface CreateConversationModalProps {
   onClose: () => void;
 }
 
-/**
- * Main modal for creating new private chats or group conversations
- * Integrates form validation, member selection, and the useCreateConversation hook
- */
 export const CreateConversationModal = ({ open, onClose }: CreateConversationModalProps) => {
   const [form] = Form.useForm();
   const [type, setType] = useState<"private" | "group">("private");
@@ -25,15 +22,11 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
 
   const handleFinish = useCallback(async (values: any) => {
     const userIds = selectedUsers.map(u => u.id);
-    
-    // Attempt creation through the custom hook
     const result = await createConversation({
       ...values,
       type,
       userIds,
     });
-    
-    // Result present indicates success
     if (result) {
       handleClose();
     }
@@ -49,9 +42,7 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
   const toggleUser = useCallback((user: User) => {
     setSelectedUsers(prev => {
       const exists = prev.some(u => u.id === user.id);
-      if (exists) {
-        return prev.filter(u => u.id !== user.id);
-      }
+      if (exists) return prev.filter(u => u.id !== user.id);
       return [...prev, user];
     });
   }, []);
@@ -60,14 +51,13 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
     setSelectedUsers(prev => prev.filter(u => u.id !== userId));
   }, []);
 
-  // Validation feedback for user count
   const validationHelp = useMemo(() => {
     const count = selectedUsers.length;
     if (type === "private") {
-      if (count === 0) return <Text type="danger" className="text-xs">At least 1 member required for a chat</Text>;
-      if (count > 1) return <Text type="warning" className="text-xs">Multiple users selected. Consider a Group chat instead.</Text>;
+      if (count === 0) return <Text type="danger" className="text-xs">At least 1 member required</Text>;
+      if (count > 1) return <Text type="warning" className="text-xs">Consider a Group chat instead.</Text>;
     } else {
-      if (count < 2) return <Text type="danger" className="text-xs">A group requires at least 2 members</Text>;
+      if (count < 2) return <Text type="danger" className="text-xs">Group requires ≥ 2 members</Text>;
     }
     return null;
   }, [selectedUsers.length, type]);
@@ -76,130 +66,107 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
     <Modal
       title={
         <Space align="center" size="small">
-          {type === "private" ? <UserIcon className="h-5 w-5 text-primary" /> : <Users className="h-5 w-5 text-primary" />}
-          <span className="text-lg font-bold">{type === "private" ? "Create New Chat" : "Create New Group"}</span>
+          {type === "private" ? <UserIcon strokeWidth={1.5} className="h-5 w-5 text-indigo-400" /> : <Users strokeWidth={1.5} className="h-5 w-5 text-indigo-400" />}
+          <span className="headline-premium text-lg">{type === "private" ? "New Message" : "New Group"}</span>
         </Space>
       }
       open={open}
       onCancel={handleClose}
       footer={null}
       destroyOnClose
-      width={500}
+      width={460}
       centered
-      styles={{
-        body: {
-          background: "transparent",
-          color: "var(--foreground)"
-        },
-        header: {
-          background: "transparent",
-          borderBottom: "1px solid rgba(255,255,255,0.1)",
-          paddingBottom: "16px"
-        }
-      }}
+      className="saas-modal"
     >
       <Form
         form={form}
         layout="vertical"
         onFinish={handleFinish}
         initialValues={{ type: "private" }}
-        className="mt-6"
+        className="p-6 pt-2"
       >
-        <div className="flex flex-col items-center mb-8">
-          <Radio.Group 
-            value={type} 
-            onChange={(e) => {
-              setType(e.target.value);
-              // Clear names when switching to private
-              if (e.target.value === "private") form.setFieldValue("name", "");
-            }}
-            optionType="button"
-            buttonStyle="solid"
-            className="w-full flex"
-          >
-            <Radio.Button value="private" className="flex-1 flex justify-center !rounded-l-xl">
-              <div className="flex items-center gap-2 py-1 justify-center">
-                <UserIcon className="h-4 w-4" />
-                <span>Private Chat</span>
-              </div>
-            </Radio.Button>
-            <Radio.Button value="group" className="flex-1 flex justify-center !rounded-r-xl">
-              <div className="flex items-center gap-2 py-1 justify-center">
-                <Users className="h-4 w-4" />
-                <span>Group Chat</span>
-              </div>
-            </Radio.Button>
-          </Radio.Group>
-          <Text type="secondary" className="text-xs mt-3 flex items-center gap-1">
-             <HelpCircle className="h-3 w-3" />
-             {type === "private" ? "Chat directly with one person" : "Chat with multiple people at once"}
-          </Text>
+        <div className="mb-6">
+          <div className="saas-switcher bg-white/5 border border-white/10">
+            <div
+              className="saas-switcher-bg !bg-white/10"
+              style={{ transform: type === "group" ? "translateX(100%)" : "translateX(0)" }}
+            />
+            <div
+              className={cn("saas-switcher-item", type === "private" && "active !text-white")}
+              onClick={() => { setType("private"); form.setFieldValue("name", ""); }}
+            >
+              Private
+            </div>
+            <div
+              className={cn("saas-switcher-item", type === "group" && "active !text-white")}
+              onClick={() => setType("group")}
+            >
+              Group
+            </div>
+          </div>
         </div>
 
         {type === "group" && (
-          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+          <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300 mb-6">
             <Form.Item
               name="name"
-              label={<span className="font-semibold text-foreground/80">Group Name</span>}
-              rules={[{ required: true, message: "Please enter group name" }]}
+              label={<span className="sub-header-premium text-[10px]">Group Name</span>}
+              rules={[{ required: true, message: "Enter group name" }]}
             >
-              <Input placeholder="E.g. Project Team, Family Chat" size="large" className="rounded-lg" />
+              <Input placeholder="Team Synergy, Family..." size="large" className="premium-input !rounded-xl" />
             </Form.Item>
             <Form.Item
               name="avatar"
-              label={<span className="font-semibold text-foreground/80">Group Avatar URL</span>}
+              label={<span className="sub-header-premium text-[10px]">Cover Image URL</span>}
             >
-              <Input 
-                 placeholder="https://example.com/image.jpg" 
-                 size="large" 
-                 className="rounded-lg" 
-                 prefix={<Camera className="h-4 w-4 text-muted-foreground mr-1" />} 
+              <Input
+                placeholder="https://..."
+                size="large"
+                className="premium-input !rounded-xl"
+                prefix={<Camera strokeWidth={1.5} className="h-4 w-4 text-secondary mr-1" />}
               />
             </Form.Item>
           </div>
         )}
 
-        <Form.Item 
+        <Form.Item
           label={
             <div className="flex justify-between items-center w-full">
-              <span className="font-semibold text-foreground/80">Add Members</span>
-              <Tooltip title="Start typing to search for users by name">
-                <Text type="secondary" className="text-xs cursor-help">Search Tips</Text>
+              <span className="sub-header-premium text-[10px]">Recipients</span>
+              <Tooltip title="Select users to start chatting">
+                <HelpCircle strokeWidth={1.5} className="h-3.5 w-3.5 text-secondary cursor-help" />
               </Tooltip>
             </div>
           }
         >
-          <UserSelector 
+          <UserSelector
             selectedUserIds={selectedUsers.map(u => u.id)}
             onSelect={toggleUser}
             onDeselect={removeUser}
           />
-          <div className="mt-1 flex justify-between">
-             {validationHelp}
-             <Text className="text-xs font-mono">{selectedUsers.length} selected</Text>
+          <div className="mt-2 flex justify-between">
+            {validationHelp}
+            <Text className="text-[10px] text-secondary font-bold uppercase tracking-wider">{selectedUsers.length} Selected</Text>
           </div>
         </Form.Item>
 
         <div className="mb-8">
-           <SelectedUsers 
-             users={selectedUsers} 
-             onRemove={removeUser}
-           />
+          <SelectedUsers users={selectedUsers} onRemove={removeUser} />
         </div>
 
         <div className="flex flex-col gap-3">
-          <Button 
-            type="primary" 
-            htmlType="submit" 
-            loading={loading} 
-            size="large" 
-            block 
-            className="h-12 text-md font-bold rounded-xl shadow-lg"
+          <Button
+            type="primary"
+            htmlType="submit"
+            loading={loading}
+            size="large"
+            block
+            className="h-12 mesh-btn rounded-xl"
           >
-            Create {type === "group" ? "Group" : "Chat"}
+            {type === "group" ? "CREATE GROUP" : "START CHAT"}
           </Button>
-          <Button onClick={handleClose} type="text" block className="h-10 hover:bg-accent/50 text-muted-foreground">
-            Cancel
+          <Button onClick={handleClose} type="text" block className="h-10 text-secondary font-semibold hover:text-white transition-colors">
+            Discard
           </Button>
         </div>
       </Form>

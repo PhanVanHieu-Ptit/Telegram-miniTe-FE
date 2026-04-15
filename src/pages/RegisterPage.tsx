@@ -48,18 +48,15 @@ export default function RegisterPage() {
                 animate="visible"
                 className="w-full max-w-md"
             >
-                <Card className="w-full glass-card rounded-3xl relative overflow-hidden" style={{ border: 'none' }}>
-                    <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-primary to-transparent opacity-50" />
+                <Card className="w-full glass-card rounded-3xl relative overflow-hidden hardware-top-border border-none" style={{ backdropFilter: 'blur(30px)', background: 'rgba(15, 23, 42, 0.6)' }}>
 
-                    <div className="mb-10 text-center relative z-10 pt-6">
+                    <div className="mb-10 text-center relative z-10 pt-8">
                         <motion.div variants={itemVariants}>
-                            <Title level={1} className="mb-2! font-bold tracking-tight text-glow" style={{ color: "white", fontSize: '2.5rem' }}>
+                            <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.5rem' }}>
                                 Join the Network
                             </Title>
                             <div className="flex items-center justify-center gap-2">
-                                <div className="h-px w-8 bg-gradient-to-r from-transparent to-white/30"></div>
-                                <Text className="text-white/40 text-[10px] uppercase tracking-[0.3em] font-bold">Establish Identity</Text>
-                                <div className="h-px w-8 bg-gradient-to-l from-transparent to-white/30"></div>
+                                <Text className="sub-header-premium text-[11px]">Establish Identity</Text>
                             </div>
                         </motion.div>
                     </div>
@@ -76,13 +73,13 @@ export default function RegisterPage() {
                         <motion.div variants={itemVariants}>
                             <Form.Item
                                 name="username"
-                                rules={[{ required: true, message: "Please enter your full name" }]}
+                                rules={[{ required: true, message: "Designation required" }]}
                             >
                                 <Input
-                                    prefix={<UserOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Username"
+                                    prefix={<UserOutlined className="mr-2 text-muted" />}
+                                    placeholder="Neural Handle (Username)"
                                     autoComplete="off"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-3 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
@@ -91,15 +88,15 @@ export default function RegisterPage() {
                             <Form.Item
                                 name="email"
                                 rules={[
-                                    { required: true, message: "Please enter your email" },
-                                    { type: "email", message: "Please enter a valid email address" },
+                                    { required: true, message: "Identification required" },
+                                    { type: "email", message: "Invalid frequency format" },
                                 ]}
                             >
                                 <Input
-                                    prefix={<MailOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Email address"
+                                    prefix={<MailOutlined className="mr-2 text-muted" />}
+                                    placeholder="Neural ID (Email)"
                                     autoComplete="email"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-3 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
@@ -108,15 +105,15 @@ export default function RegisterPage() {
                             <Form.Item
                                 name="password"
                                 rules={[
-                                    { required: true, message: "Please enter your password" },
-                                    { min: 6, message: "Password must be at least 6 characters" },
+                                    { required: true, message: "Security key required" },
+                                    { min: 6, message: "Insecure key length (min 6)" },
                                 ]}
                             >
                                 <Input.Password
-                                    prefix={<LockOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Password"
+                                    prefix={<LockOutlined className="mr-2 text-muted" />}
+                                    placeholder="Encryption Key"
                                     autoComplete="new-password"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-3 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
@@ -126,20 +123,20 @@ export default function RegisterPage() {
                                 name="confirmPassword"
                                 dependencies={["password"]}
                                 rules={[
-                                    { required: true, message: "Please confirm your password" },
+                                    { required: true, message: "Validation required" },
                                     ({ getFieldValue }) => ({
                                         validator(_, value) {
                                             if (!value || getFieldValue("password") === value) return Promise.resolve();
-                                            return Promise.reject(new Error("Passwords do not match"));
+                                            return Promise.reject(new Error("Key mismatch detected"));
                                         },
                                     }),
                                 ]}
                             >
                                 <Input.Password
-                                    prefix={<LockOutlined className="text-primary/60 mr-2" />}
-                                    placeholder="Confirm Password"
+                                    prefix={<LockOutlined className="mr-2 text-muted" />}
+                                    placeholder="Validate Encryption Key"
                                     autoComplete="new-password"
-                                    className="bg-white/5 border-white/10 hover:border-primary/50 focus:border-primary! text-white rounded-xl py-3 px-4 transition-all duration-300 placeholder:text-white/20"
+                                    className="premium-input py-3 px-4"
                                 />
                             </Form.Item>
                         </motion.div>
@@ -152,7 +149,7 @@ export default function RegisterPage() {
                                     loading={loading}
                                     block
                                     size="large"
-                                    className="h-14 primary-gradient border-none rounded-xl font-bold tracking-widest text-white shadow-[0_10px_20px_rgba(168,85,247,0.3)] transition-all hover:scale-[1.01] hover:shadow-[0_15px_30px_rgba(168,85,247,0.4)]"
+                                    className="h-14 premium-btn rounded-xl tracking-wider text-white"
                                 >
                                     CREATE IDENTITY
                                 </Button>
@@ -162,12 +159,12 @@ export default function RegisterPage() {
                         <motion.div variants={itemVariants}>
                             <div className="text-center mt-6">
                                 <Text className="text-white/40 text-sm">
-                                    Already have an account?{" "}
+                                    Already synced to the grid?{" "}
                                     <Link
                                         to="/sign-in"
                                         className="font-bold text-primary hover:text-white transition-all duration-300 underline-offset-4 hover:underline"
                                     >
-                                        Sign in
+                                        Initiate Link
                                     </Link>
                                 </Text>
                             </div>
