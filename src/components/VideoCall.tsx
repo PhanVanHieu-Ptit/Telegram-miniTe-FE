@@ -15,6 +15,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWebRTCContext } from "@/contexts/webrtc.context";
+import { cn } from "@/lib/utils";
 import {
   Phone,
   PhoneOff,
@@ -278,8 +279,8 @@ const VideoCall: React.FC<VideoCallProps> = ({
               onClick={handleStartCall}
               disabled={!isSocketConnected}
               className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition active:scale-95 ${isSocketConnected
-                  ? 'bg-emerald-500 hover:bg-emerald-600'
-                  : 'bg-gray-500 cursor-not-allowed opacity-60'
+                ? 'bg-emerald-500 hover:bg-emerald-600'
+                : 'bg-gray-500 cursor-not-allowed opacity-60'
                 }`}
             >
               <Phone className="h-4 w-4" />
