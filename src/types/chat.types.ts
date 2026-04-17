@@ -13,6 +13,7 @@ export type MessageStatus = (typeof MessageStatus)[keyof typeof MessageStatus];
 export interface User {
     id: string;
     displayName: string;
+    email?: string;
     avatarUrl?: string;
     online: boolean;
     lastSeenAt?: ISODateString;

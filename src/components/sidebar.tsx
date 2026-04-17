@@ -126,13 +126,11 @@ export function Sidebar() {
           key: "en",
           label: t('english'),
           onClick: () => changeLanguage('en'),
-          active: i18n.language === 'en'
         },
         {
           key: "vi",
           label: t('vietnamese'),
           onClick: () => changeLanguage('vi'),
-          active: i18n.language === 'vi'
         }
       ]
     },
