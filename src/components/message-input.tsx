@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
 import { SendHorizontal, Smile } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
 
@@ -11,6 +12,7 @@ interface MessageInputProps {
 }
 
 export function MessageInput({ conversationId }: MessageInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
   const typingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -101,7 +103,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         <button
           type="button"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Emoji"
+          aria-label={t('emoji')}
         >
           <Smile className="h-5 w-5" />
         </button>
@@ -110,7 +112,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           value={text}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
-          placeholder="Type a message..."
+          placeholder={t('type_a_message')}
           autoSize={{ minRows: 1, maxRows: 5 }}
           variant="filled"
           className="elevated-input"
@@ -132,7 +134,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
           onClick={handleSend}
           disabled={!text.trim()}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-white shadow-[0_4px_12px_rgba(168,85,247,0.4)] transition-all hover:scale-110 disabled:scale-90 disabled:opacity-40 disabled:bg-white/10"
-          aria-label="Send message"
+          aria-label={t('send_message')}
         >
           <SendHorizontal className="h-5 w-5" />
         </button>

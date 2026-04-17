@@ -1,6 +1,7 @@
 import { DatePicker, Select } from 'antd';
 import dayjs from 'dayjs';
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@/lib/utils';
 
 const { RangePicker } = DatePicker;
@@ -22,13 +23,15 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
   members,
   onPresetClick,
 }) => {
+  const { t } = useTranslation();
+
   return (
-    <div className="p-6 space-y-6 border-b border-white/10 bg-transparent">
-      <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60 ml-1">Transmission Source</label>
+    <div className="p-6 space-y-7 border-b border-white/5 bg-transparent">
+      <div className="space-y-2.5">
+        <label className="text-[10px] uppercase tracking-[0.2em] font-extrabold text-[#0ea5e9]/80 ml-1">{t('transmission_source')}</label>
         <Select
-          className="w-full elevated-input border-none! custom-select"
-          placeholder="All Senders"
+          className="w-full elevated-input border-none! custom-select h-11 ant-select-selection-item"
+          placeholder={t('all_senders')}
           allowClear
           value={senderFilter}
           onChange={setSenderFilter}
@@ -36,23 +39,26 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
             label: m.fullName,
             value: m.id,
           }))}
+          variant="borderless"
           dropdownStyle={{
-            backgroundColor: 'rgba(20, 25, 45, 0.98)',
+            backgroundColor: 'rgba(15, 23, 42, 0.98)',
             backdropFilter: 'blur(30px)',
             border: '1px solid rgba(255,255,255,0.1)',
-            padding: '4px'
+            padding: '6px',
+            borderRadius: '12px'
           }}
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="text-[10px] uppercase tracking-[0.2em] font-black text-primary/60 ml-1">Temporal Window</label>
+      <div className="space-y-2.5">
+        <label className="text-[10px] uppercase tracking-[0.2em] font-extrabold text-[#0ea5e9]/80 ml-1">{t('temporal_window')}</label>
         <RangePicker
-          className="w-full elevated-input border-none! custom-range-picker"
+          className="w-full elevated-input border-none! custom-range-picker h-11"
           showTime
           format="YYYY-MM-DD HH:mm"
           value={dateRange}
-          placeholder={['Start detection', 'End detection']}
+          placeholder={[t('start_detection'), t('end_detection')]}
+          variant="borderless"
           onChange={(dates) => {
             if (dates && dates[0] && dates[1]) {
               setDateRange([dates[0], dates[1]]);
@@ -60,15 +66,15 @@ export const SummaryFilters: React.FC<SummaryFiltersProps> = ({
               setDateRange(null);
             }
           }}
-          dropdownClassName="custom-datepicker-dropdown"
+          popupClassName="custom-datepicker-dropdown"
         />
       </div>
 
       <div className="flex flex-wrap gap-2 pt-1">
         {[
-          { key: 'today', label: 'TODAY' },
-          { key: '24h', label: 'LAST 24H' },
-          { key: '7d', label: 'LAST 7 DAYS' }
+          { key: 'today', label: t('today_preset') },
+          { key: '24h', label: t('last_24h_preset') },
+          { key: '7d', label: t('last_7d_preset') }
         ].map((item) => (
           <button
             key={item.key}

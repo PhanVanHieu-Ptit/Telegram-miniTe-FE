@@ -18,10 +18,10 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({ onClose, title = "
           <Sparkles className="h-6 w-6" />
         </div>
         <div>
-          <Title level={5} style={{ margin: 0, fontSize: '18px', fontWeight: 700, color: 'white' }}>
+          <Title level={5} style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: 'white', letterSpacing: '-0.02em' }}>
             {title}
           </Title>
-          <Text style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 600 }}>
+          <Text style={{ fontSize: '10px', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 900, opacity: 0.8 }}>
             Powered by AI
           </Text>
         </div>
