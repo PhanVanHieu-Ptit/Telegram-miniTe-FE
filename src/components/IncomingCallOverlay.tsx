@@ -4,9 +4,7 @@
  *
  * Rendered once at the App level. It reads the shared WebRTC context so it
  * works even if VideoCall is not mounted.
- */
-
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+ */import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     Phone,
     PhoneOff,
@@ -19,11 +17,13 @@ import {
     PhoneCall,
     User as UserIcon,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useWebRTCContext } from '@/contexts/webrtc.context';
 import { playRingtone, type RingtoneHandle } from '@/lib/notification-sound';
 import { useChatStore } from '@/store/chat.store';
 
 const IncomingCallOverlay: React.FC = () => {
+    const { t } = useTranslation();
     const {
         localStream,
         remoteStream,
@@ -164,10 +164,10 @@ const IncomingCallOverlay: React.FC = () => {
                         </div>
                         <div className="text-center">
                             <p className="text-lg font-semibold text-white">
-                                {callerInfo?.name ?? 'Unknown'}
+                                {callerInfo?.name ?? t('unknown')}
                             </p>
                             <p className="mt-1 text-sm text-gray-400">
-                                Incoming {incomingCall.callType ?? 'video'} call…
+                                {t('incoming_call', { type: incomingCall.callType ?? 'video' })}
                             </p>
                         </div>
                     </div>
@@ -179,18 +179,18 @@ const IncomingCallOverlay: React.FC = () => {
                             className="flex flex-1 items-center justify-center gap-2 py-4 text-sm  bg-red-800 font-bold text-rose-300 transition hover:bg-rose-500/20 hover:text-rose-200"
                         >
                             <PhoneOff className="h-5 w-5" />
-                            Decline
+                            {t('decline')}
                         </button>
                         <button
                             onClick={handleAccept}
                             disabled={!incomingCall.offer}
                             className="flex flex-1 items-center justify-center gap-2 py-4 text-sm bg-green-800 font-bold text-emerald-300 transition hover:bg-emerald-500/20 hover:text-emerald-200 disabled:opacity-50 disabled:cursor-wait"
-                            title={!incomingCall.offer ? 'Connecting…' : undefined}
+                            title={!incomingCall.offer ? t('connecting') : undefined}
                         >
                             {incomingCall.offer ? (
-                                <><Phone className="h-5 w-5" />Accept</>
+                                <><Phone className="h-5 w-5" />{t('accept')}</>
                             ) : (
-                                <><div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />Connecting…</>
+                                <><div className="h-4 w-4 animate-spin rounded-full border-2 border-emerald-300 border-t-transparent" />{t('connecting')}</>
                             )}
                         </button>
                     </div>
@@ -202,8 +202,8 @@ const IncomingCallOverlay: React.FC = () => {
     // ── Active call UI (calling / connected) ────────────────────────────────
     if (callStatus === 'calling' || callStatus === 'connected') {
         const statusLabel: Record<string, string> = {
-            calling: 'Calling…',
-            connected: 'Connected',
+            calling: t('calling'),
+            connected: t('connected'),
         };
 
         return (
@@ -218,7 +218,7 @@ const IncomingCallOverlay: React.FC = () => {
                                 <WifiOff className="h-4 w-4 text-rose-400" />
                             )}
                             <span className="text-sm font-semibold text-white">
-                                {incomingCall?.callerName ?? 'Call'}
+                                {incomingCall?.callerName ?? t('call')}
                             </span>
                             <span
                                 className={`text-xs font-medium ${callStatus === 'connected'
@@ -237,6 +237,7 @@ const IncomingCallOverlay: React.FC = () => {
                     <div className="relative flex h-[420px] items-center justify-center bg-black">
                         {remoteStream ? (
                             <video
+                                id="remote-video"
                                 ref={remoteVideoRef}
                                 autoPlay
                                 playsInline
@@ -247,14 +248,15 @@ const IncomingCallOverlay: React.FC = () => {
                                 <Video className="h-14 w-14 opacity-30" />
                                 <span className="text-sm">
                                     {callStatus === 'calling'
-                                        ? 'Waiting for the other person to answer…'
-                                        : 'Establishing video…'}
+                                        ? t('waiting_for_answer')
+                                        : t('establishing_video')}
                                 </span>
                             </div>
                         )}
 
                         <div className="absolute bottom-3 right-3 overflow-hidden rounded-xl shadow-lg ring-2 ring-white/20">
                             <video
+                                id="local-video"
                                 ref={localVideoRef}
                                 autoPlay
                                 playsInline
@@ -275,14 +277,14 @@ const IncomingCallOverlay: React.FC = () => {
                             <>
                                 <div className="flex items-center gap-2 text-amber-400">
                                     <PhoneCall className="h-5 w-5 animate-pulse" />
-                                    <span className="text-sm">Ringing…</span>
+                                    <span className="text-sm">{t('ringing')}</span>
                                 </div>
                                 <button
                                     onClick={handleHangUp}
                                     className="flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600 active:scale-95"
                                 >
                                     <PhoneOff className="h-4 w-4" />
-                                    Cancel
+                                    {t('cancel')}
                                 </button>
                             </>
                         )}
@@ -307,7 +309,7 @@ const IncomingCallOverlay: React.FC = () => {
                                     className="flex items-center gap-2 rounded-full bg-rose-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-rose-600 active:scale-95"
                                 >
                                     <PhoneOff className="h-4 w-4" />
-                                    Hang Up
+                                    {t('hang_up')}
                                 </button>
                                 <button
                                     onClick={toggleVideo}

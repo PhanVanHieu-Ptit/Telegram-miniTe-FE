@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, Typography, message, Flex } from "antd";
 import { MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 import { GoogleLoginButton } from "@/components/auth/GoogleLoginButton";
 import { FacebookLoginButton } from "@/components/auth/FacebookLoginButton";
@@ -15,6 +16,7 @@ interface LoginFormValues {
 }
 
 export default function LoginPage() {
+    const { t } = useTranslation();
     const [form] = Form.useForm<LoginFormValues>();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -32,10 +34,10 @@ export default function LoginPage() {
         setLoading(true);
         try {
             await login(values);
-            message.success("Login successful!");
+            message.success(t('login_successful'));
         } catch (error) {
             message.error(
-                error instanceof Error ? error.message : "Login failed. Please check your credentials."
+                error instanceof Error ? error.message : t('login_failed')
             );
         } finally {
             setLoading(false);
@@ -59,11 +61,11 @@ export default function LoginPage() {
                             transition={{ delay: 0.2, duration: 0.6 }}
                         >
                             <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.75rem' }}>
-                                Welcome Back
+                                {t('welcome_back')}
                             </Title>
                             <div className="flex items-center justify-center gap-2">
                                 <div className="h-px w-8 bg-gradient-to-r from-transparent to-primary/50" />
-                                <Text className="sub-header-premium">Access Neural Link</Text>
+                                <Text className="sub-header-premium">{t('access_neural_link')}</Text>
                                 <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/50" />
                             </div>
                         </motion.div>
@@ -82,13 +84,13 @@ export default function LoginPage() {
                             <Form.Item
                                 name="email"
                                 rules={[
-                                    { required: true, message: "Designation required" },
-                                    { type: "email", message: "Invalid frequency format" },
+                                    { required: true, message: t('designation_required') },
+                                    { type: "email", message: t('invalid_frequency_format') },
                                 ]}
                             >
                                 <Input
                                     prefix={<MailOutlined className="mr-2 text-primary/70" />}
-                                    placeholder="Neural ID (Email)"
+                                    placeholder={t('neural_id_placeholder')}
                                     autoComplete="email"
                                     className="premium-input py-4 px-4"
                                 />
@@ -99,13 +101,13 @@ export default function LoginPage() {
                             <Form.Item
                                 name="password"
                                 rules={[
-                                    { required: true, message: "Security key required" },
-                                    { min: 6, message: "Insecure key length (min 6)" },
+                                    { required: true, message: t('security_key_required') },
+                                    { min: 6, message: t('insecure_key_length') },
                                 ]}
                             >
                                 <Input.Password
                                     prefix={<LockOutlined className="mr-2 text-primary/70" />}
-                                    placeholder="Encryption Key"
+                                    placeholder={t('encryption_key_placeholder')}
                                     autoComplete="current-password"
                                     className="premium-input py-4 px-4"
                                 />
@@ -122,7 +124,7 @@ export default function LoginPage() {
                                     size="large"
                                     className="h-14 mesh-btn rounded-2xl tracking-widest text-white shadow-xl"
                                 >
-                                    ACCESS LINK
+                                    {t('access_link')}
                                 </Button>
                             </Form.Item>
                         </motion.div>
@@ -131,7 +133,7 @@ export default function LoginPage() {
                             <div className="mb-8 space-y-6">
                                 <div className="flex items-center justify-center gap-4">
                                     <div className="h-px flex-1 bg-white/5"></div>
-                                    <span className="sub-header-premium text-[10px] whitespace-nowrap opacity-60">SECURE PROTOCOLS</span>
+                                    <span className="sub-header-premium text-[10px] whitespace-nowrap opacity-60">{t('secure_protocols')}</span>
                                     <div className="h-px flex-1 bg-white/5"></div>
                                 </div>
                                 <Flex vertical justify="center" align="center" gap={16}>
@@ -142,12 +144,12 @@ export default function LoginPage() {
 
                             <div className="text-center mt-12 pb-6">
                                 <Text className="text-white/40 text-sm">
-                                    Unconnected to the grid?{" "}
+                                    {t('unconnected_to_grid')}{" "}
                                     <Link
                                         to="/auth/register"
                                         className="font-bold text-primary hover:text-accent transition-all duration-300 underline-offset-8 hover:underline"
                                     >
-                                        Establish Connection
+                                        {t('establish_connection')}
                                     </Link>
                                 </Text>
                             </div>

@@ -9,10 +9,13 @@ import {
   VolumeOff,
   Pin,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { User } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useWebRTCContext } from "@/contexts/webrtc.context";
 import { useAuthStore } from "@/store/auth.store";
+import { Modal, message } from "antd";
+import { useChatStore } from "@/store/chat.store";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -48,31 +51,6 @@ function getAvatarColor(name: string) {
   return avatarColors[Math.abs(hash) % avatarColors.length];
 }
 
-const dropdownItems: MenuProps["items"] = [
-  {
-    key: "search",
-    label: "Search messages",
-    icon: <Search className="h-4 w-4" strokeWidth={1.5} />,
-  },
-  {
-    key: "pin",
-    label: "Pin conversation",
-    icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
-  },
-  {
-    key: "mute",
-    label: "Mute notifications",
-    icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
-  },
-  { type: "divider" },
-  {
-    key: "delete",
-    label: <span className="item-destructive">Delete chat</span>,
-    icon: <Trash2 className="h-4 w-4 item-destructive" strokeWidth={1.5} />,
-    danger: true,
-  },
-];
-
 // ---------------------------------------------------------------------------
 // Props
 // ---------------------------------------------------------------------------
@@ -87,13 +65,36 @@ interface ChatHeaderProps {
 // Component
 // ---------------------------------------------------------------------------
 
-import { Modal, message } from "antd";
-import { useChatStore } from "@/store/chat.store";
-
 export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps) {
+  const { t } = useTranslation();
   const { startCall } = useWebRTCContext();
   const currentUser = useAuthStore((s) => s.user);
   const deleteConversation = useChatStore((s) => s.deleteConversation);
+
+  const dropdownItems: MenuProps["items"] = [
+    {
+      key: "search",
+      label: t('search_messages'),
+      icon: <Search className="h-4 w-4" strokeWidth={1.5} />,
+    },
+    {
+      key: "pin",
+      label: t('pin_conversation'),
+      icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
+    },
+    {
+      key: "mute",
+      label: t('mute_notifications'),
+      icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
+    },
+    { type: "divider" },
+    {
+      key: "delete",
+      label: <span className="item-destructive">{t('delete_chat')}</span>,
+      icon: <Trash2 className="h-4 w-4 item-destructive" strokeWidth={1.5} />,
+      danger: true,
+    },
+  ];
 
   const handleCallClick = () => {
     void startCall(partner.id, currentUser?.displayName ?? 'You');
@@ -102,18 +103,18 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
   const handleMenuClick: MenuProps["onClick"] = ({ key }) => {
     if (key === "delete") {
       Modal.confirm({
-        title: "Delete Chat",
-        content: "Are you sure you want to delete this chat? This action cannot be undone.",
-        okText: "Delete",
+        title: t('delete_chat_modal_title'),
+        content: t('delete_chat_modal_content'),
+        okText: t('delete_chat'),
         okType: "danger",
-        cancelText: "Cancel",
+        cancelText: t('cancel'),
         onOk: async () => {
           try {
             await deleteConversation(conversationId);
-            message.success("Chat deleted successfully");
+            message.success(t('chat_deleted_successfully'));
             onBack();
           } catch (error) {
-            message.error("Failed to delete chat");
+            message.error(t('failed_to_delete_chat'));
             console.error(error);
           }
         },
@@ -127,7 +128,7 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
       <button
         onClick={onBack}
         className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent md:hidden"
-        aria-label="Back to chats"
+        aria-label={t('back_to_chats')}
       >
         <ArrowLeft className="h-5 w-5" strokeWidth={1.5} />
       </button>
@@ -155,8 +156,8 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
             )}
           >
             {partner.online
-              ? "online"
-              : `last seen ${partner.lastSeenAt ?? "recently"}`}
+              ? t('online')
+              : `${t('last_seen')} ${partner.lastSeenAt ?? t('recently')}`}
           </span>
         </div>
       </div>
@@ -168,14 +169,14 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
           id="video-call-open-btn"
           onClick={handleCallClick}
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Video call"
+          aria-label={t('video_call')}
         >
           <Phone className="h-5 w-5" strokeWidth={1.5} />
         </button>
 
         <button
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Search"
+          aria-label={t('search')}
         >
           <Search className="h-5 w-5" strokeWidth={1.5} />
         </button>
@@ -190,7 +191,7 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
         >
           <button
             className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-            aria-label="More options"
+            aria-label={t('more_options')}
           >
             <MoreVertical className="h-5 w-5" strokeWidth={1.5} />
           </button>

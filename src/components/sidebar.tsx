@@ -2,9 +2,10 @@ import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import type { MenuProps } from "antd";
 import { Avatar, Dropdown, Input, Typography } from "antd";
-import { BookmarkIcon, LogOut, Menu, Moon, Search, Settings, Sparkles, Users } from "lucide-react";
+import { BookmarkIcon, LogOut, Menu, Moon, Search, Settings, Sparkles, Users, Languages } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ChatListItem } from "./chat-list-item";
 import { CreateConversationButton } from "./chat/CreateConversationButton";
 import { CreateConversationModal } from "./chat/CreateConversationModal";
@@ -12,6 +13,7 @@ import { CreateConversationModal } from "./chat/CreateConversationModal";
 const { Text } = Typography;
 
 export function Sidebar() {
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const conversations = useChatStore((s) => s.conversations);
   const searchQuery = useChatStore((s) => s.searchQuery);
@@ -37,6 +39,10 @@ export function Sidebar() {
   const handleLogout = async () => {
     await logout();
     navigate("/sign-in");
+  };
+
+  const changeLanguage = (lng: string) => {
+    i18n.changeLanguage(lng);
   };
 
   function getInitials(name: string = "") {
@@ -90,30 +96,52 @@ export function Sidebar() {
           >
             {getInitials(user?.displayName)}
           </Avatar>
-          <Text strong style={{ fontSize: '12px', lineHeight: '1', marginLeft: '8px' }}>{user?.displayName}</Text>
+          <div className="flex flex-col ml-3">
+            <Text strong style={{ fontSize: '13px', lineHeight: '1.2', color: 'white' }}>{user?.displayName}</Text>
+            <Text style={{ fontSize: '10px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>{user?.email}</Text>
+          </div>
         </div>
       ),
     },
     { type: "divider" },
     {
       key: "summarize",
-      label: "Summarize Chat",
+      label: t('summarize_chat'),
       icon: <Sparkles className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => navigate("/summarize")
     },
     {
       key: "new-group",
-      label: "New Group",
+      label: t('new_group'),
       icon: <Users className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => setCreateModalOpen(true)
     },
-    { key: "bookmarks", label: "Saved Messages", icon: <BookmarkIcon className="h-4 w-4" strokeWidth={1.5} /> },
-    { key: "settings", label: "Settings", icon: <Settings className="h-4 w-4" strokeWidth={1.5} /> },
-    { key: "dark-mode", label: "Dark Mode", icon: <Moon className="h-4 w-4" strokeWidth={1.5} /> },
+    { key: "bookmarks", label: t('saved_messages'), icon: <BookmarkIcon className="h-4 w-4" strokeWidth={1.5} /> },
+    {
+      key: "language",
+      label: t('language'),
+      icon: <Languages className="h-4 w-4" strokeWidth={1.5} />,
+      children: [
+        {
+          key: "en",
+          label: t('english'),
+          onClick: () => changeLanguage('en'),
+          active: i18n.language === 'en'
+        },
+        {
+          key: "vi",
+          label: t('vietnamese'),
+          onClick: () => changeLanguage('vi'),
+          active: i18n.language === 'vi'
+        }
+      ]
+    },
+    { key: "settings", label: t('settings'), icon: <Settings className="h-4 w-4" strokeWidth={1.5} /> },
+    { key: "dark-mode", label: t('dark_mode'), icon: <Moon className="h-4 w-4" strokeWidth={1.5} /> },
     { type: "divider" },
     {
       key: "logout",
-      label: <span className="item-destructive">Logout</span>,
+      label: <span className="item-destructive">{t('logout')}</span>,
       icon: <LogOut className="h-4 w-4 item-destructive" strokeWidth={1.5} />,
       danger: true,
       onClick: handleLogout,
@@ -141,7 +169,7 @@ export function Sidebar() {
           </button>
         </Dropdown>
         <Input
-          placeholder="Search neural grid..."
+          placeholder={t('search_placeholder')}
           prefix={<Search className="h-4 w-4 text-secondary" strokeWidth={1.5} />}
           variant="filled"
           value={searchQuery}
@@ -183,7 +211,7 @@ export function Sidebar() {
         ))}
         {filteredConversations.length === 0 && (
           <div className="px-4 py-8 text-center text-sm text-muted-foreground">
-            No chats found
+            {t('no_chats_found')}
           </div>
         )}
       </nav>

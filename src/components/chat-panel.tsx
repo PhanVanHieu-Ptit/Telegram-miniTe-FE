@@ -1,5 +1,6 @@
 
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "@/store/chat.store";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
@@ -7,7 +8,9 @@ import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
 import { MessageSquare } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+
 export function ChatPanel() {
+  const { t } = useTranslation();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
   const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
@@ -50,7 +53,7 @@ export function ChatPanel() {
   const typingUserNames = activeConversationId
     ? (typingUsers[activeConversationId] || [])
       .filter((userId) => userId !== currentUserId)
-      .map((userId) => getUser(userId)?.name || "Someone")
+      .map((userId) => getUser(userId)?.name || t('someone'))
     : [];
 
   if (!activeConversation || !partner) {
@@ -64,9 +67,9 @@ export function ChatPanel() {
             </div>
           </div>
           <div className="space-y-3">
-            <h3 className="headline-premium text-3xl">Neural Interface</h3>
-            <p className="sub-header-premium !text-white/40 !tracking-widest !normal-case">Select a terminal to establish connection</p>
-            <p className="text-sm leading-relaxed text-white/30 max-w-xs mx-auto">All transmissions are encrypted via multi-layered kinetic protocols.</p>
+            <h3 className="headline-premium text-3xl">{t('neural_interface')}</h3>
+            <p className="sub-header-premium !text-white/40 !tracking-widest !normal-case">{t('select_terminal')}</p>
+            <p className="text-sm leading-relaxed text-white/30 max-w-xs mx-auto">{t('encryption_notice')}</p>
           </div>
         </div>
       </div>

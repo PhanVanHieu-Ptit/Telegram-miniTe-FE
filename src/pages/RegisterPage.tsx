@@ -3,6 +3,7 @@ import { Form, Input, Button, Card, Typography, message } from "antd";
 import { UserOutlined, MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 import type { RegisterDto } from "@/api/auth.api";
 
@@ -11,6 +12,7 @@ const { Title, Text } = Typography;
 interface RegisterFormValues extends RegisterDto { }
 
 export default function RegisterPage() {
+    const { t } = useTranslation();
     const [form] = Form.useForm<RegisterFormValues>();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -20,11 +22,11 @@ export default function RegisterPage() {
         setLoading(true);
         try {
             await register(values);
-            message.success("Registration successful! Redirecting to login...");
+            message.success(t('registration_successful'));
             form.resetFields();
             setTimeout(() => navigate("/sign-in"), 1000);
         } catch (error) {
-            message.error(error instanceof Error ? error.message : "Registration failed.");
+            message.error(error instanceof Error ? error.message : t('registration_failed'));
         } finally {
             setLoading(false);
         }
@@ -53,10 +55,10 @@ export default function RegisterPage() {
                     <div className="mb-10 text-center relative z-10 pt-8">
                         <motion.div variants={itemVariants}>
                             <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.5rem' }}>
-                                Join the Network
+                                {t('join_the_network')}
                             </Title>
                             <div className="flex items-center justify-center gap-2">
-                                <Text className="sub-header-premium text-[11px]">Establish Identity</Text>
+                                <Text className="sub-header-premium text-[11px]">{t('establish_identity')}</Text>
                             </div>
                         </motion.div>
                     </div>
@@ -73,11 +75,11 @@ export default function RegisterPage() {
                         <motion.div variants={itemVariants}>
                             <Form.Item
                                 name="username"
-                                rules={[{ required: true, message: "Designation required" }]}
+                                rules={[{ required: true, message: t('designation_required') }]}
                             >
                                 <Input
                                     prefix={<UserOutlined className="mr-2 text-muted" />}
-                                    placeholder="Neural Handle (Username)"
+                                    placeholder={t('neural_handle_placeholder')}
                                     autoComplete="off"
                                     className="premium-input py-3 px-4"
                                 />
@@ -88,13 +90,13 @@ export default function RegisterPage() {
                             <Form.Item
                                 name="email"
                                 rules={[
-                                    { required: true, message: "Identification required" },
-                                    { type: "email", message: "Invalid frequency format" },
+                                    { required: true, message: t('identification_required') },
+                                    { type: "email", message: t('invalid_frequency_format') },
                                 ]}
                             >
                                 <Input
                                     prefix={<MailOutlined className="mr-2 text-muted" />}
-                                    placeholder="Neural ID (Email)"
+                                    placeholder={t('neural_id_placeholder')}
                                     autoComplete="email"
                                     className="premium-input py-3 px-4"
                                 />
@@ -105,13 +107,13 @@ export default function RegisterPage() {
                             <Form.Item
                                 name="password"
                                 rules={[
-                                    { required: true, message: "Security key required" },
-                                    { min: 6, message: "Insecure key length (min 6)" },
+                                    { required: true, message: t('security_key_required') },
+                                    { min: 6, message: t('insecure_key_length') },
                                 ]}
                             >
                                 <Input.Password
                                     prefix={<LockOutlined className="mr-2 text-muted" />}
-                                    placeholder="Encryption Key"
+                                    placeholder={t('encryption_key_placeholder')}
                                     autoComplete="new-password"
                                     className="premium-input py-3 px-4"
                                 />
@@ -123,18 +125,18 @@ export default function RegisterPage() {
                                 name="confirmPassword"
                                 dependencies={["password"]}
                                 rules={[
-                                    { required: true, message: "Validation required" },
+                                    { required: true, message: t('validation_required') },
                                     ({ getFieldValue }) => ({
                                         validator(_, value) {
                                             if (!value || getFieldValue("password") === value) return Promise.resolve();
-                                            return Promise.reject(new Error("Key mismatch detected"));
+                                            return Promise.reject(new Error(t('key_mismatch_detected')));
                                         },
                                     }),
                                 ]}
                             >
                                 <Input.Password
                                     prefix={<LockOutlined className="mr-2 text-muted" />}
-                                    placeholder="Validate Encryption Key"
+                                    placeholder={t('validate_encryption_key_placeholder')}
                                     autoComplete="new-password"
                                     className="premium-input py-3 px-4"
                                 />
@@ -151,7 +153,7 @@ export default function RegisterPage() {
                                     size="large"
                                     className="h-14 premium-btn rounded-xl tracking-wider text-white"
                                 >
-                                    CREATE IDENTITY
+                                    {t('create_identity')}
                                 </Button>
                             </Form.Item>
                         </motion.div>
@@ -159,12 +161,12 @@ export default function RegisterPage() {
                         <motion.div variants={itemVariants}>
                             <div className="text-center mt-6">
                                 <Text className="text-white/40 text-sm">
-                                    Already synced to the grid?{" "}
+                                    {t('already_synced_to_grid')}{" "}
                                     <Link
                                         to="/sign-in"
                                         className="font-bold text-primary hover:text-white transition-all duration-300 underline-offset-4 hover:underline"
                                     >
-                                        Initiate Link
+                                        {t('initiate_link')}
                                     </Link>
                                 </Text>
                             </div>
