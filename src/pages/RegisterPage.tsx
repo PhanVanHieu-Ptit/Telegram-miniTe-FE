@@ -45,20 +45,26 @@ export default function RegisterPage() {
     return (
         <div className="flex min-h-screen items-center justify-center bg-transparent px-4 py-12 sm:px-6 lg:px-8 overflow-hidden relative">
             <motion.div
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="w-full max-w-md"
             >
-                <Card className="w-full glass-card rounded-3xl relative overflow-hidden hardware-top-border border-none" style={{ backdropFilter: 'blur(30px)', background: 'rgba(15, 23, 42, 0.6)' }}>
-
+                <Card className="w-full glass-card neon-border rounded-3xl relative overflow-hidden border-none" style={{ backdropFilter: 'blur(30px)', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent opacity-50" />
                     <div className="mb-10 text-center relative z-10 pt-8">
-                        <motion.div variants={itemVariants}>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
+                        >
                             <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.5rem' }}>
                                 {t('join_the_network')}
                             </Title>
                             <div className="flex items-center justify-center gap-2">
-                                <Text className="sub-header-premium text-[11px]">{t('establish_identity')}</Text>
+                                <div className="h-px w-8 bg-gradient-to-r from-transparent to-primary/50" />
+                                <Text className="sub-header-premium">{t('access_neural_link')}</Text>
+                                <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/50" />
                             </div>
                         </motion.div>
                     </div>
@@ -72,7 +78,7 @@ export default function RegisterPage() {
                         autoComplete="off"
                         className="relative z-10"
                     >
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
                             <Form.Item
                                 name="username"
                                 rules={[{ required: true, message: t('designation_required') }]}
@@ -86,7 +92,7 @@ export default function RegisterPage() {
                             </Form.Item>
                         </motion.div>
 
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
                             <Form.Item
                                 name="email"
                                 rules={[
@@ -103,7 +109,7 @@ export default function RegisterPage() {
                             </Form.Item>
                         </motion.div>
 
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
                             <Form.Item
                                 name="password"
                                 rules={[
@@ -120,7 +126,7 @@ export default function RegisterPage() {
                             </Form.Item>
                         </motion.div>
 
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
                             <Form.Item
                                 name="confirmPassword"
                                 dependencies={["password"]}
@@ -143,7 +149,7 @@ export default function RegisterPage() {
                             </Form.Item>
                         </motion.div>
 
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                             <Form.Item className="mb-8!">
                                 <Button
                                     type="primary"
@@ -151,14 +157,14 @@ export default function RegisterPage() {
                                     loading={loading}
                                     block
                                     size="large"
-                                    className="h-14 premium-btn rounded-xl tracking-wider text-white"
+                                    className="h-14 mesh-btn rounded-2xl tracking-widest text-white shadow-xl"
                                 >
                                     {t('create_identity')}
                                 </Button>
                             </Form.Item>
                         </motion.div>
 
-                        <motion.div variants={itemVariants}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
                             <div className="text-center mt-6">
                                 <Text className="text-white/40 text-sm">
                                     {t('already_synced_to_grid')}{" "}

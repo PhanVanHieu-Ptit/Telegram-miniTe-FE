@@ -2,6 +2,8 @@ import apiClient from "./axios";
 import type {
     Conversation as ConversationType,
     Message as MessageType,
+    MessageType as ChatMessageType,
+    Attachment
 } from "../types/chat.types";
 
 export type Conversation = ConversationType;
@@ -11,6 +13,9 @@ export interface SendMessageDto {
     senderId: string;
     conversationId: string;
     content: string;
+    type?: ChatMessageType;
+    attachments?: Attachment[];
+    metadata?: any;
 }
 
 export interface CreateConversationDto {
@@ -109,5 +114,17 @@ export const markAsSeen = (payload: MarkAsSeenDto): Promise<void> => {
 export const deleteConversation = (conversationId: string): Promise<void> => {
     return apiClient
         .delete<void>(`/conversations/${conversationId}`)
+        .then((response) => response.data);
+};
+
+export interface ReactMessageDto {
+    conversationId: string;
+    messageId: string;
+    emoji: string;
+}
+
+export const reactMessage = (payload: ReactMessageDto): Promise<void> => {
+    return apiClient
+        .post<void>(`/messages/${payload.messageId}/react`, payload)
         .then((response) => response.data);
 };

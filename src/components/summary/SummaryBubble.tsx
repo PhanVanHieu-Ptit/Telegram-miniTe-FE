@@ -82,7 +82,7 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
                 <Sparkles className="h-8 w-8" />
               </div>
               <Text style={{ color: 'rgba(255,255,255,0.3)', display: 'block' }}>
-                Select a conversation terminal to engage AI summarizer.
+                Chọn một cuộc trò chuyện để tóm tắt tin nhắn với AI.
               </Text>
             </div>
           )}
@@ -100,7 +100,7 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
               disabled={!hasActiveConversation}
               className="h-14 primary-gradient border-none rounded-2xl font-bold tracking-widest text-white shadow-[0_10px_20px_rgba(168,85,247,0.3)] hover:scale-[1.02] transition-all"
             >
-              GENERATE SUMMARY
+              TẠO TÓM TẮT
             </Button>
           ) : (
             <div className="flex gap-3">
@@ -109,7 +109,7 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
                 onClick={handleClear}
                 disabled={isSummarizing}
               >
-                CLEAR
+                XÓA
               </Button>
               <Button
                 type="primary"
@@ -118,7 +118,7 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
                 onClick={handleSummarize}
                 loading={isSummarizing}
               >
-                REGENERATE
+                TẠO TÓM TẮT
               </Button>
             </div>
           )}

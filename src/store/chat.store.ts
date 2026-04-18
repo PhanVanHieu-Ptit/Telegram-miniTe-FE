@@ -44,6 +44,7 @@ interface ChatActions {
     updateConversationLastMessage: (conversationId: string, message: Message) => void;
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
     deleteConversation: (conversationId: string) => Promise<void>;
+    reactMessage: (conversationId: string, messageId: string, emoji: string) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -88,8 +89,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             const result = await getMessages(params);
             const messagesArray = Array.isArray(result) ? result : ((result as any).data || (result as any).messages || []);
 
+            const mappedMessages = messagesArray.map((msg: any) => ({
+                ...msg,
+                timestamp: msg.timestamp || msg.createdAt,
+            }));
+
             set(() => ({
-                messages: messagesArray
+                messages: mappedMessages
             }));
         } catch (error) {
             const message = error instanceof Error
@@ -134,6 +140,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             conversationId: payload.conversationId,
             senderId,
             content: payload.content,
+            type: payload.type,
+            attachments: payload.attachments,
+            metadata: payload.metadata,
             timestamp: new Date().toISOString(),
             status: MessageStatus.Sending,
         };
@@ -387,6 +396,40 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             throw new Error(message);
         } finally {
             set({ loading: false });
+        }
+    },
+
+    reactMessage: async (conversationId: string, messageId: string, emoji: string) => {
+        // Optimistic UI Update
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) => {
+                if (msg.id === messageId) {
+                    const currentReactions = { ...msg.reactions };
+                    if (!currentReactions[emoji]) currentReactions[emoji] = [];
+                    
+                    const idx = currentReactions[emoji].indexOf(userId);
+                    if (idx > -1) {
+                        currentReactions[emoji].splice(idx, 1);
+                        if (currentReactions[emoji].length === 0) delete currentReactions[emoji];
+                    } else {
+                        currentReactions[emoji].push(userId);
+                    }
+                    
+                    return { ...msg, reactions: currentReactions };
+                }
+                return msg;
+            }),
+        }));
+
+        try {
+            const { reactMessage } = await import("@/api/chat.api");
+            await reactMessage({ conversationId, messageId, emoji });
+        } catch (error) {
+            console.error("Failed to react to message:", error);
+            // We could revert optimistic update here if we want to be strict
         }
     },
 }));
