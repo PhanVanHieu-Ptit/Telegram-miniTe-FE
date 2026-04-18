@@ -9,7 +9,7 @@ interface SummaryHeaderProps {
   title?: string;
 }
 
-export const SummaryHeader: React.FC<SummaryHeaderProps> = ({ onClose, title = "AI Summarizer" }) => {
+export const SummaryHeader: React.FC<SummaryHeaderProps> = ({ onClose, title = "TÓM TẮT TIN NHẮN" }) => {
   return (
     <div className="flex items-center justify-between p-5 border-b border-white/10 bg-white/5 relative overflow-hidden">
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
@@ -22,13 +22,13 @@ export const SummaryHeader: React.FC<SummaryHeaderProps> = ({ onClose, title = "
             {title}
           </Title>
           <Text style={{ fontSize: '10px', color: '#0ea5e9', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 900, opacity: 0.8 }}>
-            Powered by AI
+            với AI
           </Text>
         </div>
       </div>
-      <Button 
-        type="text" 
-        icon={<X className="h-5 w-5" />} 
+      <Button
+        type="text"
+        icon={<X className="h-5 w-5" />}
         onClick={onClose}
         className="text-white! hover:text-white! hover:bg-white/10! rounded-full transition-all opacity-80 hover:opacity-100"
       />

@@ -19,11 +19,25 @@ export interface User {
     lastSeenAt?: ISODateString;
 }
 
+export type MessageType = 'TEXT' | 'IMAGE' | 'VOICE' | 'FILE' | 'LOCATION' | 'CONTACT' | 'BANK' | 'POLL' | 'REMINDER';
+
+export interface Attachment {
+    id?: string;
+    url: string;
+    type?: string;
+    name?: string;
+    size?: number;
+}
+
 export interface Message {
     id: string;
     conversationId: string;
     senderId: string;
+    type?: MessageType;
     content: string;
+    attachments?: Attachment[];
+    metadata?: any;
+    reactions?: Record<string, string[]>;
     timestamp: ISODateString;
     status: MessageStatus;
 }

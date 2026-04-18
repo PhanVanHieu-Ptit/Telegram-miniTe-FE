@@ -42,8 +42,8 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({ summary, loading, 
           <Filter className="h-8 w-8 text-white/60" />
         </div>
         <Text style={{ color: 'white', fontSize: '13px', textAlign: 'center', lineHeight: '1.6', fontWeight: 500 }}>
-          Configure neural filters above to generate a <br />
-          <span className="text-primary font-bold">Transmission Summary</span>
+          Cấu hình bộ lọc AI ở trên để tạo một <br />
+          <span className="text-primary font-bold">Tóm tắt tin nhắn</span>
         </Text>
       </div>
     );
@@ -53,7 +53,7 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({ summary, loading, 
     <div className="p-6 space-y-5 overflow-y-auto max-h-[350px]">
       <div className="flex items-center gap-2 mb-2">
         <div className="h-1 w-8 bg-primary rounded-full" />
-        <Text strong style={{ color: 'var(--primary)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Intelligence Extract</Text>
+        <Text strong style={{ color: 'var(--primary)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Tóm tắt tin nhắn</Text>
       </div>
       {summary.map((line, idx) => (
         <motion.div
