@@ -57,7 +57,7 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration = 0 })
     <div className="flex items-center gap-3 min-w-[200px] p-1">
       <button 
         onClick={togglePlay}
-        className="flex items-center justify-center w-10 h-10 rounded-full bg-white/20 text-current hover:bg-white/30 transition shadow-sm"
+        className="flex items-center justify-center w-10 h-10 rounded-full bg-black/10 dark:bg-white/20 text-current hover:bg-black/20 dark:hover:bg-white/30 transition shadow-md border border-white/10"
       >
         {isPlaying ? (
           <span className="text-sm font-bold">||</span>
@@ -68,18 +68,23 @@ export const VoiceMessage: React.FC<VoiceMessageProps> = ({ url, duration = 0 })
 
       <div className="flex-1 flex flex-col gap-1">
         {/* Simple mock waveform */}
-        <div className="h-5 flex items-center gap-[2px] w-full">
-          {Array.from({ length: 20 }).map((_, i) => (
+        <div className="h-5 flex items-center gap-[2px] w-full items-end">
+          {Array.from({ length: 30 }).map((_, i) => (
             <div 
               key={i} 
-              className={`w-1 rounded-full transition-all ${i / 20 * 100 < progress ? 'bg-current opacity-100' : 'bg-current opacity-40'}`}
-              style={{ height: `${Math.max(20, Math.random() * 100)}%` }}
+              className={`w-1 rounded-full transition-all ${i / 30 * 100 < progress ? 'bg-current opacity-100 scale-y-110' : 'bg-current opacity-30 shadow-inner'}`}
+              style={{ height: `${Math.max(20, Math.random() * 80)}%` }}
             />
           ))}
         </div>
-        <span className="text-[10px] font-mono opacity-80">
-          {formatDuration(audioRef.current?.currentTime || duration)}
-        </span>
+        <div className="flex justify-between items-center w-full px-1">
+           <span className="text-[10px] font-mono opacity-80">
+              {formatDuration(audioRef.current?.currentTime || 0)}
+           </span>
+           <span className="text-[10px] font-mono opacity-60">
+              {formatDuration(duration)}
+           </span>
+        </div>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import type { Conversation } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import dayjs from "dayjs";
+import { getMessagePreview } from "@/lib/message-utils";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
@@ -117,7 +118,7 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
                 {"You: "}
               </span>
             )}
-            {conversation.lastMessage?.content}
+            {getMessagePreview(conversation.lastMessage)}
           </p>
           <div className="flex shrink-0 items-center gap-1">
             {conversation.pinned && (
