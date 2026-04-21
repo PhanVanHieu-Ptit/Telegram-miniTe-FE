@@ -5,7 +5,7 @@ export interface User {
   status?: string;
 }
 
-export type MessageType = 'TEXT' | 'IMAGE' | 'VOICE' | 'FILE' | 'LOCATION';
+export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'FILE' | 'LOCATION';
 
 export interface Attachment {
   id?: string;
@@ -23,6 +23,7 @@ export interface Message {
   content?: string;
   attachments?: Attachment[];
   metadata?: any;
+  timestamp?: string;
   createdAt: string;
   sender?: User;
   status?: 'sending' | 'sent' | 'delivered' | 'read';

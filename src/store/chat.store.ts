@@ -45,6 +45,11 @@ interface ChatActions {
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
     deleteConversation: (conversationId: string) => Promise<void>;
     reactMessage: (conversationId: string, messageId: string, emoji: string) => Promise<void>;
+    /**
+     * Merge `patch` fields into the message currently identified by `tempOrRealId`.
+     * Used to swap a locally-previewed optimistic message for real server data.
+     */
+    updateMessage: (tempOrRealId: string, patch: Partial<Message>) => void;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -91,7 +96,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const mappedMessages = messagesArray.map((msg: any) => ({
                 ...msg,
-                timestamp: msg.timestamp || msg.createdAt,
+                timestamp: msg.timestamp || msg.createdAt || new Date().toISOString(),
             }));
 
             set(() => ({
@@ -113,6 +118,14 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }));
     },
 
+    updateMessage: (tempOrRealId: string, patch: Partial<Message>) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === tempOrRealId ? { ...msg, ...patch } : msg
+            ),
+        }));
+    },
+
     updateMessageStatus: (messageId: string, status: MessageStatus) => {
         set((state) => ({
             messages: state.messages.map((msg) => {
@@ -126,6 +139,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     sendMessage: async (payload) => {
+        // Optimistic message insertion is handled by the caller (message-input).
+        // This action only POSTs to the API and updates conversations.lastMessage.
         set({ loading: true });
 
         const senderId = useAuthStore.getState().user?.id;
@@ -134,48 +149,30 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             throw new Error("User not authenticated");
         }
 
-        const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const optimisticMessage: Message = {
-            id: tempId,
-            conversationId: payload.conversationId,
-            senderId,
-            content: payload.content,
-            type: payload.type,
-            attachments: payload.attachments,
-            metadata: payload.metadata,
-            timestamp: new Date().toISOString(),
-            status: MessageStatus.Sending,
-        };
-
-        get().addMessage(optimisticMessage);
-
         try {
-            const message = await sendMessageApi(payload);
+            const result = await sendMessageApi(payload);
+            const message: Message = {
+                ...result,
+                timestamp: result.timestamp || result.createdAt || new Date().toISOString(),
+            };
+
             set((state) => ({
-                messages: state.messages.map((item) =>
-                    item.id === tempId ? message : item
-                ),
                 conversations: state.conversations.map((c) =>
                     c.id === payload.conversationId
                         ? { ...c, lastMessage: message, updatedAt: message.timestamp }
                         : c
                 ),
             }));
+
             return message;
         } catch (error) {
             console.error("Failed to send message:", error);
-            set((state) => ({
-                messages: state.messages.map((item) =>
-                    item.id === tempId
-                        ? { ...item, status: MessageStatus.Failed }
-                        : item
-                ),
-            }));
-            return undefined;
+            throw error; // caller marks temp message as failed
         } finally {
             set({ loading: false });
         }
     },
+
 
     setActiveConversationId: (id: string | null) => {
         set({ activeConversationId: id });

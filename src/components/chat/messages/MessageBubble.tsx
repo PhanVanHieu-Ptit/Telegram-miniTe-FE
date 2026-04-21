@@ -1,11 +1,7 @@
 import React from 'react';
-import type { Message } from '../../../types/chat';
-import { TextMessage } from './TextMessage';
-import { ImageMessage } from './ImageMessage';
-import { VoiceMessage } from './VoiceMessage';
-import { FileMessage } from './FileMessage';
-import { LocationMessage } from './LocationMessage';
+import type { Message } from '../../../types/chat.types';
 import { format } from 'date-fns';
+import { MessageRenderer } from './MessageRenderer';
 
 interface MessageBubbleProps {
   message: Message;
@@ -31,34 +27,13 @@ const MessageStatus = ({ status }: { status?: string }) => {
 };
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, isConsecutive = false }) => {
-  const renderMessageContent = () => {
-    switch (message.type) {
-      case 'TEXT':
-        return <TextMessage content={message.content} />;
-      case 'IMAGE':
-        return <ImageMessage attachments={message.attachments} />;
-      case 'VOICE':
-        return <VoiceMessage url={message.attachments?.[0]?.url} duration={message.metadata?.duration} />;
-      case 'FILE':
-        return <FileMessage attachments={message.attachments} />;
-      case 'LOCATION':
-        let payload;
-        try {
-          payload = JSON.parse(message.content || '{}');
-        } catch(e) { payload = {}; }
-        return <LocationMessage payload={payload} />;
-      default:
-        return <div className="text-sm opacity-80 italic">Unsupported message type</div>;
-    }
-  };
-
   return (
     <div className={`flex w-full mb-1 ${isOwn ? 'justify-end' : 'justify-start'}`}>
       {!isOwn && !isConsecutive && (
         <div className="mr-2 self-end mb-1">
           <Avatar 
             src={message.sender?.avatarUrl} 
-            fallback={message.sender?.username?.[0]?.toUpperCase() || '?'} 
+            fallback={(message.sender?.displayName || message.sender?.username || '?')[0].toUpperCase()} 
           />
         </div>
       )}
@@ -68,9 +43,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, is
       <div className={`group relative max-w-[75%] md:max-w-[65%] lg:max-w-[55%] transition-all ${isConsecutive ? 'mt-[2px]' : 'mt-2'}`}>
         
         {/* Sender Name for group chats if not own and not consecutive */}
-        {!isOwn && !isConsecutive && message.sender?.username && (
+        {!isOwn && !isConsecutive && (message.sender?.displayName || message.sender?.username) && (
           <div className="text-[11px] font-semibold text-gray-500 ml-1 mb-1">
-            {message.sender.username}
+            {message.sender?.displayName || message.sender?.username}
           </div>
         )}
 
@@ -82,10 +57,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, isOwn, is
             : 'bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-2xl rounded-bl-sm border border-gray-100 dark:border-gray-800/50'
           }
         `}>
-          {renderMessageContent()}
+          <MessageRenderer message={message} />
           
           <div className={`text-[10px] mt-1 flex items-center gap-1 ${isOwn ? 'justify-end text-blue-100' : 'justify-end text-gray-400'}`}>
-            {format(new Date(message.createdAt), 'HH:mm')}
+            {format(new Date(message.timestamp || message.createdAt || Date.now()), 'HH:mm')}
             {isOwn && <MessageStatus status={message.status} />}
           </div>
         </div>

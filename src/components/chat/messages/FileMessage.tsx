@@ -1,5 +1,6 @@
 import React from 'react';
-import type { Attachment } from '../../../types/chat';
+import type { Attachment } from '../../../types/chat.types';
+
 
 interface FileMessageProps {
   attachments?: Attachment[];

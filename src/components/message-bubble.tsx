@@ -2,17 +2,11 @@
 
 import { memo, useState } from "react";
 import { Avatar } from "antd";
-import { Check, CheckCheck, SmilePlus } from "lucide-react";
+import { Check, CheckCheck, SmilePlus, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message, User } from "@/types/chat.types";
 import dayjs from "dayjs";
-import { ImageMessage } from "./chat/messages/ImageMessage";
-import { VoiceMessage } from "./chat/messages/VoiceMessage";
-import { FileMessage } from "./chat/messages/FileMessage";
-import { LocationMessage } from "./chat/messages/LocationMessage";
-import { ContactMessage } from "./chat/messages/ContactMessage";
-import { BankMessage } from "./chat/messages/BankMessage";
-import { PollMessage } from "./chat/messages/PollMessage";
+import { MessageRenderer } from "./chat/messages/MessageRenderer";
 import { useChatStore } from "@/store/chat.store";
 
 interface MessageBubbleProps {
@@ -118,26 +112,10 @@ export const MessageBubble = memo(function MessageBubble({
               : "rounded-bl-2xl"
         )}
       >
-        {(() => {
-          const msgType = message.type ? message.type.toUpperCase() : 'TEXT';
-          return (
-            <>
-              {msgType === 'IMAGE' && <ImageMessage attachments={message.attachments} />}
-              {msgType === 'FILE' && <FileMessage attachments={message.attachments} />}
-              {msgType === 'VOICE' && <VoiceMessage url={message.attachments?.[0]?.url} duration={message.metadata?.duration} />}
-              {msgType === 'LOCATION' && <LocationMessage payload={safeParse(message.content)} />}
-              {msgType === 'CONTACT' && <ContactMessage payload={safeParse(message.content)} />}
-              {msgType === 'BANK' && <BankMessage payload={safeParse(message.content)} />}
-              {msgType === 'POLL' && <PollMessage payload={safeParse(message.content)} />}
-              {msgType === 'TEXT' && (
-                <span className="whitespace-pre-wrap break-words">{message.content}</span>
-              )}
-            </>
-          );
-        })()}
+        <MessageRenderer message={message} />
 
-        {/* Timestamp + seen indicator */}
-        {showTimestamp && (
+        {/* Timestamp + seen indicator — hidden during upload */}
+        {showTimestamp && message.status !== 'uploading' && (
           <span
             className={cn(
               "ml-2 inline-flex shrink-0 items-center gap-0.5 align-bottom text-[10px] leading-none select-none",
@@ -155,6 +133,22 @@ export const MessageBubble = memo(function MessageBubble({
               ) : (
                 <Check className="h-3.5 w-3.5" />
               ))}
+          </span>
+        )}
+
+        {/* Uploading badge */}
+        {message.status === 'uploading' && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-white/50 animate-pulse mt-0.5">
+            <span className="w-2 h-2 rounded-full border border-white/20 border-t-white animate-spin inline-block" />
+            Uploading…
+          </span>
+        )}
+
+        {/* Failed badge */}
+        {message.status === 'failed' && (
+          <span className="inline-flex items-center gap-1 text-[10px] text-red-400 mt-0.5">
+            <RefreshCw className="h-3 w-3" />
+            Failed
           </span>
         )}
         
