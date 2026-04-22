@@ -16,6 +16,7 @@ export interface SendMessageDto {
     type?: ChatMessageType;
     attachments?: Attachment[];
     metadata?: any;
+    mentions?: string[];
 }
 
 export interface CreateConversationDto {
@@ -127,4 +128,53 @@ export const reactMessage = (payload: ReactMessageDto): Promise<void> => {
     return apiClient
         .post<void>(`/messages/${payload.messageId}/react`, payload)
         .then((response) => response.data);
+};
+
+export interface MessageActionDto {
+    conversationId: string;
+    messageId: string;
+}
+
+export const hideMessage = (payload: MessageActionDto): Promise<void> => {
+    return apiClient
+        .post<void>(`/messages/${payload.messageId}/hide`, { conversationId: payload.conversationId })
+        .then((response) => response.data);
+};
+
+export const unhideMessage = (payload: MessageActionDto): Promise<void> => {
+    return apiClient
+        .post<void>(`/messages/${payload.messageId}/unhide`, { conversationId: payload.conversationId })
+        .then((response) => response.data);
+};
+
+export const pinMessage = (payload: MessageActionDto): Promise<void> => {
+    return apiClient
+        .post<void>(`/messages/${payload.messageId}/pin`, { conversationId: payload.conversationId })
+        .then((response) => response.data);
+};
+
+export const unpinMessage = (payload: MessageActionDto): Promise<void> => {
+    return apiClient
+        .post<void>(`/messages/${payload.messageId}/unpin`, { conversationId: payload.conversationId })
+        .then((response) => response.data);
+};
+
+export interface SearchMessagesParams {
+    conversationId?: string;
+    keyword?: string;
+    type?: string | string[];
+    senderId?: string | string[];
+    fromDate?: string;
+    toDate?: string;
+    cursor?: string;
+}
+
+export const searchMessages = async (params: SearchMessagesParams): Promise<Message[]> => {
+    try {
+        const response = await apiClient.get<Message[]>("/messages/search", { params });
+        return response.data;
+    } catch (error) {
+        console.error("Error in searchMessages:", error);
+        throw error;
+    }
 };

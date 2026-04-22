@@ -7,6 +7,10 @@ import {
     type SendMessageDto,
     sendMessage as sendMessageApi,
     type GetMessagesParams,
+    hideMessage as hideMessageApi,
+    unhideMessage as unhideMessageApi,
+    pinMessage as pinMessageApi,
+    unpinMessage as unpinMessageApi,
 } from "@/api/chat.api";
 
 interface ChatState {
@@ -45,6 +49,10 @@ interface ChatActions {
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
     deleteConversation: (conversationId: string) => Promise<void>;
     reactMessage: (conversationId: string, messageId: string, emoji: string) => Promise<void>;
+    hideMessage: (conversationId: string, messageId: string) => Promise<void>;
+    unhideMessage: (conversationId: string, messageId: string) => Promise<void>;
+    pinMessage: (conversationId: string, messageId: string) => Promise<void>;
+    unpinMessage: (conversationId: string, messageId: string) => Promise<void>;
     /**
      * Merge `patch` fields into the message currently identified by `tempOrRealId`.
      * Used to swap a locally-previewed optimistic message for real server data.
@@ -427,6 +435,72 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } catch (error) {
             console.error("Failed to react to message:", error);
             // We could revert optimistic update here if we want to be strict
+        }
+    },
+
+    hideMessage: async (conversationId: string, messageId: string) => {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: [...(msg.hiddenBy || []), userId] }
+                    : msg
+            ),
+        }));
+
+        try {
+            await hideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to hide message:", error);
+        }
+    },
+
+    unhideMessage: async (conversationId: string, messageId: string) => {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: (msg.hiddenBy || []).filter(id => id !== userId) }
+                    : msg
+            ),
+        }));
+
+        try {
+            await unhideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unhide message:", error);
+        }
+    },
+
+    pinMessage: async (conversationId: string, messageId: string) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: true } : msg
+            ),
+        }));
+
+        try {
+            await pinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to pin message:", error);
+        }
+    },
+
+    unpinMessage: async (conversationId: string, messageId: string) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: false } : msg
+            ),
+        }));
+
+        try {
+            await unpinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unpin message:", error);
         }
     },
 }));

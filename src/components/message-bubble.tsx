@@ -1,8 +1,10 @@
 
 
 import { memo, useState } from "react";
-import { Avatar } from "antd";
-import { Check, CheckCheck, SmilePlus, RefreshCw } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
+import { Avatar, Dropdown } from "antd";
+import type { MenuProps } from "antd";
+import { Check, CheckCheck, SmilePlus, RefreshCw, Pin, EyeOff, MoreVertical, PinOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Message, User } from "@/types/chat.types";
 import dayjs from "dayjs";
@@ -54,23 +56,42 @@ export const MessageBubble = memo(function MessageBubble({
   sender,
 }: MessageBubbleProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const reactMessage = useChatStore((s) => s.reactMessage);
+  const { reactMessage, pinMessage, unpinMessage, hideMessage } = useChatStore(
+    useShallow((s) => ({
+      reactMessage: s.reactMessage,
+      pinMessage: s.pinMessage,
+      unpinMessage: s.unpinMessage,
+      hideMessage: s.hideMessage,
+    }))
+  );
   
   const REACTION_LIST = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
-  const safeParse = (str?: string) => {
-    try {
-      return JSON.parse(str || '{}');
-    } catch {
-      return {};
-    }
-  };
+
 
   const handleReact = (emoji: string) => {
     setShowEmojiPicker(false);
     if (!message.id) return;
     void reactMessage(message.conversationId, message.id, emoji);
   };
+
+  const handleActionClick: MenuProps['onClick'] = (e) => {
+    if (!message.id) return;
+    if (e.key === 'pin') {
+      void pinMessage(message.conversationId, message.id);
+    } else if (e.key === 'unpin') {
+      void unpinMessage(message.conversationId, message.id);
+    } else if (e.key === 'hide') {
+      void hideMessage(message.conversationId, message.id);
+    }
+  };
+
+  const actionItems: MenuProps['items'] = [
+    message.isPinned
+      ? { key: 'unpin', label: 'Unpin Message', icon: <PinOff className="w-4 h-4" /> }
+      : { key: 'pin', label: 'Pin Message', icon: <Pin className="w-4 h-4" /> },
+    { key: 'hide', label: 'Hide for me', icon: <EyeOff className="w-4 h-4" />, danger: true },
+  ];
 
   return (
     <div
@@ -112,6 +133,11 @@ export const MessageBubble = memo(function MessageBubble({
               : "rounded-bl-2xl"
         )}
       >
+        {message.isPinned && (
+          <div className="absolute -top-2 -right-2 bg-yellow-500/90 rounded-full p-1 shadow-sm text-white border border-yellow-400">
+            <Pin className="w-3 h-3 fill-current" />
+          </div>
+        )}
         <MessageRenderer message={message} />
 
         {/* Timestamp + seen indicator — hidden during upload */}
@@ -174,6 +200,14 @@ export const MessageBubble = memo(function MessageBubble({
         >
            <SmilePlus className="w-4 h-4" />
         </button>
+        <Dropdown menu={{ items: actionItems, onClick: handleActionClick }} trigger={['click']} placement="topRight">
+          <button
+             type="button"
+             className="w-7 h-7 flex items-center justify-center rounded-full text-white/50 hover:text-white hover:bg-white/10 transition"
+          >
+             <MoreVertical className="w-4 h-4" />
+          </button>
+        </Dropdown>
         {showEmojiPicker && (
           <div className={cn("absolute bottom-full mb-1 z-50 flex gap-1 bg-[#1e2330] border border-white/10 rounded-full p-1.5 shadow-xl", isOwnMessage ? "right-0" : "left-0")}>
             {REACTION_LIST.map(em => (

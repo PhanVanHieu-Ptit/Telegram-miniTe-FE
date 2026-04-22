@@ -59,13 +59,14 @@ interface ChatHeaderProps {
   partner: User;
   onBack: () => void;
   conversationId: string;
+  onOpenSearch?: () => void;
 }
 
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
-export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps) {
+export function ChatHeader({ partner, onBack, conversationId, onOpenSearch }: ChatHeaderProps) {
   const { t } = useTranslation();
   const { startCall } = useWebRTCContext();
   const currentUser = useAuthStore((s) => s.user);
@@ -119,6 +120,8 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
           }
         },
       });
+    } else if (key === "search") {
+      onOpenSearch?.();
     }
   };
 
@@ -175,6 +178,7 @@ export function ChatHeader({ partner, onBack, conversationId }: ChatHeaderProps)
         </button>
 
         <button
+          onClick={onOpenSearch}
           className="flex h-9 w-9 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
           aria-label={t('search')}
         >

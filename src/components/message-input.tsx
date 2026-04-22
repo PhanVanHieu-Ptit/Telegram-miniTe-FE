@@ -32,6 +32,11 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
+  const [mentionQuery, setMentionQuery] = useState<{ query: string; index: number } | null>(null);
+  const conversations = useChatStore((s) => s.conversations);
+  const activeConversation = conversations.find(c => c.id === conversationId);
+  const members = activeConversation?.members || [];
+
   const sendMessage = useChatStore((s) => s.sendMessage);
   const addMessage = useChatStore((s) => s.addMessage);
   const updateMessage = useChatStore((s) => s.updateMessage);
@@ -165,6 +170,20 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         updateMessage(tempId, { status: "sending", attachments: remoteAttachments });
       }
 
+      // Process mentions
+      const mentionMatches = finalContent.match(/@([\w\u00C0-\u017F]+)/g) || [];
+      const mentionedNames = mentionMatches.map(m => m.slice(1).toLowerCase());
+      
+      let mentions: string[] = [];
+      if (mentionedNames.includes('all') || mentionedNames.includes('everyone')) {
+        mentions = members.filter(m => m.id !== currentUserId).map(m => m.id);
+      } else {
+        mentions = members.filter(m => {
+           const formattedName = m.fullName.replace(/\s+/g, '').toLowerCase();
+           return mentionedNames.includes(formattedName);
+        }).map(m => m.id);
+      }
+
       // ── Phase 3: POST to backend ──
       const result = await sendMessage({
         conversationId,
@@ -172,6 +191,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         senderId: currentUserId,
         type: messageType,
         attachments: remoteAttachments || localAttachments,
+        mentions,
       });
 
       if (result) {
@@ -235,6 +255,38 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     }
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    handleTypingStart();
+
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/@([\w\u00C0-\u017F]*)$/);
+    if (match) {
+      setMentionQuery({ query: match[1], index: cursor - match[1].length - 1 });
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    if (!mentionQuery) return;
+    const before = text.slice(0, mentionQuery.index);
+    const after = text.slice(mentionQuery.index + mentionQuery.query.length + 1);
+    const newText = `${before}@${name} ${after}`;
+    setText(newText);
+    setMentionQuery(null);
+  };
+
+  const filteredMembers = [
+    { id: 'all', fullName: 'All (Everyone)', avatarUrl: null, tag: 'all' },
+    ...members.filter(m => m.id !== currentUserId).map(m => ({
+       ...m,
+       tag: m.fullName.replace(/\s+/g, '')
+    }))
+  ].filter(m => m.tag.toLowerCase().includes((mentionQuery?.query || '').toLowerCase()));
+
   return (
     <footer className="shrink-0 border-t border-white/10 backdrop-blur-md relative z-20" style={{ background: "rgba(10, 15, 25, 0.4)" }}>
       {/* Overlay Pickers */}
@@ -282,6 +334,28 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         </div>
       )}
 
+      {/* Mention Picker */}
+      {mentionQuery && filteredMembers.length > 0 && (
+        <div className="absolute bottom-full left-4 mb-2 max-h-48 overflow-y-auto bg-[#1a1f2e] border border-white/10 rounded-xl shadow-2xl p-2 w-64 z-50">
+          <div className="text-[10px] text-white/50 mb-1 px-2 uppercase font-semibold">Members</div>
+          {filteredMembers.map(m => (
+            <button
+              key={m.id}
+              onClick={() => insertMention(m.tag)}
+              className="flex items-center gap-2 w-full p-2 hover:bg-white/5 rounded-lg transition text-left"
+            >
+              <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] shrink-0 font-bold overflow-hidden">
+                {m.avatarUrl ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" /> : m.fullName[0].toUpperCase()}
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm text-white truncate leading-tight">{m.fullName}</span>
+                <span className="text-[10px] text-white/40 truncate">@{m.tag}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-2xl px-3 py-2.5 md:px-6 items-end gap-2">
         <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
 
@@ -299,7 +373,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
 
         <Input.TextArea
           value={text}
-          onChange={(e) => { setText(e.target.value); handleTypingStart(); }}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
           placeholder={t('type_a_message')}
           autoSize={{ minRows: 1, maxRows: 5 }}

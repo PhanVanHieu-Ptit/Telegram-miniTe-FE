@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Layers, Undo2, Trash2, Download, Send } from 'lucide-react';
+import { Layers, Trash2, Send } from 'lucide-react';
 import { Button, Slider } from 'antd';
 
 interface DrawingCanvasProps {

@@ -32,15 +32,7 @@ export default function RegisterPage() {
         }
     };
 
-    const containerVariants: any = {
-        hidden: { opacity: 0, y: 30, scale: 0.95 },
-        visible: { opacity: 1, y: 0, scale: 1, transition: { duration: 0.8, ease: "easeOut", staggerChildren: 0.1 } }
-    };
 
-    const itemVariants: any = {
-        hidden: { opacity: 0, x: -20 },
-        visible: { opacity: 1, x: 0, transition: { duration: 0.5 } }
-    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-transparent px-4 py-12 sm:px-6 lg:px-8 overflow-hidden relative">

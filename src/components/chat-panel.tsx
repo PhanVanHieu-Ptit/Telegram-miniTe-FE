@@ -1,16 +1,18 @@
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useChatStore } from "@/store/chat.store";
 import { ChatHeader } from "./chat-header";
 import { MessageList } from "./message-list";
 import { MessageInput } from "./message-input";
 import { TypingIndicator } from "./typing-indicator";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Pin, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
+import { SearchSidebar } from "./search-sidebar";
 
 export function ChatPanel() {
   const { t } = useTranslation();
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
   const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
@@ -18,6 +20,8 @@ export function ChatPanel() {
   const typingUsers = useChatStore((s) => s.typingUsers);
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
   const getUser = useChatStore((s) => s.getUser);
+  const messages = useChatStore((s) => s.messages);
+  const unpinMessage = useChatStore((s) => s.unpinMessage);
 
   const handleBack = () => {
     setActiveConversationId(null);
@@ -76,9 +80,40 @@ export function ChatPanel() {
     );
   }
 
+  // Get pinned messages
+  const pinnedMessages = messages.filter(m => m.isPinned);
+
   return (
-    <div className="flex flex-1 flex-col bg-transparent">
-      <ChatHeader partner={partner} onBack={handleBack} conversationId={activeConversation.id} />
+    <div className="flex flex-1 flex-col bg-transparent relative">
+      <ChatHeader partner={partner} onBack={handleBack} conversationId={activeConversation.id} onOpenSearch={() => setIsSearchOpen(true)} />
+      
+      <SearchSidebar 
+        open={isSearchOpen} 
+        onClose={() => setIsSearchOpen(false)} 
+        conversationId={activeConversation.id} 
+      />
+      
+      {/* Pinned Messages Banner */}
+      {pinnedMessages.length > 0 && (
+        <div className="bg-black/20 border-b border-white/5 px-4 py-2 flex flex-col gap-1 z-10 shadow-md">
+          {pinnedMessages.map((msg) => (
+            <div key={msg.id} className="flex items-center justify-between text-xs p-1.5 bg-white/5 rounded hover:bg-white/10 transition">
+              <div className="flex items-center gap-2 overflow-hidden">
+                <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
+                <span className="font-semibold text-white/70 shrink-0">{getUser(msg.senderId)?.displayName || t('someone')}:</span>
+                <span className="truncate text-white/50">{msg.content || t('attachment')}</span>
+              </div>
+              <button
+                className="text-white/30 hover:text-red-400 p-1 rounded-full hover:bg-white/10 transition shrink-0 ml-2"
+                onClick={() => unpinMessage(activeConversation.id, msg.id)}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <MessageList />
       <TypingIndicator usersTyping={typingUserNames} />
       <MessageInput key={activeConversation.id} conversationId={activeConversation.id} />
