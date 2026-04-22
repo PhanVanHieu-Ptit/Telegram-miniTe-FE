@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Image, 
   MapPin, 
@@ -57,7 +57,7 @@ export const AttachmentMenu: React.FC<AttachmentMenuProps> = ({ onSelect }) => {
       placement="topLeft"
       overlayClassName="attachment-popover"
       color="transparent"
-      styles={{ body: { padding: 0 } }}
+
     >
       <button
         type="button"

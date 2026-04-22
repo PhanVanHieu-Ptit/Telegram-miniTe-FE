@@ -45,6 +45,9 @@ export interface Message {
     mediaUrl?: string;
     attachments?: Attachment[];
     metadata?: any;
+    mentions?: string[];
+    hiddenBy?: string[];
+    isPinned?: boolean;
     reactions?: Record<string, string[]>;
     timestamp: ISODateString;
     createdAt?: ISODateString;

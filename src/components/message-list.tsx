@@ -79,15 +79,19 @@ export const MessageList = memo(function MessageList() {
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
-  const { activeConversationId, messages, getUser } = useChatStore(
-    useShallow((s) => ({
-      activeConversationId: s.activeConversationId,
-      messages: s.messages,
-      getUser: s.getUser,
-    }))
-  );
+  const activeConversationId = useChatStore((s) => s.activeConversationId);
+  const messages = useChatStore((s) => s.messages);
+  const getUser = useChatStore((s) => s.getUser);
 
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+
+  const filteredMessages = useMemo(() => {
+    let msgs = messages;
+    if (currentUserId) {
+      msgs = msgs.filter(m => !m.hiddenBy?.includes(currentUserId));
+    }
+    return msgs;
+  }, [messages, currentUserId]);
 
   useEffect(() => {
     const container = scrollContainerRef.current;
@@ -121,10 +125,10 @@ export const MessageList = memo(function MessageList() {
   }, []);
 
   useEffect(() => {
-    if (isNearBottom && messages.length > 0) {
+    if (isNearBottom && filteredMessages.length > 0) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages.length, isNearBottom]);
+  }, [filteredMessages.length, isNearBottom]);
 
   useEffect(() => {
     if (activeConversationId) {
@@ -134,13 +138,15 @@ export const MessageList = memo(function MessageList() {
     }
   }, [activeConversationId]);
 
-  const shouldVirtualize = messages.length > VIRTUALIZE_THRESHOLD;
+
+
+  const shouldVirtualize = filteredMessages.length > VIRTUALIZE_THRESHOLD;
 
   const { startIndex, endIndex, topSpacerHeight, bottomSpacerHeight } = useMemo(() => {
-    if (!shouldVirtualize || messages.length === 0) {
+    if (!shouldVirtualize || filteredMessages.length === 0) {
       return {
         startIndex: 0,
-        endIndex: messages.length - 1,
+        endIndex: filteredMessages.length - 1,
         topSpacerHeight: 0,
         bottomSpacerHeight: 0,
       };
@@ -152,7 +158,7 @@ export const MessageList = memo(function MessageList() {
       Math.floor(scrollTop / ESTIMATED_ITEM_HEIGHT) - OVERSCAN
     );
     const end = Math.min(
-      messages.length - 1,
+      filteredMessages.length - 1,
       Math.ceil((scrollTop + viewportHeight) / ESTIMATED_ITEM_HEIGHT) + OVERSCAN
     );
 
@@ -162,16 +168,16 @@ export const MessageList = memo(function MessageList() {
       topSpacerHeight: start * ESTIMATED_ITEM_HEIGHT,
       bottomSpacerHeight: Math.max(
         0,
-        (messages.length - end - 1) * ESTIMATED_ITEM_HEIGHT
+        (filteredMessages.length - end - 1) * ESTIMATED_ITEM_HEIGHT
       ),
     };
-  }, [shouldVirtualize, messages.length, containerHeight, scrollTop]);
+  }, [shouldVirtualize, filteredMessages.length, containerHeight, scrollTop]);
 
   const visibleMessages = useMemo(() => {
-    if (!shouldVirtualize) return messages;
+    if (!shouldVirtualize) return filteredMessages;
     if (endIndex < startIndex) return [];
-    return messages.slice(startIndex, endIndex + 1);
-  }, [messages, shouldVirtualize, startIndex, endIndex]);
+    return filteredMessages.slice(startIndex, endIndex + 1);
+  }, [filteredMessages, shouldVirtualize, startIndex, endIndex]);
 
   if (!activeConversationId) {
     return (
@@ -193,8 +199,8 @@ export const MessageList = memo(function MessageList() {
 
         {visibleMessages.map((message, index) => {
           const actualIndex = shouldVirtualize ? startIndex + index : index;
-          const prev = messages[actualIndex - 1];
-          const next = messages[actualIndex + 1];
+          const prev = filteredMessages[actualIndex - 1];
+          const next = filteredMessages[actualIndex + 1];
 
           let showDateDivider = false;
           if (!prev) {

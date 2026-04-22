@@ -110,7 +110,7 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message }) => 
       !message.attachments?.length &&
       !parsedPayload
     ) {
-      return <TextMessage content={message.content} />;
+      return <TextMessage content={message.content} mentions={message.mentions} />;
     }
 
     const effectiveAttachments = message.attachments?.length
@@ -178,7 +178,7 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message }) => 
           if (urlFromContent.match(/\.(jpeg|jpg|gif|png|webp)$/i)) return <ImageMessage attachments={[{ url: resolvedUrl }]} />;
           if (urlFromContent.match(/\.(mp4|webm|ogg|mp3|wav|m4a)$/i)) return <VoiceMessage url={resolvedUrl} />;
         }
-        return <TextMessage content={message.content} />;
+        return <TextMessage content={message.content} mentions={message.mentions} />;
     }
   };
 

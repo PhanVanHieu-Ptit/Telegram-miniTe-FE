@@ -34,7 +34,8 @@ export function Sidebar() {
     );
   }, [conversations, searchQuery]);
   const [createModalOpen, setCreateModalOpen] = useState(false);
-  const { user, logout } = useAuthStore();
+  const user = useAuthStore((s) => s.user);
+  const logout = useAuthStore((s) => s.logout);
 
   const handleLogout = async () => {
     await logout();

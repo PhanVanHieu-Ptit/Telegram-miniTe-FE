@@ -25,7 +25,7 @@ export const ImageMessage: React.FC<ImageMessageProps> = ({ attachments }) => {
                 </div>
               }
               fallback="https://via.placeholder.com/400x300?text=Image+Not+Found"
-              onError={(e) => {
+              onError={() => {
                 console.error("Image load failed:", att.url);
               }}
             />
