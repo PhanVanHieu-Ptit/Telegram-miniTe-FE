@@ -13,6 +13,7 @@ import MessageSummarizerPage from './pages/MessageSummarizerPage'
 import NotificationProvider from './components/NotificationProvider'
 import { WebRTCProvider } from '@/contexts/webrtc.context'
 import IncomingCallOverlay from '@/components/IncomingCallOverlay'
+import { Toaster } from 'sonner'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -105,6 +106,7 @@ function App(): JSX.Element {
           and conversations finish loading. This prevents missing incoming
           calls during the app bootstrap window. */}
       <WebRTCProvider>
+        <Toaster position="top-center" richColors />
         {/* Global incoming call popup — always visible regardless of page */}
         <IncomingCallOverlay />
         {bootstrapPhase !== 'ready' ? (

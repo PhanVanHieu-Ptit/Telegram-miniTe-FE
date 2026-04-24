@@ -88,5 +88,19 @@
   "someone": "Ai đó",
   "neural_interface": "3HCHAT",
   "select_terminal": "Chọn một nhóm chat để bắt đầu nhắn tin nào!",
-  "encryption_notice": "Tất cả các tin nhắn đều được mã hóa bảo mật, nên hãy yên tâm nhắn tin!"
+  "encryption_notice": "Tất cả các tin nhắn đều được mã hóa bảo mật, nên hãy yên tâm nhắn tin!",
+  "reply": "Trả lời",
+  "copy": "Sao chép",
+  "react": "Bày tỏ cảm xúc",
+  "more_actions": "Thêm",
+  "edit_message": "Sửa tin nhắn",
+  "forward": "Chuyển tiếp",
+  "hide_for_me": "Ẩn đối với tôi",
+  "delete_for_everyone": "Xóa cho mọi người",
+  "delete_for_me": "Xóa cho tôi",
+  "pin_message": "Ghim tin nhắn",
+  "unpin_message": "Bỏ ghim tin nhắn",
+  "copy_text": "Sao chép văn bản",
+  "delete_message_everyone_confirm": "Xóa tin nhắn này cho mọi người?",
+  "delete_message_self_confirm": "Xóa tin nhắn này cho tôi?"
 }

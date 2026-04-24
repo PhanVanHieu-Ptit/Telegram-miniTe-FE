@@ -24,6 +24,9 @@ interface ChatState {
     searchQuery: string;
     typingUsers: Record<string, string[]>; // conversationId -> userId[]
     onlineUsers: string[];
+    replyingToMessage: Message | null;
+    editingMessage: Message | null;
+    forwardingMessage: Message | null;
 }
 
 interface ChatActions {
@@ -58,6 +61,11 @@ interface ChatActions {
      * Used to swap a locally-previewed optimistic message for real server data.
      */
     updateMessage: (tempOrRealId: string, patch: Partial<Message>) => void;
+    setReplyingToMessage: (message: Message | null) => void;
+    setEditingMessage: (message: Message | null) => void;
+    setForwardingMessage: (message: Message | null) => void;
+    editMessage: (messageId: string, content: string) => Promise<void>;
+    deleteMessage: (messageId: string, mode?: 'self' | 'everyone') => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -74,6 +82,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     searchQuery: "",
     typingUsers: {},
     onlineUsers: [],
+    replyingToMessage: null,
+    editingMessage: null,
+    forwardingMessage: null,
 
     // Actions
     fetchConversations: async () => {
@@ -501,6 +512,56 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unpinMessageApi({ conversationId, messageId });
         } catch (error) {
             console.error("Failed to unpin message:", error);
+        }
+    },
+    setReplyingToMessage: (message) => set({ replyingToMessage: message }),
+    setEditingMessage: (message) => set({ editingMessage: message }),
+    setForwardingMessage: (message) => set({ forwardingMessage: message }),
+    
+    editMessage: async (messageId, content) => {
+        const { activeConversationId } = get();
+        if (!activeConversationId) return;
+
+        try {
+            const { editMessage: editMessageApi } = await import("@/api/chat.api");
+            const updatedMessage = await editMessageApi({ messageId, conversationId: activeConversationId, content });
+            
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg.id === messageId ? updatedMessage : msg
+                ),
+                editingMessage: null,
+            }));
+        } catch (error) {
+            console.error("Failed to edit message:", error);
+            throw error;
+        }
+    },
+
+    deleteMessage: async (messageId, mode = 'self') => {
+        const { activeConversationId } = get();
+        if (!activeConversationId) return;
+
+        try {
+            const { deleteMessage: deleteMessageApi } = await import("@/api/chat.api");
+            await deleteMessageApi({ messageId, conversationId: activeConversationId, mode });
+            
+            if (mode === 'everyone') {
+                set((state) => ({
+                    messages: state.messages.map((msg) =>
+                        msg.id === messageId 
+                            ? { ...msg, isDeleted: true, content: "This message was deleted", attachments: [] } 
+                            : msg
+                    ),
+                }));
+            } else {
+                set((state) => ({
+                    messages: state.messages.filter((msg) => msg.id !== messageId),
+                }));
+            }
+        } catch (error) {
+            console.error("Failed to delete message:", error);
+            throw error;
         }
     },
 }));

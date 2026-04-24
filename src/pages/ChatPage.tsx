@@ -4,6 +4,7 @@ import { ChatPanel } from "@/components/chat-panel";
 import { useChatStore } from "@/store/chat.store";
 import { cn } from "@/lib/utils";
 import { SummaryWidget } from "@/components/summary";
+import { ForwardModal } from "@/components/chat/ForwardModal";
 
 export default function ChatPage() {
     const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -12,6 +13,8 @@ export default function ChatPage() {
     const fetchConversations = useChatStore((s) => s.fetchConversations);
     const subscribeToConversation = useChatStore((s) => s.subscribeToConversation);
     const publishSeenStatus = useChatStore((s) => s.publishSeenStatus);
+    const forwardingMessage = useChatStore((s) => s.forwardingMessage);
+    const setForwardingMessage = useChatStore((s) => s.setForwardingMessage);
 
 
     // Subscribe to conversation when activeConversationId changes
@@ -70,6 +73,12 @@ export default function ChatPage() {
 
             {/* Floating Summary Widget */}
             <SummaryWidget />
+
+            {/* Forward Message Modal */}
+            <ForwardModal 
+              message={forwardingMessage} 
+              onClose={() => setForwardingMessage(null)} 
+            />
         </main>
     );
 }

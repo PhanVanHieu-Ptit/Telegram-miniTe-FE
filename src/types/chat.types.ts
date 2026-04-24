@@ -53,6 +53,13 @@ export interface Message {
     createdAt?: ISODateString;
     updatedAt?: ISODateString;
     status: MessageStatus;
+
+    // New fields
+    replyTo?: string;
+    forwardedFrom?: string;
+    isDeleted?: boolean;
+    editedAt?: ISODateString;
+    editHistory?: { content: string; editedAt: ISODateString }[];
 }
 
 export interface ConversationMember {
