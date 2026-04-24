@@ -41,6 +41,19 @@ export function MessageInput({ conversationId }: MessageInputProps) {
   const addMessage = useChatStore((s) => s.addMessage);
   const updateMessage = useChatStore((s) => s.updateMessage);
   const setTypingActive = useChatStore((s) => s.setTypingActive);
+  const replyingToMessage = useChatStore((s) => s.replyingToMessage);
+  const setReplyingToMessage = useChatStore((s) => s.setReplyingToMessage);
+  const editingMessage = useChatStore((s) => s.editingMessage);
+  const setEditingMessage = useChatStore((s) => s.setEditingMessage);
+  const editMessage = useChatStore((s) => s.editMessage);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.content);
+    } else {
+      setText("");
+    }
+  }, [editingMessage]);
 
   // ── Typing indicator management ──────────────────────────────────
 
@@ -102,6 +115,18 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     if (!trimmed && !hasFiles && !overrides?.customPayload) return;
     if (!currentUserId) return;
 
+    if (editingMessage) {
+      try {
+        await editMessage(editingMessage.id, trimmed);
+        setEditingMessage(null);
+        setText("");
+        return;
+      } catch (err) {
+        console.error("Failed to edit:", err);
+        return;
+      }
+    }
+
     stopTyping();
 
     let messageType = overrides?.type || (hasFiles ? "IMAGE" : "TEXT");
@@ -136,6 +161,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
       content: finalContent,
       type: messageType,
       attachments: localAttachments,
+      replyTo: replyingToMessage?.id,
       timestamp: new Date().toISOString(),
       status: (hasFiles || messageType === 'GIF') ? "uploading" : "sending",
     });
@@ -192,7 +218,10 @@ export function MessageInput({ conversationId }: MessageInputProps) {
         type: messageType,
         attachments: remoteAttachments || localAttachments,
         mentions,
+        replyTo: replyingToMessage?.id,
       });
+
+      if (replyingToMessage) setReplyingToMessage(null);
 
       if (result) {
         updateMessage(tempId, {
@@ -353,6 +382,38 @@ export function MessageInput({ conversationId }: MessageInputProps) {
               </div>
             </button>
           ))}
+        </div>
+      )}
+
+      {/* Reply Preview */}
+      {replyingToMessage && (
+        <div className="mx-auto max-w-2xl px-6 py-2 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-sm animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-1 bg-blue-500 h-8 rounded-full" />
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold text-blue-400">Replying to {replyingToMessage.sender?.displayName}</span>
+              <span className="text-[11px] text-white/60 truncate">{replyingToMessage.content}</span>
+            </div>
+          </div>
+          <button onClick={() => setReplyingToMessage(null)} className="p-1.5 hover:bg-white/10 rounded-full text-white/40">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Edit Preview */}
+      {editingMessage && (
+        <div className="mx-auto max-w-2xl px-6 py-2 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-sm animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-1 bg-amber-500 h-8 rounded-full" />
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold text-amber-400">Editing Message</span>
+              <span className="text-[11px] text-white/60 truncate">{editingMessage.content}</span>
+            </div>
+          </div>
+          <button onClick={() => setEditingMessage(null)} className="p-1.5 hover:bg-white/10 rounded-full text-white/40">
+            <X size={16} />
+          </button>
         </div>
       )}
 

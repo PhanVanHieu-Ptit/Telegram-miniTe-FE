@@ -146,13 +146,34 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
 
         // Handle message events: chat/{conversationId}/message
         if (topic.match(/^chat\/[^/]+\/message$/)) {
-            const messageData = payload as Message;
+            const messageData = payload as any;
             const store = useChatStore.getState();
 
-            // Deduplicate: skip if message already exists (e.g. sender already
-            // added it via the optimistic → API-response flow)
+            // Handle special events via eventType
+            if (messageData.eventType === 'MESSAGE_EDITED') {
+                store.updateMessage(messageData.id, messageData);
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_DELETED') {
+                store.updateMessage(messageData.id, messageData); // messageData has isDeleted: true
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_PINNED') {
+                store.updateMessage(messageData.id, { isPinned: true });
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_UNPINNED') {
+                store.updateMessage(messageData.id, { isPinned: false });
+                return;
+            }
+            if (messageData.eventType === 'REACTION_UPDATE') {
+                store.updateMessage(messageData.id, { reactions: messageData.reactions });
+                return;
+            }
+
+            // Standard new message flow
+            // Deduplicate: skip if message already exists
             if (store.messages.some((m) => m.id === messageData.id)) {
-                // Still update sidebar lastMessage even for own messages
                 store.updateConversationLastMessage(messageData.conversationId, messageData);
                 return;
             }

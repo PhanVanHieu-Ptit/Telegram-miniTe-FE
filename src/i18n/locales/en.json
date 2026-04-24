@@ -88,5 +88,19 @@
   "someone": "Someone",
   "neural_interface": "Neural Interface",
   "select_terminal": "Select a terminal to establish connection",
-  "encryption_notice": "All transmissions are encrypted via multi-layered kinetic protocols."
+  "encryption_notice": "All transmissions are encrypted via multi-layered kinetic protocols.",
+  "reply": "Reply",
+  "copy": "Copy",
+  "react": "React",
+  "more_actions": "More Actions",
+  "edit_message": "Edit Message",
+  "forward": "Forward",
+  "hide_for_me": "Hide for me",
+  "delete_for_everyone": "Delete for everyone",
+  "delete_for_me": "Delete for me",
+  "pin_message": "Pin Message",
+  "unpin_message": "Unpin Message",
+  "copy_text": "Copy Text",
+  "delete_message_everyone_confirm": "Delete this message for everyone?",
+  "delete_message_self_confirm": "Delete this message for me?"
 }

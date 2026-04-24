@@ -17,6 +17,8 @@ export interface SendMessageDto {
     attachments?: Attachment[];
     metadata?: any;
     mentions?: string[];
+    replyTo?: string;
+    forwardedFrom?: string;
 }
 
 export interface CreateConversationDto {
@@ -175,6 +177,45 @@ export const searchMessages = async (params: SearchMessagesParams): Promise<Mess
         return response.data;
     } catch (error) {
         console.error("Error in searchMessages:", error);
+        throw error;
+    }
+};
+
+export interface EditMessageDto {
+    messageId: string;
+    conversationId: string;
+    content: string;
+}
+
+export const editMessage = async (payload: EditMessageDto): Promise<Message> => {
+    try {
+        const response = await apiClient.patch<Message>(`/messages/${payload.messageId}`, {
+            content: payload.content,
+            conversationId: payload.conversationId
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Error in editMessage:", error);
+        throw error;
+    }
+};
+
+export interface DeleteMessageDto {
+    messageId: string;
+    conversationId: string;
+    mode?: 'self' | 'everyone';
+}
+
+export const deleteMessage = async (payload: DeleteMessageDto): Promise<void> => {
+    try {
+        await apiClient.delete(`/messages/${payload.messageId}`, {
+            params: {
+                conversationId: payload.conversationId,
+                mode: payload.mode || 'self'
+            }
+        });
+    } catch (error) {
+        console.error("Error in deleteMessage:", error);
         throw error;
     }
 };
