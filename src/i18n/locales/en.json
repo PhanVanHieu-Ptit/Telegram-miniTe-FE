@@ -96,11 +96,21 @@
   "edit_message": "Edit Message",
   "forward": "Forward",
   "hide_for_me": "Hide for me",
+  "hide_for_everyone": "Hide for everyone",
   "delete_for_everyone": "Delete for everyone",
   "delete_for_me": "Delete for me",
   "pin_message": "Pin Message",
   "unpin_message": "Unpin Message",
   "copy_text": "Copy Text",
   "delete_message_everyone_confirm": "Delete this message for everyone?",
-  "delete_message_self_confirm": "Delete this message for me?"
+  "delete_message_self_confirm": "Delete this message for me?",
+  "forwarded": "Forwarded",
+  "forwarded_from": "Forwarded from {{name}}",
+  "forward_message": "Forward Message",
+  "search_conversations": "Search conversations...",
+  "members_count": "{{count}} members",
+  "delete": "Delete",
+  "sensitive_media": "Sensitive Media",
+  "hidden_message": "Hidden Message",
+  "message_deleted_placeholder": "This message was deleted"
 }

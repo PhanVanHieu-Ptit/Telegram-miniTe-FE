@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { Modal, Input, Checkbox, Avatar, List } from 'antd';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { useChatStore } from '@/store/chat.store';
+import { useAuthStore } from '@/store/auth.store';
 import type { Message } from '@/types/chat.types';
 
 interface ForwardModalProps {
@@ -10,32 +12,48 @@ interface ForwardModalProps {
 }
 
 export const ForwardModal: React.FC<ForwardModalProps> = ({ message, onClose }) => {
+  const { t } = useTranslation();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [search, setSearch] = useState("");
   const conversations = useChatStore(state => state.conversations);
+  const getUser = useChatStore(state => state.getUser);
+  const currentUser = useAuthStore(state => state.user);
   const sendMessage = useChatStore(state => state.sendMessage);
 
-  if (!message) return null;
+  if (!message || !currentUser) return null;
 
-  const filtered = conversations.filter(c => 
+  // Get the original sender's name robustly
+  const getOriginalSenderName = () => {
+    if (message.sender?.displayName) return message.sender.displayName;
+    const storeUser = getUser(message.senderId);
+    if (storeUser?.displayName) return storeUser.displayName;
+    return "User"; // Minimal fallback that isn't "Someone"
+  };
+
+  const filtered = conversations.filter(c =>
     c.chatName.toLowerCase().includes(search.toLowerCase())
   );
 
   const toggleSelect = (id: string) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
 
   const handleForward = async () => {
+    const senderName = getOriginalSenderName();
     for (const conversationId of selectedIds) {
       await sendMessage({
         conversationId,
         content: message.content,
-        senderId: message.senderId, // Will be overridden by service but good for reference
+        senderId: currentUser.id,
         type: message.type,
         attachments: message.attachments,
-        forwardedFrom: message.id
+        forwardedFrom: message.id,
+        metadata: {
+          ...message.metadata,
+          forwardedFromName: senderName
+        }
       });
     }
     onClose();
@@ -43,18 +61,19 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, onClose }) 
 
   return (
     <Modal
-      title="Forward Message"
+      title={t('forward_message')}
       open={!!message}
       onCancel={onClose}
       onOk={handleForward}
-      okText="Forward"
+      okText={t('forward')}
+      cancelText={t('cancel')}
       okButtonProps={{ disabled: selectedIds.length === 0 }}
       className="dark-modal"
     >
       <div className="space-y-4">
-        <Input 
+        <Input
           prefix={<Search size={16} />}
-          placeholder="Search conversations..."
+          placeholder={t('search_conversations')}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="bg-white/5 border-white/10 text-white"
@@ -64,18 +83,20 @@ export const ForwardModal: React.FC<ForwardModalProps> = ({ message, onClose }) 
           <List
             dataSource={filtered}
             renderItem={convo => (
-              <List.Item 
+              <List.Item
                 className="hover:bg-white/5 rounded-lg px-2 cursor-pointer transition-colors border-none"
                 onClick={() => toggleSelect(convo.id)}
               >
                 <div className="flex items-center gap-3 w-full py-1">
                   <Checkbox checked={selectedIds.includes(convo.id)} />
                   <Avatar src={convo.members[0]?.avatarUrl} size="large">
-                    {convo.chatName[0].toUpperCase()}
+                    {convo?.chatName?.[0]?.toUpperCase()}
                   </Avatar>
                   <div className="flex flex-col">
                     <span className="text-white font-medium">{convo.chatName}</span>
-                    <span className="text-xs text-white/40">{convo.members.length} members</span>
+                    <span className="text-xs text-white/40">
+                      {t('members_count', { count: convo.members.length })}
+                    </span>
                   </div>
                 </div>
               </List.Item>

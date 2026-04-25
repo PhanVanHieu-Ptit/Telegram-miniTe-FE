@@ -1,30 +1,30 @@
-import { memo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { Avatar, Dropdown, Tooltip } from "antd";
-import type { MenuProps } from "antd";
-import { 
-  Check, 
-  CheckCheck, 
-  SmilePlus, 
-  RefreshCw, 
-  Pin, 
-  EyeOff, 
-  MoreVertical, 
-  PinOff,
-  Copy,
-  Reply,
-  Edit2,
-  Trash2,
-  Forward
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Message, User } from "@/types/chat.types";
-import dayjs from "dayjs";
-import { MessageRenderer } from "./chat/messages/MessageRenderer";
-import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useChatStore } from "@/store/chat.store";
+import type { Message, User } from "@/types/chat.types";
+import type { MenuProps } from "antd";
+import { App, Avatar, Dropdown, Tooltip } from "antd";
+import dayjs from "dayjs";
+import {
+  Check,
+  CheckCheck,
+  Copy,
+  Edit2,
+  EyeOff,
+  Forward,
+  MoreVertical,
+  Pin,
+  PinOff,
+  RefreshCw,
+  Reply,
+  SmilePlus,
+  Trash2
+} from "lucide-react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
+import { MessageRenderer } from "./chat/messages/MessageRenderer";
 
 interface MessageBubbleProps {
   message: Message;
@@ -108,11 +108,11 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   isOwnMessage,
   showAvatar,
-  showTimestamp,
   seen,
   sender,
 }: MessageBubbleProps) {
   const { t } = useTranslation();
+  const { modal } = App.useApp();
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const { 
     reactMessage, 
@@ -135,6 +135,10 @@ export const MessageBubble = memo(function MessageBubble({
       deleteMessage: s.deleteMessage,
     }))
   );
+
+  const currentUserId = useAuthStore((state) => state.user?.id);
+  const isHidden = !!(currentUserId && message.hiddenBy?.includes(currentUserId));
+  const [isRevealed, setIsRevealed] = useState(false);
   
   const REACTION_LIST = ['👍', '❤️', '😂', '😮', '😢', '😡'];
 
@@ -193,14 +197,32 @@ export const MessageBubble = memo(function MessageBubble({
         void hideMessage(message.conversationId, message.id);
         break;
       case 'delete_everyone':
-        if (confirm(t('delete_message_everyone_confirm'))) {
-          void deleteMessage(message.id, 'everyone');
-        }
+        modal.confirm({
+          title: t('delete_for_everyone'),
+          content: t('delete_message_everyone_confirm'),
+          okText: t('delete'),
+          okType: 'danger',
+          cancelText: t('cancel'),
+          centered: true,
+          className: 'dark-modal',
+          onOk: () => {
+            if (message.id) void deleteMessage(message.id, 'everyone');
+          }
+        });
         break;
       case 'delete_self':
-        if (confirm(t('delete_message_self_confirm'))) {
-          void deleteMessage(message.id, 'self');
-        }
+        modal.confirm({
+          title: t('delete_for_me'),
+          content: t('delete_message_self_confirm'),
+          okText: t('delete'),
+          okType: 'danger',
+          cancelText: t('cancel'),
+          centered: true,
+          className: 'dark-modal',
+          onOk: () => {
+            if (message.id) void deleteMessage(message.id, 'self');
+          }
+        });
         break;
     }
   };
@@ -214,11 +236,10 @@ export const MessageBubble = memo(function MessageBubble({
     message.isPinned
       ? { key: 'unpin', label: t('unpin_message'), icon: <PinOff className="w-4 h-4" /> }
       : { key: 'pin', label: t('pin_message'), icon: <Pin className="w-4 h-4" /> },
-    { key: 'hide', label: t('hide_for_me'), icon: <EyeOff className="w-4 h-4" /> },
+    { key: 'hide', label: isOwnMessage ? t('hide_for_everyone') : t('hide_for_me'), icon: <EyeOff className="w-4 h-4" /> },
     { type: 'divider' },
-    isOwnMessage 
-      ? { key: 'delete_everyone', label: t('delete_for_everyone'), icon: <Trash2 className="w-4 h-4" />, danger: true }
-      : { key: 'delete_self', label: t('delete_for_me'), icon: <Trash2 className="w-4 h-4" />, danger: true },
+    { key: 'delete_self', label: t('delete_for_me'), icon: <Trash2 className="w-4 h-4" />, danger: true },
+    isOwnMessage && { key: 'delete_everyone', label: t('delete_for_everyone'), icon: <Trash2 className="w-4 h-4" />, danger: true },
   ].filter(Boolean) as MenuProps['items'];
 
   if (message.isDeleted) {
@@ -281,7 +302,11 @@ export const MessageBubble = memo(function MessageBubble({
         {message.forwardedFrom && (
            <div className="text-[10px] italic opacity-50 mb-1 flex items-center gap-1">
              <Forward className="w-3 h-3" />
-             <span>Forwarded</span>
+             <span>
+               {t('forwarded_from', { 
+                 name: message.metadata?.forwardedFromName || t('someone') 
+               })}
+             </span>
            </div>
         )}
 
@@ -292,7 +317,16 @@ export const MessageBubble = memo(function MessageBubble({
            />
         )}
 
-        <MessageRenderer message={message} />
+        <div className={cn(
+          "transition-all duration-500",
+          isHidden ? "cursor-pointer" : ""
+        )} onClick={() => isHidden && setIsRevealed(!isRevealed)}>
+          <MessageRenderer 
+            message={message} 
+            isHidden={isHidden}
+            isRevealed={isRevealed}
+          />
+        </div>
 
         {/* Timestamp + seen indicator */}
         <div className={cn(

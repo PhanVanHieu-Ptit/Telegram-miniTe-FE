@@ -1,4 +1,7 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import { EyeOff } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import type { Message } from '../../../types/chat.types';
 import { TextMessage } from './TextMessage';
 import { ImageMessage } from './ImageMessage';
@@ -14,9 +17,12 @@ import { GifMessage } from './GifMessage';
 
 interface MessageRendererProps {
   message: Message;
+  isHidden?: boolean;
+  isRevealed?: boolean;
 }
 
-export const MessageRenderer: React.FC<MessageRendererProps> = ({ message }) => {
+export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHidden, isRevealed }) => {
+  const { t } = useTranslation();
   const { effectiveType, parsedPayload } = useMemo(() => {
     const rawType = (message.type || 'TEXT').toUpperCase();
     const hasAttachments = !!(message.attachments && message.attachments.length > 0);
@@ -130,55 +136,79 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message }) => 
         </div>
       )
       : null;
-
     const withOverlay = (node: React.ReactNode) =>
       uploadOverlay
         ? <div className="relative">{node}{uploadOverlay}</div>
         : <>{node}</>;
 
+    const withSpoiler = (node: React.ReactNode, type: string) => {
+      if (!isHidden || isRevealed) return node;
+      
+      const isMedia = ['IMAGE', 'VIDEO', 'GIF', 'VOICE'].includes(type);
+      
+      return (
+        <div className="relative group/spoiler select-none overflow-hidden rounded-xl">
+           <div className={cn(
+             "transition-all duration-500 filter",
+             isMedia ? "blur-3xl opacity-40 scale-110" : "blur-[8px] opacity-20 pointer-events-none"
+           )}>
+             {node}
+           </div>
+           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 z-20">
+              <div className="w-9 h-9 rounded-full bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/20 group-hover/spoiler:bg-white/20 transition-all shadow-xl">
+                <EyeOff className="w-4 h-4 text-white" />
+              </div>
+              <span className="text-[9px] font-bold text-white/50 tracking-[0.2em] uppercase">
+                {isMedia ? t('sensitive_media') : t('hidden_message')}
+              </span>
+           </div>
+        </div>
+      );
+    }
+
     switch (effectiveType) {
       case 'IMAGE':
-        return withOverlay(<ImageMessage attachments={effectiveAttachments} />);
+        return withSpoiler(withOverlay(<ImageMessage attachments={effectiveAttachments} />), 'IMAGE');
       case 'GIF':
-        return withOverlay(<GifMessage attachments={effectiveAttachments} />);
+        return withSpoiler(withOverlay(<GifMessage attachments={effectiveAttachments} />), 'GIF');
       case 'VIDEO':
-        return withOverlay(<VideoMessage attachments={effectiveAttachments} />);
+        return withSpoiler(withOverlay(<VideoMessage attachments={effectiveAttachments} />), 'VIDEO');
       case 'VOICE':
-        return withOverlay(
+        return withSpoiler(withOverlay(
           <VoiceMessage
             url={resolvedUrl}
             duration={message.metadata?.duration}
           />
-        );
+        ), 'VOICE');
       case 'FILE':
-        return withOverlay(<FileMessage attachments={effectiveAttachments} />);
+        return withSpoiler(withOverlay(<FileMessage attachments={effectiveAttachments} />), 'FILE');
       case 'LOCATION':
-        return <LocationMessage payload={parsedPayload || {}} />;
+        return withSpoiler(<LocationMessage payload={parsedPayload || {}} />, 'LOCATION');
       case 'POLL':
-        return <PollMessage payload={parsedPayload || {}} />;
+        return withSpoiler(<PollMessage payload={parsedPayload || {}} />, 'POLL');
       case 'BANK':
-        return <BankMessage payload={parsedPayload || {}} />;
+        return withSpoiler(<BankMessage payload={parsedPayload || {}} />, 'BANK');
       case 'CONTACT':
-        return <ContactMessage payload={parsedPayload || {}} />;
+        return withSpoiler(<ContactMessage payload={parsedPayload || {}} />, 'CONTACT');
       case 'REMINDER':
-        return (
+        return withSpoiler(
           <div className="p-3 bg-white/5 border border-white/10 rounded-xl text-xs flex items-center gap-2">
             <span className="text-lg">🔔</span>
             <div className="flex flex-col">
               <span className="font-bold opacity-60 uppercase tracking-tighter">Reminder</span>
               <span className="opacity-90">{message.content}</span>
             </div>
-          </div>
+          </div>, 'REMINDER'
         );
       case 'LINK':
-        return <LinkMessage content={message.content} metadata={message.metadata} />;
+        return withSpoiler(<LinkMessage content={message.content} metadata={message.metadata} />, 'LINK');
       case 'TEXT':
       default:
         if (urlFromContent && effectiveType === 'TEXT') {
-          if (urlFromContent.match(/\.(jpeg|jpg|gif|png|webp)$/i)) return <ImageMessage attachments={[{ url: resolvedUrl }]} />;
-          if (urlFromContent.match(/\.(mp4|webm|ogg|mp3|wav|m4a)$/i)) return <VoiceMessage url={resolvedUrl} />;
+          if (urlFromContent.match(/\.(jpeg|jpg|gif|png|webp)$/i)) return withSpoiler(<ImageMessage attachments={[{ url: resolvedUrl }]} />, 'IMAGE');
+          if (urlFromContent.match(/\.(mp4|webm|ogg|mp3|wav|m4a)$/i)) return withSpoiler(<VoiceMessage url={resolvedUrl} />, 'VOICE');
         }
-        return <TextMessage content={message.content} mentions={message.mentions} />;
+        return withSpoiler(<TextMessage content={message.content} mentions={message.mentions} />, 'TEXT');
     }
   };
 

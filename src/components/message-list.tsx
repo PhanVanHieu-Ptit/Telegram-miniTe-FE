@@ -1,10 +1,9 @@
-import { memo, useEffect, useMemo, useRef, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
-import { motion } from "framer-motion";
-import { MessageBubble } from "./message-bubble";
+import { useChatStore } from "@/store/chat.store";
 import type { Message, User } from "@/types/chat.types";
+import { motion } from "framer-motion";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { MessageBubble } from "./message-bubble";
 
 const VIRTUALIZE_THRESHOLD = 100;
 const ESTIMATED_ITEM_HEIGHT = 76;
@@ -86,11 +85,8 @@ export const MessageList = memo(function MessageList() {
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
   const filteredMessages = useMemo(() => {
-    let msgs = messages;
-    if (currentUserId) {
-      msgs = msgs.filter(m => !m.hiddenBy?.includes(currentUserId));
-    }
-    return msgs;
+    if (!currentUserId) return messages;
+    return messages.filter(m => !m.deletedForUsers?.includes(currentUserId));
   }, [messages, currentUserId]);
 
   useEffect(() => {
