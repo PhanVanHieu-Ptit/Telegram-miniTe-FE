@@ -1,6 +1,6 @@
 
 
-import { ConfigProvider, theme } from "antd";
+import { ConfigProvider, theme, App as AntdApp } from "antd";
 
 export function AntdProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -36,7 +36,9 @@ export function AntdProvider({ children }: { children: React.ReactNode }) {
         },
       }}
     >
-      {children}
+      <AntdApp>
+        {children}
+      </AntdApp>
     </ConfigProvider>
   );
 }

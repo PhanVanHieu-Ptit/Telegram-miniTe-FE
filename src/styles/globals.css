@@ -182,6 +182,7 @@
 .ant-modal .ant-modal-content,
 .ant-modal-content,
 .saas-modal .ant-modal-content,
+.dark-modal .ant-modal-content,
 div.ant-modal-content {
   background: #0a0f19 !important; /* Pure Dark for Modal Background */
   background-color: #0a0f19 !important;
@@ -191,6 +192,34 @@ div.ant-modal-content {
   box-shadow: 0 0 40px rgba(14, 165, 233, 0.1), 0 30px 60px rgba(0, 0, 0, 0.9) !important;
   padding: 0 !important;
   overflow: hidden !important;
+}
+
+.ant-modal-confirm .ant-modal-body {
+  padding: 24px 32px 16px !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  color: white !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  margin-bottom: 8px !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.9rem !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-btns {
+  padding: 0 32px 24px !important;
+  margin-top: 16px !important;
+}
+
+.ant-modal-confirm .ant-btn {
+  border-radius: 12px !important;
+  height: 42px !important;
+  padding: 0 24px !important;
+  font-weight: 600 !important;
 }
 
 .ant-modal-mask {

@@ -58,6 +58,7 @@ export interface Message {
     replyTo?: string;
     forwardedFrom?: string;
     isDeleted?: boolean;
+    deletedForUsers?: string[];
     editedAt?: ISODateString;
     editHistory?: { content: string; editedAt: ISODateString }[];
 }

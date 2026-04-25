@@ -96,11 +96,21 @@
   "edit_message": "Sửa tin nhắn",
   "forward": "Chuyển tiếp",
   "hide_for_me": "Ẩn đối với tôi",
+  "hide_for_everyone": "Ẩn đối với tất cả",
   "delete_for_everyone": "Xóa cho mọi người",
   "delete_for_me": "Xóa cho tôi",
   "pin_message": "Ghim tin nhắn",
   "unpin_message": "Bỏ ghim tin nhắn",
   "copy_text": "Sao chép văn bản",
   "delete_message_everyone_confirm": "Xóa tin nhắn này cho mọi người?",
-  "delete_message_self_confirm": "Xóa tin nhắn này cho tôi?"
+  "delete_message_self_confirm": "Xóa tin nhắn này cho tôi?",
+  "forwarded": "Đã chuyển tiếp",
+  "forwarded_from": "Đã chuyển tiếp từ {{name}}",
+  "forward_message": "Chuyển tiếp tin nhắn",
+  "search_conversations": "Tìm kiếm cuộc hội thoại...",
+  "members_count": "{{count}} thành viên",
+  "delete": "Xóa",
+  "sensitive_media": "Nội dung nhạy cảm",
+  "hidden_message": "Tin nhắn đã ẩn",
+  "message_deleted_placeholder": "Tin nhắn này đã bị xóa"
 }

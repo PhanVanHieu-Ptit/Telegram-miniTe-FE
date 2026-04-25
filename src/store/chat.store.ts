@@ -550,7 +550,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 set((state) => ({
                     messages: state.messages.map((msg) =>
                         msg.id === messageId 
-                            ? { ...msg, isDeleted: true, content: "This message was deleted", attachments: [] } 
+                            ? { ...msg, isDeleted: true, content: "", attachments: [] } 
                             : msg
                     ),
                 }));
