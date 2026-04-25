@@ -1,30 +1,30 @@
-import { memo, useState } from "react";
-import { useShallow } from "zustand/react/shallow";
-import { Avatar, Dropdown, Tooltip, Modal, App } from "antd";
-import type { MenuProps } from "antd";
-import { 
-  Check, 
-  CheckCheck, 
-  SmilePlus, 
-  RefreshCw, 
-  Pin, 
-  EyeOff, 
-  MoreVertical, 
-  PinOff,
-  Copy,
-  Reply,
-  Edit2,
-  Trash2,
-  Forward
-} from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Message, User } from "@/types/chat.types";
-import dayjs from "dayjs";
-import { MessageRenderer } from "./chat/messages/MessageRenderer";
-import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
+import { useChatStore } from "@/store/chat.store";
+import type { Message, User } from "@/types/chat.types";
+import type { MenuProps } from "antd";
+import { App, Avatar, Dropdown, Tooltip } from "antd";
+import dayjs from "dayjs";
+import {
+  Check,
+  CheckCheck,
+  Copy,
+  Edit2,
+  EyeOff,
+  Forward,
+  MoreVertical,
+  Pin,
+  PinOff,
+  RefreshCw,
+  Reply,
+  SmilePlus,
+  Trash2
+} from "lucide-react";
+import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useShallow } from "zustand/react/shallow";
+import { MessageRenderer } from "./chat/messages/MessageRenderer";
 
 interface MessageBubbleProps {
   message: Message;
@@ -108,7 +108,6 @@ export const MessageBubble = memo(function MessageBubble({
   message,
   isOwnMessage,
   showAvatar,
-  showTimestamp,
   seen,
   sender,
 }: MessageBubbleProps) {
