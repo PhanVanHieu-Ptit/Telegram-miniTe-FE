@@ -56,8 +56,8 @@ export function ChatPanel() {
   // Get typing user names for the active conversation
   const typingUserNames = activeConversationId
     ? (typingUsers[activeConversationId] || [])
-      .filter((userId) => userId !== currentUserId)
-      .map((userId) => getUser(userId)?.name || t('someone'))
+      .filter((u) => u.userId !== currentUserId)
+      .map((u) => u.fullName || t('someone'))
     : [];
 
   if (!activeConversation || !partner) {
@@ -100,7 +100,11 @@ export function ChatPanel() {
             <div key={msg.id} className="flex items-center justify-between text-xs p-1.5 bg-white/5 rounded hover:bg-white/10 transition">
               <div className="flex items-center gap-2 overflow-hidden">
                 <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-                <span className="font-semibold text-white/70 shrink-0">{getUser(msg.senderId)?.displayName || t('someone')}:</span>
+                <span className="font-semibold text-white/70 shrink-0">
+                  {(msg.senderId === currentUserId 
+                    ? useAuthStore.getState().user?.displayName 
+                    : (activeConversation.members.find(m => m.id === msg.senderId)?.fullName || getUser(msg.senderId)?.fullName)) || t('someone')}:
+                </span>
                 <span className="truncate text-white/50">{msg.content || t('attachment')}</span>
               </div>
               <button

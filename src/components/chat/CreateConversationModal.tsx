@@ -120,14 +120,14 @@ export const CreateConversationModal = ({ open, onClose }: CreateConversationMod
               label={<span className="sub-header-premium text-[10px] ml-1">{t('group_identifier')}</span>}
               rules={[{ required: true, message: t('enter_group_name') }]}
             >
-              <Input placeholder="e.g. Alpha Team, Project X..." size="large" className="premium-input !rounded-xl" />
+              <Input placeholder={t('group_name_placeholder')} size="large" className="premium-input !rounded-xl" />
             </Form.Item>
             <Form.Item
               name="avatar"
               label={<span className="sub-header-premium text-[10px] ml-1">{t('visualization_url')}</span>}
             >
               <Input
-                placeholder="https://images.unsplash.com/..."
+                placeholder={t('avatar_url_placeholder')}
                 size="large"
                 className="premium-input !rounded-xl"
                 prefix={<Camera strokeWidth={2} className="h-4 w-4 text-primary/60 mr-2" />}

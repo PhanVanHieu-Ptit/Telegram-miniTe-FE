@@ -19,6 +19,7 @@ interface MessageStatusEvent {
 
 interface TypingEvent {
     userId: string;
+    fullName?: string;
     typing: boolean;
 }
 
@@ -89,6 +90,18 @@ export async function subscribeToConversationSeen(
 }
 
 /**
+ * Publish heartbeat for a user
+ */
+export async function publishHeartbeat(
+    client: AppMqttClient,
+    userId: string,
+    activeConversationId?: string | null
+): Promise<void> {
+    const payload = { activeConversationId };
+    await client.publish(`presence/${userId}/heartbeat`, payload);
+}
+
+/**
  * Subscribe to typing events for a specific conversation
  */
 export async function subscribeToTyping(
@@ -105,9 +118,10 @@ export async function publishTyping(
     client: AppMqttClient,
     conversationId: string,
     userId: string,
-    typing: boolean
+    typing: boolean,
+    fullName?: string
 ): Promise<void> {
-    const payload = { userId, typing };
+    const payload = { userId, typing, fullName, timestamp: new Date().toISOString() };
     await client.publish(`chat/${conversationId}/typing`, payload);
 }
 
@@ -233,7 +247,7 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
             if (conversationIdMatch) {
                 const conversationId = conversationIdMatch[1];
                 if (typingData.typing) {
-                    useChatStore.getState().setTypingUser(conversationId, typingData.userId);
+                    useChatStore.getState().setTypingUser(conversationId, typingData.userId, typingData.fullName);
                 } else {
                     useChatStore.getState().removeTypingUser(conversationId, typingData.userId);
                 }

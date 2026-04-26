@@ -5,6 +5,7 @@ import type { Message, User } from "@/types/chat.types";
 import type { MenuProps } from "antd";
 import { App, Avatar, Dropdown, Tooltip } from "antd";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import {
   Check,
   CheckCheck,
@@ -25,6 +26,8 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useShallow } from "zustand/react/shallow";
 import { MessageRenderer } from "./chat/messages/MessageRenderer";
+
+dayjs.extend(utc);
 
 interface MessageBubbleProps {
   message: Message;
@@ -333,9 +336,9 @@ export const MessageBubble = memo(function MessageBubble({
           "flex items-center gap-1 mt-1 justify-end",
           isOwnMessage ? "text-white/60" : "text-white/40"
         )}>
-           {message.editedAt && <span className="text-[10px] italic opacity-70">(edited)</span>}
+           {message.editedAt && <span className="text-[10px] italic opacity-70">({t('edited')})</span>}
            <span className="text-[10px]">
-             {dayjs(message.timestamp).format("HH:mm")}
+             {dayjs.utc(message.timestamp).local().format("HH:mm")}
            </span>
            {isOwnMessage && message.status !== 'uploading' && (
              seen ? (

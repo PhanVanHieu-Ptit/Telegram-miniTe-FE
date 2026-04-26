@@ -93,6 +93,27 @@ function App(): JSX.Element {
   }, [isAuthenticated, bootstrapChat])
 
   useEffect(() => {
+    if (!isAuthenticated || !mqttInitializedRef.current) return;
+
+    const intervalId = setInterval(() => {
+      const user = useAuthStore.getState().user;
+      const activeConvId = useChatStore.getState().activeConversationId;
+
+      if (user?.id) {
+        const client = getMqttClient({ url: MQTT_URL });
+        const isHidden = document.hidden;
+        const effectiveActiveConvId = isHidden ? null : activeConvId;
+
+        import('@/mqtt/mqtt.service').then(({ publishHeartbeat }) => {
+          void publishHeartbeat(client, user.id, effectiveActiveConvId);
+        });
+      }
+    }, 10_000); // 10 seconds
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     return () => {
       mqttCleanupRef.current?.()
       mqttCleanupRef.current = null
