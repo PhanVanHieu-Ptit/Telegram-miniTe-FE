@@ -6,10 +6,12 @@ import type { Conversation } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
 import dayjs from "dayjs";
+import utc from "dayjs/plugin/utc";
 import { getMessagePreview } from "@/lib/message-utils";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
 
+dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
 dayjs.extend(isSameOrAfter);
 
@@ -106,9 +108,9 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
             {conversation?.chatName !== '' ? conversation?.chatName : otherMember.fullName}
           </span>
           <span className={cn("shrink-0 text-[10px] font-medium tracking-wide opacity-60", active ? "text-white/80" : "text-secondary")}>
-            {dayjs(conversation.updatedAt).isSame(dayjs(), "day")
-              ? dayjs(conversation.updatedAt).format("HH:mm")
-              : dayjs(conversation.updatedAt).format("MM/DD/YYYY")}
+            {dayjs.utc(conversation.updatedAt).local().isSame(dayjs(), "day")
+              ? dayjs.utc(conversation.updatedAt).local().format("HH:mm")
+              : dayjs.utc(conversation.updatedAt).local().format("MM/DD/YYYY")}
           </span>
         </div>
         <div className="flex items-center justify-between gap-1">

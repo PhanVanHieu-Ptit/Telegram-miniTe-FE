@@ -112,5 +112,18 @@
   "delete": "Delete",
   "sensitive_media": "Sensitive Media",
   "hidden_message": "Hidden Message",
-  "message_deleted_placeholder": "This message was deleted"
+  "message_deleted_placeholder": "This message was deleted",
+  "edited": "edited",
+  "typing_single": "{{name}} is typing...",
+  "typing_double": "{{name1}} and {{name2}} are typing...",
+  "typing_multiple": "{{name}} and {{count}} others are typing...",
+  "create_chat_or_group_tooltip": "Create new chat or group",
+  "start_chat_btn": "START CHAT",
+  "search_users_placeholder": "Search users to add...",
+  "no_users_found": "No users found",
+  "type_to_search": "Type to search users",
+  "group_name_placeholder": "e.g. Alpha Team, Project X...",
+  "avatar_url_placeholder": "https://images.unsplash.com/...",
+  "today": "Today",
+  "yesterday": "Yesterday"
 }

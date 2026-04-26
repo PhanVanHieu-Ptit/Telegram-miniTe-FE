@@ -86,6 +86,7 @@ export interface Conversation {
 export interface TypingEvent {
     conversationId: string;
     userId: string;
-    isTyping: boolean;
-    timestamp: ISODateString;
+    fullName?: string;
+    typing: boolean;
+    timestamp?: ISODateString;
 }

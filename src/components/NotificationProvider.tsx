@@ -5,6 +5,7 @@ import { useFcm } from '@/hooks/useFcm';
 import { useAuthStore } from '@/store/auth.store';
 import NotificationItem, { type NotificationType } from './Notifications/NotificationItem';
 import { useNavigate } from 'react-router-dom';
+import { useChatStore } from '@/store/chat.store';
 
 interface NotificationProviderProps {
   children: React.ReactNode;
@@ -44,7 +45,7 @@ const NotificationProvider: React.FC<NotificationProviderProps> = ({ children })
    */
   const parseNotification = (payload: any) => {
     const { notification: note, data } = payload;
-    
+
     let type: NotificationType = 'system';
     let avatarUrl = note?.icon || '/logo192.png'; // Fallback to logo
     let actionPath = '';
@@ -87,6 +88,18 @@ const NotificationProvider: React.FC<NotificationProviderProps> = ({ children })
 
     const unsubscribe = onMessageListener((payload) => {
       if (payload) {
+        // Prevent showing notification for self-sent messages
+        const currentUser = useAuthStore.getState().user;
+        if (payload.data?.senderId && currentUser?.id && payload.data.senderId === currentUser.id) {
+          return;
+        }
+
+        // Prevent showing notification for current active conversation
+        const activeConversationId = useChatStore.getState().activeConversationId;
+        if (payload.data?.conversationId && activeConversationId && payload.data.conversationId === activeConversationId) {
+          return;
+        }
+
         const { title, message, type, avatarUrl, actionPath, timestamp } = parseNotification(payload);
         const key = `notification-${Date.now()}`;
 
@@ -131,3 +144,4 @@ const NotificationProvider: React.FC<NotificationProviderProps> = ({ children })
 };
 
 export default NotificationProvider;
+

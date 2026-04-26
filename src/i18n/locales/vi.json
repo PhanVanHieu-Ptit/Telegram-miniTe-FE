@@ -112,5 +112,18 @@
   "delete": "Xóa",
   "sensitive_media": "Nội dung nhạy cảm",
   "hidden_message": "Tin nhắn đã ẩn",
-  "message_deleted_placeholder": "Tin nhắn này đã bị xóa"
+  "message_deleted_placeholder": "Tin nhắn này đã bị xóa",
+  "edited": "đã chỉnh sửa",
+  "typing_single": "{{name}} đang soạn tin...",
+  "typing_double": "{{name1}} và {{name2}} đang soạn tin...",
+  "typing_multiple": "{{name}} và {{count}} người khác đang soạn tin...",
+  "create_chat_or_group_tooltip": "Tạo cuộc trò chuyện hoặc nhóm mới",
+  "start_chat_btn": "BẮT ĐẦU CHAT",
+  "search_users_placeholder": "Tìm kiếm người dùng để thêm...",
+  "no_users_found": "Không tìm thấy người dùng nào",
+  "type_to_search": "Nhập để tìm kiếm người dùng",
+  "group_name_placeholder": "Ví dụ: Nhóm Alpha, Dự án X...",
+  "avatar_url_placeholder": "https://anh.vidu.com/...",
+  "today": "Hôm nay",
+  "yesterday": "Hôm qua"
 }

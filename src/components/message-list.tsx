@@ -3,34 +3,12 @@ import { useChatStore } from "@/store/chat.store";
 import type { Message, User } from "@/types/chat.types";
 import { motion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { MessageBubble } from "./message-bubble";
 
 const VIRTUALIZE_THRESHOLD = 100;
 const ESTIMATED_ITEM_HEIGHT = 76;
 const OVERSCAN = 10;
-
-function formatDateDivider(dateStr: string) {
-  const d = new Date(dateStr);
-  const now = new Date();
-  
-  if (d.toDateString() === now.toDateString()) {
-    return "Today";
-  }
-  
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (d.toDateString() === yesterday.toDateString()) {
-    return "Yesterday";
-  }
-  
-  const diffTime = Math.abs(now.getTime() - d.getTime());
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  if (diffDays < 7) {
-    return d.toLocaleDateString(undefined, { weekday: 'long' });
-  }
-  
-  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
-}
 
 interface MessageRowProps {
   message: Message;
@@ -78,11 +56,36 @@ export const MessageList = memo(function MessageList() {
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
 
+  const { t, i18n } = useTranslation();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const messages = useChatStore((s) => s.messages);
   const getUser = useChatStore((s) => s.getUser);
 
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+
+  const formatDateDivider = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const lang = i18n.language === 'vi' ? 'vi-VN' : 'en-US';
+    
+    if (d.toDateString() === now.toDateString()) {
+      return t("today");
+    }
+    
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (d.toDateString() === yesterday.toDateString()) {
+      return t("yesterday");
+    }
+    
+    const diffTime = Math.abs(now.getTime() - d.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (diffDays < 7) {
+      return d.toLocaleDateString(lang, { weekday: 'long' });
+    }
+    
+    return d.toLocaleDateString(lang, { year: 'numeric', month: 'short', day: 'numeric' });
+  };
 
   const filteredMessages = useMemo(() => {
     if (!currentUserId) return messages;

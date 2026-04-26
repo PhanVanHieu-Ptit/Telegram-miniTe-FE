@@ -22,7 +22,7 @@ interface ChatState {
     activeConversationId: string | null;
     sidebarOpen: boolean;
     searchQuery: string;
-    typingUsers: Record<string, string[]>; // conversationId -> userId[]
+    typingUsers: Record<string, { userId: string; fullName: string }[]>; // conversationId -> {userId, fullName}[]
     onlineUsers: string[];
     replyingToMessage: Message | null;
     editingMessage: Message | null;
@@ -37,7 +37,7 @@ interface ChatActions {
     sendMessage: (payload: SendMessageDto) => Promise<Message | undefined>;
     setActiveConversationId: (id: string | null) => void;
     setSidebarOpen: (open: boolean) => void;
-    setTypingUser: (conversationId: string, userId: string) => void;
+    setTypingUser: (conversationId: string, userId: string, fullName?: string) => void;
     removeTypingUser: (conversationId: string, userId: string) => void;
     setTypingActive: (conversationId: string, isTyping: boolean) => Promise<void>;
     setSearchQuery: (query: string) => void;
@@ -206,16 +206,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ sidebarOpen: open });
     },
 
-    setTypingUser: (conversationId: string, userId: string) => {
+    setTypingUser: (conversationId: string, userId: string, fullName?: string) => {
         set((state) => {
             const currentUsers = state.typingUsers[conversationId] || [];
-            if (currentUsers.includes(userId)) {
+            if (currentUsers.some(u => u.userId === userId)) {
                 return state;
             }
             return {
                 typingUsers: {
                     ...state.typingUsers,
-                    [conversationId]: [...currentUsers, userId],
+                    [conversationId]: [...currentUsers, { userId, fullName: fullName || "Someone" }],
                 },
             };
         });
@@ -224,7 +224,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     removeTypingUser: (conversationId: string, userId: string) => {
         set((state) => {
             const currentUsers = state.typingUsers[conversationId] || [];
-            const filtered = currentUsers.filter((id) => id !== userId);
+            const filtered = currentUsers.filter((u) => u.userId !== userId);
             return {
                 typingUsers: {
                     ...state.typingUsers,
@@ -249,7 +249,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 password: import.meta.env.VITE_MQTT_PASS,
             });
             await client.connect(); // Ensure MQTT client is connected
-            await publishTyping(client, conversationId, userId, isTyping);
+            const fullName = useAuthStore.getState().user?.displayName;
+            await publishTyping(client, conversationId, userId, isTyping, fullName);
         } catch (error) {
             console.error("Failed to publish typing status:", error);
         }
@@ -357,7 +358,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
             const { conversations } = get();
             const userId = useAuthStore.getState().user?.id;
-            
+
             const subs: Promise<void>[] = conversations.map((c) => subscribeToMessages(client, c.id));
             if (userId) {
                 subs.push(subscribeToOnlineStatus(client, userId));
@@ -425,7 +426,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 if (msg.id === messageId) {
                     const currentReactions = { ...msg.reactions };
                     if (!currentReactions[emoji]) currentReactions[emoji] = [];
-                    
+
                     const idx = currentReactions[emoji].indexOf(userId);
                     if (idx > -1) {
                         currentReactions[emoji].splice(idx, 1);
@@ -433,7 +434,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                     } else {
                         currentReactions[emoji].push(userId);
                     }
-                    
+
                     return { ...msg, reactions: currentReactions };
                 }
                 return msg;
@@ -517,7 +518,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     setReplyingToMessage: (message) => set({ replyingToMessage: message }),
     setEditingMessage: (message) => set({ editingMessage: message }),
     setForwardingMessage: (message) => set({ forwardingMessage: message }),
-    
+
     editMessage: async (messageId, content) => {
         const { activeConversationId } = get();
         if (!activeConversationId) return;
@@ -525,7 +526,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         try {
             const { editMessage: editMessageApi } = await import("@/api/chat.api");
             const updatedMessage = await editMessageApi({ messageId, conversationId: activeConversationId, content });
-            
+
             set((state) => ({
                 messages: state.messages.map((msg) =>
                     msg.id === messageId ? updatedMessage : msg
@@ -545,12 +546,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         try {
             const { deleteMessage: deleteMessageApi } = await import("@/api/chat.api");
             await deleteMessageApi({ messageId, conversationId: activeConversationId, mode });
-            
+
             if (mode === 'everyone') {
                 set((state) => ({
                     messages: state.messages.map((msg) =>
-                        msg.id === messageId 
-                            ? { ...msg, isDeleted: true, content: "", attachments: [] } 
+                        msg.id === messageId
+                            ? { ...msg, isDeleted: true, content: "", attachments: [] }
                             : msg
                     ),
                 }));
