@@ -10,6 +10,8 @@ import utc from "dayjs/plugin/utc";
 import { getMessagePreview } from "@/lib/message-utils";
 import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
 import isSameOrAfter from "dayjs/plugin/isSameOrAfter";
+import { useTranslation } from "react-i18next";
+import { BookmarkIcon } from "lucide-react";
 
 dayjs.extend(utc);
 dayjs.extend(isSameOrBefore);
@@ -50,17 +52,22 @@ interface ChatListItemProps {
 }
 
 const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemProps) => {
-  // Connect to Zustand store to get conversation partner
-  // Find the other member for 1-1 chat
+  const { t } = useTranslation();
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+  
+  const isSavedMessages = useMemo(() => {
+    return conversation.members?.length === 1 && conversation.members[0].id === currentUserId;
+  }, [conversation.members, currentUserId]);
+
   const otherMember = useMemo(() => {
+    if (isSavedMessages) return conversation.members[0];
     if (!conversation.members || conversation.members.length === 0) return null;
     if (conversation.members.length === 2) {
       return conversation.members.find((m) => m.id !== currentUserId);
     }
     // For group chat, fallback to first member not current user
     return conversation.members.find((m) => m.id !== currentUserId) || conversation.members[0];
-  }, [conversation.members, currentUserId]);
+  }, [conversation.members, currentUserId, isSavedMessages]);
 
   const avatarColor = useMemo(() => {
     if (!otherMember) return avatarColors[0];
@@ -93,10 +100,18 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
         <Badge dot={false} color="var(--online)" offset={[-4, 36]}>
           <Avatar
             size={48}
-            src={otherMember.avatarUrl || undefined}
-            style={{ backgroundColor: avatarColor, fontSize: 16, fontWeight: 600 }}
+            src={isSavedMessages ? undefined : (otherMember.avatarUrl || undefined)}
+            style={{ 
+                backgroundColor: isSavedMessages ? '#54a7f2' : avatarColor, 
+                fontSize: 16, 
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center'
+            }}
+            icon={isSavedMessages ? <BookmarkIcon className="w-6 h-6 text-white" /> : null}
           >
-            {!otherMember.avatarUrl && getInitials(otherMember.fullName)}
+            {!isSavedMessages && !otherMember.avatarUrl && getInitials(otherMember.fullName)}
           </Avatar>
         </Badge>
       </div>
@@ -105,7 +120,7 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
       <div className="flex min-w-0 flex-1 flex-col">
         <div className="flex items-center justify-between">
           <span className={cn("truncate text-sm font-semibold", active ? "text-white" : "text-white")}>
-            {conversation?.chatName !== '' ? conversation?.chatName : otherMember.fullName}
+            {isSavedMessages ? t('saved_messages') : (conversation?.chatName !== '' ? conversation?.chatName : otherMember.fullName)}
           </span>
           <span className={cn("shrink-0 text-[10px] font-medium tracking-wide opacity-60", active ? "text-white/80" : "text-secondary")}>
             {dayjs.utc(conversation.updatedAt).local().isSame(dayjs(), "day")

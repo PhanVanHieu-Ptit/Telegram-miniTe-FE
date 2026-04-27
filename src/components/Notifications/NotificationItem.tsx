@@ -1,5 +1,5 @@
 import { cn } from '@/lib/utils';
-import { Avatar, Button, Typography } from 'antd';
+import { Avatar, Typography } from 'antd';
 import { motion } from 'framer-motion';
 import { Bell, ExternalLink, Info, MessageSquare, X, Zap } from 'lucide-react';
 import React from 'react';
@@ -34,10 +34,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const formatTime = (date: string | number | Date) => {
     const d = new Date(date);
     if (isNaN(d.getTime())) return t('notifications.just_now');
-    
+
     const now = new Date();
     const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
-    
+
     if (diffInSeconds < 60) return t('notifications.just_now');
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}${t('notifications.m')}`;
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}${t('notifications.h')}`;
@@ -84,47 +84,47 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
   const theme = getTheme();
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      className="group relative w-full overflow-hidden"
+    <motion.div
+      initial={{ opacity: 0, x: 20, scale: 0.95 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      className="relative w-full overflow-hidden"
     >
-      <div className="flex flex-col gap-3 p-4">
+      <div className="flex flex-col gap-3 p-4 bg-slate-900/40 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl">
         {/* Header Metadata */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between mb-0.5">
           <div className={cn(
-            "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold uppercase tracking-wider",
+            "flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[9px] font-extrabold uppercase tracking-[0.1em]",
             theme.bg, theme.color, theme.border
           )}>
             {theme.icon}
             <span>{theme.label}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-medium text-slate-500">
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
               {formatTime(timestamp)}
             </span>
-            <button 
+            <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDismiss?.();
               }}
-              className="p-1 rounded-full hover:bg-white/10 text-slate-500 hover:text-white transition-colors"
+              className="p-1.2 rounded-lg bg-white/5 text-slate-400 hover:text-white hover:bg-white/10 transition-all duration-300"
             >
-              <X size={14} />
+              <X size={12} />
             </button>
           </div>
         </div>
 
         {/* Core Content */}
-        <div className="flex gap-4">
-          <div className="relative shrink-0">
-            <Avatar 
-              src={avatarUrl} 
-              size={48}
-              className="ring-2 ring-white/5 bg-slate-800 object-cover"
+        <div className="flex gap-4 items-start">
+          <div className="relative shrink-0 mt-0.5">
+            <Avatar
+              src={avatarUrl}
+              size={52}
+              className="ring-2 ring-white/10 bg-slate-800 object-cover shadow-xl"
             />
             <div className={cn(
-              "absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#141414] shadow-lg",
+              "absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full border-[1.5px] border-[#0a0f19] shadow-lg",
               theme.bg, theme.color
             )}>
               {theme.icon}
@@ -132,10 +132,10 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
           </div>
 
           <div className="flex flex-col gap-1 min-w-0 flex-1">
-            <Text className="!text-white font-semibold text-[15px] leading-tight truncate">
+            <Text className="!text-white font-bold text-[16px] tracking-tight leading-tight truncate">
               {title}
             </Text>
-            <p className="text-[13px] leading-snug text-slate-400 line-clamp-2">
+            <p className="text-[14px] leading-[1.4] text-slate-400/90 font-medium line-clamp-2">
               {message}
             </p>
           </div>
@@ -143,34 +143,34 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
 
         {/* Footer Actions */}
         <div className="flex items-center gap-2 mt-1">
-          <Button 
-            type="primary" 
-            size="small" 
-            icon={<ExternalLink size={14} />}
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onView?.();
             }}
-            className="h-8 rounded-lg bg-blue-600 hover:bg-blue-500 border-none px-4 text-xs font-semibold shadow-md shadow-blue-500/20"
+            className="flex-1 flex items-center justify-center gap-2 h-9 rounded-xl bg-primary/20 hover:bg-primary/30 border border-primary/20 text-primary text-[12px] font-bold transition-all duration-300 active:scale-[0.98]"
           >
+            <ExternalLink size={14} />
             {t('notifications.view_details')}
-          </Button>
-          <Button 
-            type="text" 
-            size="small" 
+          </button>
+          <button
             onClick={(e) => {
               e.stopPropagation();
               onDismiss?.();
             }}
-            className="h-8 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 px-3 text-xs font-medium"
+            className="flex items-center justify-center h-9 w-9 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-400 hover:text-white transition-all duration-300"
+            title={t('notifications.ignore')}
           >
-            {t('notifications.ignore')}
-          </Button>
+            <X size={16} />
+          </button>
         </div>
       </div>
 
-      {/* Decorative gradient background (subtle) */}
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-white/[0.03] to-transparent pointer-events-none" />
+      {/* Glow Effect */}
+      <div className={cn(
+        "absolute top-0 right-0 w-24 h-24 -z-10 blur-[40px] opacity-20 rounded-full",
+        type === 'chat' ? 'bg-blue-500' : type === 'alert' ? 'bg-rose-500' : 'bg-primary'
+      )} />
     </motion.div>
   );
 };

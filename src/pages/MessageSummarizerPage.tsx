@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Table,
   Select,
@@ -26,6 +27,7 @@ const { Title, Text, Paragraph } = Typography;
 const { RangePicker } = DatePicker;
 
 const MessageSummarizerPage = () => {
+  const { t } = useTranslation();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
   const messages = useChatStore((s) => s.messages);
@@ -72,7 +74,7 @@ const MessageSummarizerPage = () => {
 
   const handleSummarize = async () => {
     if (!activeConversationId) {
-      message.error("Please select a conversation first");
+      message.error(t('notifications.select_conversation_error'));
       return;
     }
 
@@ -87,13 +89,13 @@ const MessageSummarizerPage = () => {
 
       if (response.success) {
         setSummary(response.summary);
-        message.success("Summary generated successfully!");
+        message.success(t('notifications.summary_generated'));
       } else {
-        message.error("Failed to generate summary");
+        message.error(t('notifications.summary_failed'));
       }
     } catch (error) {
       console.error("Summarization error:", error);
-      message.error("An error occurred while generating the summary");
+      message.error(t('notifications.summary_failed'));
     } finally {
       setIsSummarizing(false);
     }
