@@ -1,15 +1,15 @@
 
+import { useAuthStore } from "@/store/auth.store";
+import { useChatStore } from "@/store/chat.store";
+import { MessageSquare } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useChatStore } from "@/store/chat.store";
-import { ChatHeader } from "./chat-header";
-import { MessageList } from "./message-list";
-import { MessageInput } from "./message-input";
-import { TypingIndicator } from "./typing-indicator";
-import { MessageSquare, Pin, X } from "lucide-react";
-import { useAuthStore } from "@/store/auth.store";
-import { SearchSidebar } from "./search-sidebar";
 import { useNavigate } from "react-router-dom";
+import { ChatHeader } from "./chat-header";
+import { MessageInput } from "./message-input";
+import { MessageList } from "./message-list";
+import { SearchSidebar } from "./search-sidebar";
+import { TypingIndicator } from "./typing-indicator";
 
 export function ChatPanel() {
   const { t } = useTranslation();
@@ -20,9 +20,7 @@ export function ChatPanel() {
   const setSidebarOpen = useChatStore((s) => s.setSidebarOpen);
   const typingUsers = useChatStore((s) => s.typingUsers);
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
-  const getUser = useChatStore((s) => s.getUser);
   const messages = useChatStore((s) => s.messages);
-  const unpinMessage = useChatStore((s) => s.unpinMessage);
   const navigate = useNavigate();
 
   const handleBack = () => {
@@ -89,18 +87,18 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-1 flex-col bg-transparent relative">
-      <ChatHeader 
-        partner={partner} 
-        onBack={handleBack} 
-        conversationId={activeConversation.id} 
-        onOpenSearch={() => setIsSearchOpen(true)} 
+      <ChatHeader
+        partner={partner}
+        onBack={handleBack}
+        conversationId={activeConversation.id}
+        onOpenSearch={() => setIsSearchOpen(true)}
         pinnedMessages={pinnedMessages}
       />
-      
-      <SearchSidebar 
-        open={isSearchOpen} 
-        onClose={() => setIsSearchOpen(false)} 
-        conversationId={activeConversation.id} 
+
+      <SearchSidebar
+        open={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        conversationId={activeConversation.id}
       />
 
       <MessageList />
