@@ -9,6 +9,7 @@ import { TypingIndicator } from "./typing-indicator";
 import { MessageSquare, Pin, X } from "lucide-react";
 import { useAuthStore } from "@/store/auth.store";
 import { SearchSidebar } from "./search-sidebar";
+import { useNavigate } from "react-router-dom";
 
 export function ChatPanel() {
   const { t } = useTranslation();
@@ -22,10 +23,13 @@ export function ChatPanel() {
   const getUser = useChatStore((s) => s.getUser);
   const messages = useChatStore((s) => s.messages);
   const unpinMessage = useChatStore((s) => s.unpinMessage);
+  const navigate = useNavigate();
 
   const handleBack = () => {
     setActiveConversationId(null);
     setSidebarOpen(true);
+    // Clear URL params
+    navigate("/chat");
   };
 
 
@@ -85,38 +89,19 @@ export function ChatPanel() {
 
   return (
     <div className="flex flex-1 flex-col bg-transparent relative">
-      <ChatHeader partner={partner} onBack={handleBack} conversationId={activeConversation.id} onOpenSearch={() => setIsSearchOpen(true)} />
+      <ChatHeader 
+        partner={partner} 
+        onBack={handleBack} 
+        conversationId={activeConversation.id} 
+        onOpenSearch={() => setIsSearchOpen(true)} 
+        pinnedMessages={pinnedMessages}
+      />
       
       <SearchSidebar 
         open={isSearchOpen} 
         onClose={() => setIsSearchOpen(false)} 
         conversationId={activeConversation.id} 
       />
-      
-      {/* Pinned Messages Banner */}
-      {pinnedMessages.length > 0 && (
-        <div className="bg-black/20 border-b border-white/5 px-4 py-2 flex flex-col gap-1 z-10 shadow-md">
-          {pinnedMessages.map((msg) => (
-            <div key={msg.id} className="flex items-center justify-between text-xs p-1.5 bg-white/5 rounded hover:bg-white/10 transition">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <Pin className="w-3.5 h-3.5 text-yellow-500 shrink-0" />
-                <span className="font-semibold text-white/70 shrink-0">
-                  {(msg.senderId === currentUserId 
-                    ? useAuthStore.getState().user?.displayName 
-                    : (activeConversation.members.find(m => m.id === msg.senderId)?.fullName || getUser(msg.senderId)?.fullName)) || t('someone')}:
-                </span>
-                <span className="truncate text-white/50">{msg.content || t('attachment')}</span>
-              </div>
-              <button
-                className="text-white/30 hover:text-red-400 p-1 rounded-full hover:bg-white/10 transition shrink-0 ml-2"
-                onClick={() => unpinMessage(activeConversation.id, msg.id)}
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
 
       <MessageList />
       <TypingIndicator usersTyping={typingUserNames} />

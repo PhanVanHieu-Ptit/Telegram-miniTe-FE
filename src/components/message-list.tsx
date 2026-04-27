@@ -4,7 +4,9 @@ import type { Message, User } from "@/types/chat.types";
 import { motion } from "framer-motion";
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router-dom";
 import { MessageBubble } from "./message-bubble";
+import { cn } from "@/lib/utils";
 
 const VIRTUALIZE_THRESHOLD = 100;
 const ESTIMATED_ITEM_HEIGHT = 76;
@@ -17,6 +19,7 @@ interface MessageRowProps {
   sameGroupPrev: boolean;
   sameGroupNext: boolean;
   isFirst: boolean;
+  isHighlighted?: boolean;
 }
 
 const MessageRow = memo(function MessageRow({
@@ -26,15 +29,31 @@ const MessageRow = memo(function MessageRow({
   sameGroupPrev,
   sameGroupNext,
   isFirst,
+  isHighlighted,
 }: MessageRowProps) {
   const isOwnMessage = message.senderId === currentUserId;
 
   return (
     <motion.div 
+      id={`msg-${message.id}`}
       initial={{ opacity: 0, y: 10, scale: 0.98 }} 
-      animate={{ opacity: 1, y: 0, scale: 1 }} 
-      transition={{ duration: 0.3, type: "spring", stiffness: 200 }}
-      className={!sameGroupPrev && !isFirst ? "mt-3" : ""}
+      animate={{ 
+        opacity: 1, 
+        y: 0, 
+        scale: 1,
+        backgroundColor: isHighlighted ? "rgba(14, 165, 233, 0.15)" : "transparent"
+      }} 
+      transition={{ 
+        duration: 0.3, 
+        type: "spring", 
+        stiffness: 200,
+        backgroundColor: { duration: 1.5, repeat: isHighlighted ? 2 : 0, repeatType: "reverse" }
+      }}
+      className={cn(
+        "transition-colors duration-500 rounded-2xl",
+        !sameGroupPrev && !isFirst ? "mt-3" : "",
+        isHighlighted && "ring-1 ring-primary/30"
+      )}
     >
       <MessageBubble
         message={message}
@@ -51,10 +70,13 @@ const MessageRow = memo(function MessageRow({
 export const MessageList = memo(function MessageList() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const targetMsgId = searchParams.get('msgId');
 
   const [isNearBottom, setIsNearBottom] = useState(true);
   const [scrollTop, setScrollTop] = useState(0);
   const [containerHeight, setContainerHeight] = useState(0);
+  const [highlightedId, setHighlightedId] = useState<string | null>(null);
 
   const { t, i18n } = useTranslation();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
@@ -62,6 +84,36 @@ export const MessageList = memo(function MessageList() {
   const getUser = useChatStore((s) => s.getUser);
 
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
+
+  // Handle scroll to specific message
+  useEffect(() => {
+    if (targetMsgId && messages.length > 0) {
+      const msgIndex = messages.findIndex(m => m.id === targetMsgId);
+      if (msgIndex !== -1) {
+        // Find the element if it exists in DOM
+        const element = document.getElementById(`msg-${targetMsgId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          setHighlightedId(targetMsgId);
+          // Clear highligt and URL param after a delay
+          const timer = setTimeout(() => {
+             setHighlightedId(null);
+             // Optionally remove msgId from URL without triggering reload
+             const newParams = new URLSearchParams(searchParams);
+             newParams.delete('msgId');
+             setSearchParams(newParams, { replace: true });
+          }, 3000);
+          return () => clearTimeout(timer);
+        } else if (scrollContainerRef.current) {
+          // If virtualized and not in DOM, jump to estimated position
+          const estimatedPos = msgIndex * ESTIMATED_ITEM_HEIGHT;
+          scrollContainerRef.current.scrollTo({ top: estimatedPos, behavior: 'auto' });
+          // The next render cycle should bring the element into DOM, then we scrollIntoView properly
+          setIsNearBottom(false);
+        }
+      }
+    }
+  }, [targetMsgId, messages, setSearchParams, searchParams]);
 
   const formatDateDivider = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -124,20 +176,18 @@ export const MessageList = memo(function MessageList() {
   }, []);
 
   useEffect(() => {
-    if (isNearBottom && filteredMessages.length > 0) {
+    if (isNearBottom && filteredMessages.length > 0 && !targetMsgId) {
       bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [filteredMessages.length, isNearBottom]);
+  }, [filteredMessages.length, isNearBottom, targetMsgId]);
 
   useEffect(() => {
-    if (activeConversationId) {
+    if (activeConversationId && !targetMsgId) {
       bottomRef.current?.scrollIntoView({ behavior: "auto" });
       setIsNearBottom(true);
       setScrollTop(0);
     }
-  }, [activeConversationId]);
-
-
+  }, [activeConversationId, targetMsgId]);
 
   const shouldVirtualize = filteredMessages.length > VIRTUALIZE_THRESHOLD;
 
@@ -189,7 +239,7 @@ export const MessageList = memo(function MessageList() {
   return (
     <div
       ref={scrollContainerRef}
-      className="flex flex-1 flex-col overflow-y-auto px-3 py-4 md:px-6"
+      className="flex flex-1 flex-col overflow-y-auto px-3 py-4 md:px-6 scroll-smooth"
     >
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-1">
         {shouldVirtualize && topSpacerHeight > 0 ? (
@@ -217,11 +267,11 @@ export const MessageList = memo(function MessageList() {
           return (
             <div key={message.id} className="flex flex-col">
               {showDateDivider && (
-                 <div className="flex justify-center my-4">
-                    <span className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground font-medium">
-                       {formatDateDivider(message.timestamp)}
-                    </span>
-                 </div>
+                <div className="flex justify-center my-4">
+                  <span className="bg-muted px-3 py-1 rounded-full text-xs text-muted-foreground font-medium">
+                    {formatDateDivider(message.timestamp)}
+                  </span>
+                </div>
               )}
               <MessageRow
                 message={message}
@@ -230,6 +280,7 @@ export const MessageList = memo(function MessageList() {
                 sameGroupPrev={sameGroupPrev}
                 sameGroupNext={sameGroupNext}
                 isFirst={actualIndex === 0 || showDateDivider}
+                isHighlighted={highlightedId === message.id}
               />
             </div>
           );

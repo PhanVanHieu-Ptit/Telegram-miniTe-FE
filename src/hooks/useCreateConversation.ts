@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { conversationService } from "@/services/conversation.service";
 import type { Conversation } from "@/types/chat.types";
 import { message } from "antd";
+import { useNavigate } from "react-router-dom";
 
 interface CreateConversationParams {
     name?: string;
@@ -20,7 +21,7 @@ export const useCreateConversation = () => {
     const [loading, setLoading] = useState(false);
     const currentUser = useAuthStore((s) => s.user);
     const fetchConversations = useChatStore((s) => s.fetchConversations);
-    const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
+    const navigate = useNavigate();
 
     const createConversation = useCallback(async (params: CreateConversationParams): Promise<Conversation | undefined> => {
         if (!currentUser) {
@@ -60,9 +61,10 @@ export const useCreateConversation = () => {
 
             // 3. Post-Creation side-effects
             await fetchConversations();
-            setActiveConversationId(result.id);
+            // Update URL which will trigger setActiveConversationId in ChatPage
+            navigate(`/chat?id=${result.id}`);
             message.success("Conversation created successfully");
-            
+
             return result;
         } catch (error: any) {
             const errorMessage = error.message || "Failed to create conversation";
@@ -71,7 +73,7 @@ export const useCreateConversation = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentUser, fetchConversations, setActiveConversationId]);
+    }, [currentUser, fetchConversations, navigate]);
 
     return {
         createConversation,

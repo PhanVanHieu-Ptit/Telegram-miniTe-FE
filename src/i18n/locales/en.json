@@ -125,5 +125,27 @@
   "group_name_placeholder": "e.g. Alpha Team, Project X...",
   "avatar_url_placeholder": "https://images.unsplash.com/...",
   "today": "Today",
-  "yesterday": "Yesterday"
+  "yesterday": "Yesterday",
+  "notifications": {
+    "type_chat": "Message",
+    "type_activity": "Activity",
+    "type_alert": "Alert",
+    "type_system": "System",
+    "view_details": "View Details",
+    "ignore": "Ignore",
+    "just_now": "just now",
+    "m": "m",
+    "h": "h",
+    "sent_a": "Sent a {{type}}",
+    "media_image": "photo",
+    "media_video": "video",
+    "media_file": "file",
+    "media_audio": "audio",
+    "media_voice": "voice note",
+    "incoming_call_title": "Incoming Call",
+    "someone_calling": "{{name}} is calling you",
+    "pinned_message": "Pinned message",
+    "pinned_messages_count": "{{count}} pinned messages",
+    "attachment": "Attachment"
+  }
 }
