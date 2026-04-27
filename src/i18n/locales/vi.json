@@ -22,6 +22,8 @@
   "vietnamese": "Tiếng Việt",
   "summarize_chat": "Tóm tắt đoạn chat",
   "saved_messages": "Tin nhắn đã lưu",
+  "save_message": "Lưu tin nhắn",
+  "message_saved": "Đã lưu tin nhắn vào Tin nhắn đã lưu",
   "settings": "Cài đặt",
   "dark_mode": "Chế độ tối",
   "logout": "Đăng xuất",
@@ -146,6 +148,17 @@
     "someone_calling": "{{name}} đang gọi cho bạn",
     "pinned_message": "Tin nhắn đã ghim",
     "pinned_messages_count": "{{count}} tin nhắn đã ghim",
-    "attachment": "Tệp đính kèm"
+    "attachment": "Tệp đính kèm",
+    "copied_to_clipboard": "Đã sao chép vào bộ nhớ tạm",
+    "copy_failed": "Sao chép thất bại",
+    "summary_generated": "Đã tạo bản tóm tắt thành công!",
+    "summary_failed": "Tạo bản tóm tắt thất bại",
+    "select_conversation_error": "Vui lòng chọn một cuộc hội thoại trước",
+    "login_required_error": "Bạn phải đăng nhập để thực hiện hành động này",
+    "group_name_required_error": "Tên cuộc trò chuyện là bắt buộc đối với nhóm",
+    "private_chat_member_error": "Yêu cầu ít nhất 1 người dùng cho trò chuyện cá nhân",
+    "group_chat_member_error": "Yêu cầu ít nhất 2 người dùng cho trò chuyện nhóm",
+    "conversation_created_success": "Đã tạo cuộc trò chuyện thành công",
+    "conversation_create_failed": "Tạo cuộc trò chuyện thất bại"
   }
 }

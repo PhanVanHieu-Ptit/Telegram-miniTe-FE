@@ -117,7 +117,12 @@ export function Sidebar() {
       icon: <Users className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => setCreateModalOpen(true)
     },
-    { key: "bookmarks", label: t('saved_messages'), icon: <BookmarkIcon className="h-4 w-4" strokeWidth={1.5} /> },
+    {
+      key: "bookmarks",
+      label: t('saved_messages'),
+      icon: <BookmarkIcon className="h-4 w-4" strokeWidth={1.5} />,
+      onClick: () => useChatStore.getState().openSavedMessages()
+    },
     {
       key: "language",
       label: t('language'),

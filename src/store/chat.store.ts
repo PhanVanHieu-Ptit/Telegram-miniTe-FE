@@ -66,6 +66,8 @@ interface ChatActions {
     setForwardingMessage: (message: Message | null) => void;
     editMessage: (messageId: string, content: string) => Promise<void>;
     deleteMessage: (messageId: string, mode?: 'self' | 'everyone') => Promise<void>;
+    openSavedMessages: () => Promise<void>;
+    saveMessage: (message: Message) => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -563,6 +565,82 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } catch (error) {
             console.error("Failed to delete message:", error);
             throw error;
+        }
+    },
+
+    openSavedMessages: async () => {
+        set({ loading: true });
+        try {
+            const { getSavedMessages } = await import("@/api/chat.api");
+            const conversation = await getSavedMessages();
+            
+            // Check if it already exists in our list
+            const exists = get().conversations.some(c => c.id === conversation.id);
+            if (!exists) {
+                set(state => ({
+                    conversations: [conversation, ...state.conversations]
+                }));
+            }
+            
+            get().setActiveConversationId(conversation.id);
+        } catch (error) {
+            console.error("Failed to open saved messages:", error);
+            throw error;
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    saveMessage: async (message: Message) => {
+        set({ loading: true });
+        try {
+            const { getSavedMessages, sendMessage } = await import("@/api/chat.api");
+            const { user } = useAuthStore.getState();
+            if (!user) throw new Error("User not authenticated");
+
+            const savedConv = await getSavedMessages();
+            
+            // Ensure conversation is in the list
+            const exists = get().conversations.some(c => c.id === savedConv.id);
+            if (!exists) {
+                set(state => ({
+                    conversations: [savedConv, ...state.conversations]
+                }));
+            }
+
+            // Forward the message to saved messages
+            const result = await sendMessage({
+                conversationId: savedConv.id,
+                senderId: user.id,
+                content: message.content || "",
+                type: message.type,
+                attachments: message.attachments,
+                forwardedFrom: message.senderId,
+                metadata: {
+                    ...message.metadata,
+                    forwardedFromName: message.sender?.displayName || "Someone"
+                }
+            });
+            
+            if (result) {
+                // Update last message in the list
+                set(state => ({
+                    conversations: state.conversations.map(c => 
+                        c.id === savedConv.id ? { ...c, lastMessage: result, updatedAt: result.timestamp } : c
+                    )
+                }));
+            }
+
+            const { toast } = await import("sonner");
+            const { t } = await import("i18next");
+            toast.success(t('message_saved'));
+        } catch (error) {
+            console.error("Failed to save message:", error);
+            const { toast } = await import("sonner");
+            toast.error("Failed to save message");
+            throw error;
+        } finally {
+            set({ loading: false });
         }
     },
 }));

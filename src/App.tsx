@@ -127,7 +127,19 @@ function App(): JSX.Element {
           and conversations finish loading. This prevents missing incoming
           calls during the app bootstrap window. */}
       <WebRTCProvider>
-        <Toaster position="top-center" richColors />
+        <Toaster 
+          position="top-center" 
+          richColors 
+          toastOptions={{
+            style: {
+              background: 'rgba(15, 23, 42, 0.8)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '16px',
+              color: '#ffffff',
+            },
+          }}
+        />
         {/* Global incoming call popup — always visible regardless of page */}
         <IncomingCallOverlay />
         {bootstrapPhase !== 'ready' ? (

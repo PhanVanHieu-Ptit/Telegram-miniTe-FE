@@ -219,3 +219,9 @@ export const deleteMessage = async (payload: DeleteMessageDto): Promise<void> =>
         throw error;
     }
 };
+
+export const getSavedMessages = (): Promise<Conversation> => {
+    return apiClient
+        .get<Conversation>("/conversations/saved")
+        .then((response) => response.data);
+};

@@ -10,6 +10,7 @@ import {
   Pin,
   X,
   List,
+  BookmarkIcon
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { User, Message } from "@/types/chat.types";
@@ -79,6 +80,8 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
   const deleteConversation = useChatStore((s) => s.deleteConversation);
   const unpinMessage = useChatStore((s) => s.unpinMessage);
   const [isPinnedModalOpen, setIsPinnedModalOpen] = useState(false);
+
+  const isSavedMessages = currentUser?.id === partner.id;
 
   const lastPinned = pinnedMessages[pinnedMessages.length - 1];
 
@@ -204,27 +207,33 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
         <Avatar
           size={44}
           style={{
-            backgroundColor: getAvatarColor(partner.displayName || ""),
+            backgroundColor: isSavedMessages ? '#54a7f2' : getAvatarColor(partner.displayName || ""),
             fontSize: 16,
             fontWeight: 600,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
           }}
+          icon={isSavedMessages ? <BookmarkIcon className="w-5 h-5 text-white" /> : null}
         >
-          {getInitials(partner.displayName)}
+          {!isSavedMessages && getInitials(partner.displayName)}
         </Avatar>
         <div className="flex min-w-0 flex-col">
           <span className="truncate text-sm font-bold text-foreground leading-tight">
-            {partner.displayName}
+            {isSavedMessages ? t('saved_messages') : partner.displayName}
           </span>
-          <span
-            className={cn(
-              "text-[12px] font-medium tracking-tight",
-              partner.online ? "text-primary/90" : "text-muted-foreground/60"
-            )}
-          >
-            {partner.online
-              ? t('online')
-              : `${t('last_seen')} ${partner.lastSeenAt ?? t('recently')}`}
-          </span>
+          {!isSavedMessages && (
+            <span
+              className={cn(
+                "text-[12px] font-medium tracking-tight",
+                partner.online ? "text-primary/90" : "text-muted-foreground/60"
+              )}
+            >
+              {partner.online
+                ? t('online')
+                : `${t('last_seen')} ${partner.lastSeenAt ?? t('recently')}`}
+            </span>
+          )}
         </div>
       </div>
 

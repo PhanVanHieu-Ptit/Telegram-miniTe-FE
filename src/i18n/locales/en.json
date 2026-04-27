@@ -22,6 +22,8 @@
   "vietnamese": "Vietnamese",
   "summarize_chat": "Summarize Chat",
   "saved_messages": "Saved Messages",
+  "save_message": "Save",
+  "message_saved": "Message saved to Saved Messages",
   "settings": "Settings",
   "dark_mode": "Dark Mode",
   "logout": "Logout",
@@ -146,6 +148,17 @@
     "someone_calling": "{{name}} is calling you",
     "pinned_message": "Pinned message",
     "pinned_messages_count": "{{count}} pinned messages",
-    "attachment": "Attachment"
+    "attachment": "Attachment",
+    "copied_to_clipboard": "Copied to clipboard",
+    "copy_failed": "Failed to copy",
+    "summary_generated": "Summary generated successfully!",
+    "summary_failed": "Failed to generate summary",
+    "select_conversation_error": "Please select a conversation first",
+    "login_required_error": "You must be logged in to perform this action",
+    "group_name_required_error": "Conversation name is required for group chats",
+    "private_chat_member_error": "At least 1 user is required for private chat",
+    "group_chat_member_error": "At least 2 users are required for group chat",
+    "conversation_created_success": "Conversation created successfully",
+    "conversation_create_failed": "Failed to create conversation"
   }
 }

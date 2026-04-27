@@ -19,7 +19,8 @@ import {
   RefreshCw,
   Reply,
   SmilePlus,
-  Trash2
+  Trash2,
+  BookmarkIcon
 } from "lucide-react";
 import { memo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -125,7 +126,8 @@ export const MessageBubble = memo(function MessageBubble({
     setReplyingToMessage,
     setEditingMessage,
     setForwardingMessage,
-    deleteMessage
+    deleteMessage,
+    saveMessage
   } = useChatStore(
     useShallow((s) => ({
       reactMessage: s.reactMessage,
@@ -136,6 +138,7 @@ export const MessageBubble = memo(function MessageBubble({
       setEditingMessage: s.setEditingMessage,
       setForwardingMessage: s.setForwardingMessage,
       deleteMessage: s.deleteMessage,
+      saveMessage: s.saveMessage,
     }))
   );
 
@@ -148,7 +151,7 @@ export const MessageBubble = memo(function MessageBubble({
   const copyToClipboard = () => {
     if (navigator.clipboard && window.isSecureContext) {
       navigator.clipboard.writeText(message.content).then(() => {
-        toast.success("Copied to clipboard");
+        toast.success(t('notifications.copied_to_clipboard'));
       }).catch(() => fallbackCopy(message.content));
     } else {
       fallbackCopy(message.content);
@@ -162,9 +165,9 @@ export const MessageBubble = memo(function MessageBubble({
     textArea.select();
     try {
       document.execCommand('copy');
-      toast.success("Copied to clipboard");
+      toast.success(t('notifications.copied_to_clipboard'));
     } catch (err) {
-      toast.error("Failed to copy");
+      toast.error(t('notifications.copy_failed'));
     }
     document.body.removeChild(textArea);
   };
@@ -227,12 +230,16 @@ export const MessageBubble = memo(function MessageBubble({
           }
         });
         break;
+      case 'save':
+        void saveMessage(message);
+        break;
     }
   };
 
   const actionItems: MenuProps['items'] = [
     { key: 'reply', label: t('reply'), icon: <Reply className="w-4 h-4" /> },
     { key: 'copy', label: t('copy_text'), icon: <Copy className="w-4 h-4" /> },
+    { key: 'save', label: t('save_message'), icon: <BookmarkIcon className="w-4 h-4" /> },
     isOwnMessage && !message.isDeleted && { key: 'edit', label: t('edit_message'), icon: <Edit2 className="w-4 h-4" /> },
     { key: 'forward', label: t('forward'), icon: <Forward className="w-4 h-4" /> },
     { type: 'divider' },
