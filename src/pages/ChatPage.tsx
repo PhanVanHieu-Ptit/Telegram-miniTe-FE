@@ -5,9 +5,11 @@ import { useChatStore } from "@/store/chat.store";
 import { cn } from "@/lib/utils";
 import { SummaryWidget } from "@/components/summary";
 import { ForwardModal } from "@/components/chat/ForwardModal";
+import { useSearchParams } from "react-router-dom";
 
 export default function ChatPage() {
     const activeConversationId = useChatStore((s) => s.activeConversationId);
+    const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
     const sidebarOpen = useChatStore((s) => s.sidebarOpen);
     const messages = useChatStore((s) => s.messages);
     const fetchConversations = useChatStore((s) => s.fetchConversations);
@@ -15,6 +17,16 @@ export default function ChatPage() {
     const publishSeenStatus = useChatStore((s) => s.publishSeenStatus);
     const forwardingMessage = useChatStore((s) => s.forwardingMessage);
     const setForwardingMessage = useChatStore((s) => s.setForwardingMessage);
+
+    const [searchParams] = useSearchParams();
+    const chatId = searchParams.get('id');
+
+    // Handle deep linking from URL (e.g. from notifications)
+    useEffect(() => {
+        if (chatId && chatId !== activeConversationId) {
+            setActiveConversationId(chatId);
+        }
+    }, [chatId, activeConversationId, setActiveConversationId]);
 
 
     // Subscribe to conversation when activeConversationId changes

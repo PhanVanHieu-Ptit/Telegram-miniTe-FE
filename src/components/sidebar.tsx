@@ -153,6 +153,8 @@ export function Sidebar() {
   const handleConversationClick = (id: string) => {
     setActiveConversationId(id);
     setSidebarOpen(false);
+    // Update URL to stay in sync with active conversation
+    navigate(`/chat?id=${id}`);
   };
 
   return (
