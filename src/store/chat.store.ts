@@ -56,6 +56,10 @@ interface ChatActions {
     unhideMessage: (conversationId: string, messageId: string) => Promise<void>;
     pinMessage: (conversationId: string, messageId: string) => Promise<void>;
     unpinMessage: (conversationId: string, messageId: string) => Promise<void>;
+    pinConversation: (conversationId: string) => Promise<void>;
+    unpinConversation: (conversationId: string) => Promise<void>;
+    addMembers: (conversationId: string, userIds: string[]) => Promise<void>;
+    removeMember: (conversationId: string, userId: string) => Promise<void>;
     /**
      * Merge `patch` fields into the message currently identified by `tempOrRealId`.
      * Used to swap a locally-previewed optimistic message for real server data.
@@ -517,6 +521,65 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             console.error("Failed to unpin message:", error);
         }
     },
+    
+    pinConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: true } : c
+            ),
+        }));
+        try {
+            const { pinConversation: pinConversationApi } = await import("@/api/chat.api");
+            await pinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to pin conversation:", error);
+        }
+    },
+
+    unpinConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: false } : c
+            ),
+        }));
+        try {
+            const { unpinConversation: unpinConversationApi } = await import("@/api/chat.api");
+            await unpinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unpin conversation:", error);
+        }
+    },
+    
+    addMembers: async (conversationId: string, userIds: string[]) => {
+        try {
+            const { addMembers: addMembersApi } = await import("@/api/chat.api");
+            await addMembersApi(conversationId, userIds);
+            // Re-fetch conversation to get updated members
+            get().fetchConversations();
+        } catch (error) {
+            console.error("Failed to add members:", error);
+            throw error;
+        }
+    },
+
+    removeMember: async (conversationId: string, userId: string) => {
+        try {
+            const { removeMember: removeMemberApi } = await import("@/api/chat.api");
+            await removeMemberApi(conversationId, userId);
+            // Optimistic update
+            set((state) => ({
+                conversations: state.conversations.map((c) =>
+                    c.id === conversationId
+                        ? { ...c, members: c.members?.filter((m) => m.id !== userId) }
+                        : c
+                ),
+            }));
+        } catch (error) {
+            console.error("Failed to remove member:", error);
+            throw error;
+        }
+    },
+
     setReplyingToMessage: (message) => set({ replyingToMessage: message }),
     setEditingMessage: (message) => set({ editingMessage: message }),
     setForwardingMessage: (message) => set({ forwardingMessage: message }),

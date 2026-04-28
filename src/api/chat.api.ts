@@ -120,6 +120,30 @@ export const deleteConversation = (conversationId: string): Promise<void> => {
         .then((response) => response.data);
 };
 
+export const pinConversation = (conversationId: string): Promise<void> => {
+    return apiClient
+        .post<void>(`/conversations/${conversationId}/pin`)
+        .then((response) => response.data);
+};
+
+export const unpinConversation = (conversationId: string): Promise<void> => {
+    return apiClient
+        .post<void>(`/conversations/${conversationId}/unpin`)
+        .then((response) => response.data);
+};
+
+export const addMembers = (conversationId: string, userIds: string[]): Promise<void> => {
+    return apiClient
+        .post<void>(`/conversations/${conversationId}/members`, { userIds })
+        .then((response) => response.data);
+};
+
+export const removeMember = (conversationId: string, userId: string): Promise<void> => {
+    return apiClient
+        .delete<void>(`/conversations/${conversationId}/members/${userId}`)
+        .then((response) => response.data);
+};
+
 export interface ReactMessageDto {
     conversationId: string;
     messageId: string;

@@ -10,7 +10,9 @@ import {
   Pin,
   X,
   List,
-  BookmarkIcon
+  BookmarkIcon,
+  PinOff,
+  Users
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { User, Message } from "@/types/chat.types";
@@ -21,6 +23,7 @@ import { Modal, message } from "antd";
 import { useChatStore } from "@/store/chat.store";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { GroupInfoModal } from "./group-info-modal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -79,7 +82,13 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
   const currentUser = useAuthStore((s) => s.user);
   const deleteConversation = useChatStore((s) => s.deleteConversation);
   const unpinMessage = useChatStore((s) => s.unpinMessage);
+  const pinConversation = useChatStore((s) => s.pinConversation);
+  const unpinConversation = useChatStore((s) => s.unpinConversation);
+  const conversation = useChatStore((s) => s.conversations.find((c) => c.id === conversationId));
+  const isPinned = conversation?.pinned || false;
+  const isGroup = conversation?.type === 'group' || (conversation?.participantIds && conversation.participantIds.length > 2);
   const [isPinnedModalOpen, setIsPinnedModalOpen] = useState(false);
+  const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
 
   const isSavedMessages = currentUser?.id === partner.id;
 
@@ -91,7 +100,11 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       label: t('search_messages'),
       icon: <Search className="h-4 w-4" strokeWidth={1.5} />,
     },
-    {
+    isPinned ? {
+      key: "unpin",
+      label: t('unpin_conversation', { defaultValue: 'Unpin conversation' }),
+      icon: <PinOff className="h-4 w-4" strokeWidth={1.5} />,
+    } : {
       key: "pin",
       label: t('pin_conversation'),
       icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
@@ -102,6 +115,12 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
     },
     { type: "divider" },
+    ...(isGroup ? [{
+      key: "group_info",
+      label: t('group_info', { defaultValue: 'Group Info' }),
+      icon: <Users className="h-4 w-4" strokeWidth={1.5} />,
+      onClick: () => setIsGroupInfoOpen(true)
+    }, { type: "divider" as const }] : []),
     {
       key: "delete",
       label: <span className="item-destructive">{t('delete_chat')}</span>,
@@ -131,6 +150,12 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       });
     } else if (key === "search") {
       onOpenSearch?.();
+    } else if (key === "pin") {
+      void pinConversation(conversationId);
+      message.success(t('conversation_pinned', { defaultValue: 'Conversation pinned' }));
+    } else if (key === "unpin") {
+      void unpinConversation(conversationId);
+      message.success(t('conversation_unpinned', { defaultValue: 'Conversation unpinned' }));
     }
   };
 
@@ -203,7 +228,14 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       </button>
 
       {/* User info (Left Side) */}
-      <div className={cn("flex items-center gap-3", lastPinned ? "max-w-[200px] shrink-0" : "flex-1")}>
+      <div 
+        className={cn(
+          "flex items-center gap-3", 
+          lastPinned ? "max-w-[200px] shrink-0" : "flex-1",
+          isGroup ? "cursor-pointer hover:bg-white/5 p-1 -ml-1 rounded-lg transition-colors" : ""
+        )}
+        onClick={() => isGroup && setIsGroupInfoOpen(true)}
+      >
         <Avatar
           size={44}
           style={{
@@ -226,10 +258,12 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
             <span
               className={cn(
                 "text-[12px] font-medium tracking-tight",
-                partner.online ? "text-primary/90" : "text-muted-foreground/60"
+                isGroup ? "text-muted-foreground/60" : partner.online ? "text-primary/90" : "text-muted-foreground/60"
               )}
             >
-              {partner.online
+              {isGroup 
+                ? t('members_count', { count: conversation?.members?.length || 0, defaultValue: `${conversation?.members?.length || 0} members` })
+                : partner.online
                 ? t('online')
                 : `${t('last_seen')} ${partner.lastSeenAt ?? t('recently')}`}
             </span>
@@ -305,6 +339,14 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
           </button>
         </Dropdown>
       </div>
+
+      {isGroup && conversation && (
+        <GroupInfoModal
+          isOpen={isGroupInfoOpen}
+          onClose={() => setIsGroupInfoOpen(false)}
+          conversation={conversation}
+        />
+      )}
     </header>
   );
 }

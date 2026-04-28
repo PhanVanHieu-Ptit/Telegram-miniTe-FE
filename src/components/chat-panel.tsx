@@ -45,11 +45,20 @@ export function ChatPanel() {
       member = activeConversation.members.find((m: { id: string }) => m.id !== currentUserId) || activeConversation.members[0];
     }
     if (!member) return undefined;
+    const isGroup = activeConversation.type === 'group' || (activeConversation.participantIds && activeConversation.participantIds.length > 2);
+    
+    let displayName = member.fullName;
+    if (isGroup) {
+      displayName = (activeConversation.chatName && activeConversation.chatName.trim() !== '') 
+          ? activeConversation.chatName 
+          : activeConversation.members.map((m: { fullName: string }) => m.fullName).join(", ") || "Group";
+    }
+
     // Map ConversationMember to User
     return {
-      id: member.id,
-      displayName: member.fullName,
-      avatarUrl: member.avatarUrl ?? "",
+      id: isGroup ? activeConversation.id : member.id,
+      displayName: displayName,
+      avatarUrl: isGroup ? "" : (member.avatarUrl ?? ""),
       online: false,
       lastSeenAt: undefined,
     };

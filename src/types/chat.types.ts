@@ -73,6 +73,7 @@ export interface ConversationMember {
 
 export interface Conversation {
     id: string;
+    type?: 'private' | 'group';
     participantIds: string[];
     members: ConversationMember[];
     lastMessage?: Message;
