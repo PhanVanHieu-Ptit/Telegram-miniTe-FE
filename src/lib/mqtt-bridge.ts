@@ -30,6 +30,9 @@ interface MessageNewPayload {
   conversationId: string;
   senderId: string;
   text: string;
+  type?: string;
+  attachments?: any[];
+  metadata?: any;
   timestamp: string;
   seenBy?: string[];
   read?: boolean;
@@ -193,7 +196,10 @@ export class MqttStoreBridge {
         id: data.id,
         conversationId: data.conversationId,
         senderId: data.senderId,
-        text: data.text,
+        content: data.text,
+        type: data.type as any,
+        attachments: data.attachments,
+        metadata: data.metadata,
         timestamp: data.timestamp,
         status: MessageStatus.Sent,
         seenBy: data.seenBy,

@@ -72,6 +72,8 @@ export const getMessages = async (params: GetMessagesParams): Promise<Message[]>
         const response = await apiClient.get<Message[]>("/messages", {
             params: {
                 conversationId: params.conversationId,
+                cursor: params.cursor,
+                limit: params.limit,
             },
         });
         return response.data;

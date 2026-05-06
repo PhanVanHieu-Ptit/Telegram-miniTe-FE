@@ -8,10 +8,11 @@ export function getMessagePreview(message?: Message): string {
 
   if (type === "TEXT") {
     if (hasAttachments) {
-      const firstType = message.attachments?.[0]?.type || "";
-      if (firstType.startsWith("image/")) return "📷 Photo";
-      if (firstType.startsWith("video/")) return "📹 Video";
-      if (firstType.startsWith("audio/")) return "🎤 Voice message";
+      const firstType = (message.attachments?.[0]?.type || "").toLowerCase();
+      if (firstType === 'image' || firstType.startsWith("image/")) return "📷 Photo";
+      if (firstType === 'video' || firstType.startsWith("video/")) return "📹 Video";
+      if (firstType === 'audio' || firstType.startsWith("audio/")) return "🎤 Voice message";
+      if (firstType === 'file') return "📄 File";
       return "📄 File";
     }
     

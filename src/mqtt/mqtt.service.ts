@@ -194,7 +194,13 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
 
             // Only add to the messages list if it belongs to the active conversation
             if (messageData.conversationId === store.activeConversationId) {
-                store.addMessage(messageData);
+                store.addMessage({
+                    ...messageData,
+                    timestamp: messageData.timestamp || messageData.createdAt || new Date().toISOString(),
+                    status: messageData.status || "sent",
+                    // Strip localUrl — blob URLs from the sender are invalid on this client
+                    attachments: messageData.attachments?.map(({ localUrl: _l, ...att }: any) => att),
+                });
             }
 
             // Always update the sidebar's lastMessage preview

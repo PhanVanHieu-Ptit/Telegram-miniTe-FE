@@ -33,6 +33,10 @@ export interface Attachment {
     type?: string;
     name?: string;
     size?: number;
+    /** Cloudinary public_id for the uploaded asset */
+    public_id?: string;
+    /** Cloudinary format e.g. "jpg", "mp4", "pdf" */
+    format?: string;
 }
 
 export interface Message {

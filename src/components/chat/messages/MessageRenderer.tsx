@@ -25,7 +25,10 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
   const { t } = useTranslation();
   const { effectiveType, parsedPayload } = useMemo(() => {
     const rawType = (message.type || 'TEXT').toUpperCase();
-    const hasAttachments = !!(message.attachments && message.attachments.length > 0);
+    
+    // Backward compatibility: handle 'media' or 'files' as aliases for 'attachments'
+    const attachments = message.attachments || (message as any).files || (message as any).media || [];
+    const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
 
     let payload = null;
     if (message.content && (message.content.startsWith('{') || message.content.startsWith('['))) {
@@ -41,17 +44,23 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
 
     if (type === 'TEXT' || type === 'FILE' || !type) {
       if (hasAttachments || message.mediaUrl || urlFromContent) {
-        const firstType = message.attachments?.[0]?.type || '';
-        const firstName = message.attachments?.[0]?.name || '';
+        const firstAtt = attachments[0] || {};
+        const firstType = firstAtt.type || '';
+        const firstName = firstAtt.name || '';
         // Use localUrl (blob) first — it's available immediately after file pick
-        const url = message.attachments?.[0]?.localUrl || message.attachments?.[0]?.url || message.mediaUrl || urlFromContent || '';
+        const url = firstAtt.localUrl || firstAtt.url || message.mediaUrl || urlFromContent || '';
 
-        if (firstType.startsWith('image/') || url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
+        // Cloudinary type field takes priority ('image' | 'video' | 'audio' | 'file')
+        if (firstType === 'audio') type = 'VOICE';
+        else if (firstType === 'image' || firstType.startsWith('image/') || url.match(/\.(jpeg|jpg|gif|png|webp)$/i)) {
           type = (firstName.toLowerCase().endsWith('.gif') || url.toLowerCase().endsWith('.gif') || url.includes('gif')) ? 'GIF' : 'IMAGE';
         }
-        else if (firstType.startsWith('video/') || url.match(/\.(mp4|webm|ogg|mov)$/i)) type = 'VIDEO';
+        else if (firstType === 'video' || firstType.startsWith('video/') || url.match(/\.(mp4|webm|ogg|mov)$/i)) type = 'VIDEO';
         else if (firstType.startsWith('audio/') || url.match(/\.(webm|ogg|mp3|wav|m4a)$/i) || url.toLowerCase().includes('voice-note')) {
           type = 'VOICE';
+        }
+        else if (firstType === 'file') {
+          type = 'FILE';
         }
         else {
           type = 'FILE';
@@ -78,13 +87,18 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
    */
   const getFullUrl = (url?: string): string => {
     if (!url) return '';
-    if (url.startsWith('http') || url.startsWith('blob:') || url.startsWith('data:')) return url;
+    
+    // If it's already an absolute URL (http, blob, data), return it as is
+    if (/^(https?|blob|data):/i.test(url)) return url;
 
     const firebaseBucket = import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || 'app-3hchat.firebasestorage.app';
-    if (url.includes('chat-media/') || url.includes('uploads/')) {
+    
+    // Check if it's a legacy Firebase path (MUST NOT start with http/https)
+    if ((url.includes('chat-media/') || url.includes('uploads/'))) {
       return `https://firebasestorage.googleapis.com/v0/b/${firebaseBucket}/o/${encodeURIComponent(url)}?alt=media`;
     }
 
+    // Default to backend local uploads (legacy fallback)
     const baseUrl = import.meta.env.VITE_API_URL || '';
     const cleanUrl = url.startsWith('/') ? url : `/${url}`;
     return `${baseUrl}/uploads${cleanUrl}`;
@@ -95,7 +109,10 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
    * Ưu tiên localUrl (Blob) vì nó không bao giờ bị lỗi CORS.
    */
   const resolveAttachmentUrl = (att: NonNullable<Message['attachments']>[number]): string => {
-    return getFullUrl(att.localUrl || att.url);
+    if (!att) return '';
+    const url = att.localUrl || att.url;
+    if (!url) return '';
+    return getFullUrl(url);
   };
 
   const isUploading = message.status === 'uploading';
@@ -104,7 +121,10 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
     const content = (message.content || '').trim();
     const urlFromContent = content.match(/\.(jpeg|jpg|gif|png|webp|mp4|webm|ogg|mov|mp3|wav|m4a)$/i) ? content : '';
 
-    const firstAtt = message.attachments?.[0];
+    // Normalize attachments from aliases
+    const normalizedAttachments = message.attachments || (message as any).files || (message as any).media || [];
+    const firstAtt = normalizedAttachments[0];
+    
     // Ưu tiên localUrl (Blob) ngay cả khi đã gửi xong nếu nó vẫn còn trong state
     const rawUrl = firstAtt?.localUrl || firstAtt?.url || message.mediaUrl || urlFromContent;
     const resolvedUrl = getFullUrl(rawUrl);
@@ -119,8 +139,8 @@ export const MessageRenderer: React.FC<MessageRendererProps> = ({ message, isHid
       return <TextMessage content={message.content} mentions={message.mentions} />;
     }
 
-    const effectiveAttachments = message.attachments?.length
-      ? message.attachments.map(att => ({ ...att, url: resolveAttachmentUrl(att) }))
+    const effectiveAttachments = normalizedAttachments.length
+      ? normalizedAttachments.map((att: any) => ({ ...att, url: resolveAttachmentUrl(att) }))
       : rawUrl
         ? [{ url: resolvedUrl }] as any[]
         : undefined;
