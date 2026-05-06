@@ -174,8 +174,8 @@ export function MessageInput({ conversationId }: MessageInputProps) {
       let remoteAttachments: any[] | undefined = undefined;
 
       if (hasFiles) {
-        const { uploadAttachments } = await import("@/lib/uploadMedia");
-        const uploaded = await uploadAttachments(
+        const { uploadAttachmentsViaBackend } = await import("@/lib/uploadMedia");
+        const uploaded = await uploadAttachmentsViaBackend(
           capturedFiles,
           conversationId,
           (fileIdx, pct) => {
@@ -211,12 +211,17 @@ export function MessageInput({ conversationId }: MessageInputProps) {
       }
 
       // ── Phase 3: POST to backend ──
+      // Strip localUrl (blob URL) — it's only valid in the sender's browser
+      // and must NOT be persisted to the DB or sent to recipients.
+      const attachmentsForBackend = (remoteAttachments || localAttachments)?.map(
+        ({ localUrl: _localUrl, uploadProgress: _p, ...rest }: any) => rest
+      );
       const result = await sendMessage({
         conversationId,
         content: finalContent,
         senderId: currentUserId,
         type: messageType,
-        attachments: remoteAttachments || localAttachments,
+        attachments: attachmentsForBackend,
         mentions,
         replyTo: replyingToMessage?.id,
       });
@@ -347,15 +352,37 @@ export function MessageInput({ conversationId }: MessageInputProps) {
       {files.length > 0 && (
         <div className="flex gap-2 px-6 py-2 overflow-x-auto border-b border-white/5">
           {files.map((file, idx) => (
-            <div key={idx} className="relative flex-shrink-0 w-16 h-16 bg-white/10 rounded-lg overflow-hidden group">
+            <div key={idx} className="relative flex-shrink-0 w-20 h-20 bg-white/10 rounded-xl overflow-hidden group border border-white/10">
               {file.type.startsWith('image/') ? (
                 <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+              ) : file.type.startsWith('video/') ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-black/20">
+                  <span className="text-2xl">🎬</span>
+                  <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
+                </div>
+              ) : file.type.startsWith('audio/') ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-purple-900/30">
+                  <span className="text-2xl">🎵</span>
+                  <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
+                </div>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-[10px] text-white/70 p-1">
-                  <span className="truncate w-full text-center">{file.name}</span>
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-blue-900/20 p-1">
+                        <span className="text-2xl">
+                          {file.name.endsWith('.pdf') ? '📕' : file.name.match(/\.docx?$/) ? '📘' : file.name.match(/\.xlsx?$/) ? '📗' : '📄'}
+                        </span>
+                        <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
                 </div>
               )}
-              <button onClick={() => setFiles(files.filter((_, i) => i !== idx))} className="absolute top-1 right-1 bg-black/50 rounded-full p-1 opacity-100">
+              {/* Upload indicator badge */}
+              <div className="absolute top-1 left-1 bg-black/50 rounded px-1 py-0.5">
+                <span className="text-[8px] text-white/70">
+                  {(file.size / 1024 / 1024).toFixed(1)}MB
+                </span>
+              </div>
+              <button
+                onClick={() => setFiles(files.filter((_, i) => i !== idx))}
+                className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 opacity-100 hover:bg-red-500/80 transition-colors"
+              >
                 <X className="w-3 h-3 text-white" />
               </button>
             </div>

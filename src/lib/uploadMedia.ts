@@ -1,17 +1,17 @@
 /**
  * uploadMedia.ts
  *
- * Uploads files to Firebase Storage via the SDK (no CORS issue on upload itself).
- * Returns the Firebase download URL after upload completes.
+ * Two upload paths:
+ *  1. uploadAttachments — Firebase Storage SDK (legacy, used for voice notes / drawings)
+ *  2. uploadAttachmentsViaBackend — multipart POST to backend → Cloudinary
  *
- * NOTE: The returned `downloadUrl` is used ONLY for persisting to the backend.
- * For rendering in the chat UI, the caller should keep the `localUrl` (blob URL)
- * until the image/video/audio element successfully loads from the remote URL.
+ * The returned attachment objects are used directly as message.attachments.
  */
 
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import app from '@/firebase/firebase';
 import type { Attachment } from '@/types/chat.types';
+import apiClient from '@/api/axios';
 
 const storage = getStorage(app);
 
@@ -41,7 +41,6 @@ export function uploadFile(
 
     const metadata = {
       contentType: file.type,
-      // These custom metadata fields don't affect CORS — CORS is configured at bucket level
       customMetadata: { originalName: file.name },
     };
 
@@ -71,7 +70,7 @@ export function uploadFile(
 }
 
 /**
- * Upload multiple files in parallel.
+ * Upload multiple files via Firebase Storage (legacy path).
  * Returns Attachment[] with real Firebase CDN URLs.
  */
 export async function uploadAttachments(
@@ -90,6 +89,61 @@ export async function uploadAttachments(
   );
 
   return results.map((r) => ({
+    url: r.url,
+    name: r.name,
+    size: r.size,
+    type: r.type,
+  }));
+}
+
+export interface CloudinaryAttachment {
+  url: string;
+  public_id: string;
+  type: 'image' | 'video' | 'audio' | 'file';
+  format: string;
+  size: number;
+  name: string;
+}
+
+/**
+ * Upload files via the backend → Cloudinary pipeline.
+ *
+ * Sends a single multipart/form-data request containing:
+ *   - conversationId field
+ *   - one or more "files" file parts
+ *
+ * Returns Attachment[] using the Cloudinary CDN URLs.
+ */
+export async function uploadAttachmentsViaBackend(
+  files: File[],
+  conversationId: string,
+  onProgress?: (fileIndex: number, percent: number) => void
+): Promise<Attachment[]> {
+  const formData = new FormData();
+  formData.append('conversationId', conversationId);
+  files.forEach((file) => formData.append('files', file, file.name));
+
+  // Signal upload started
+  files.forEach((_, idx) => onProgress?.(idx, 10));
+
+  const response = await apiClient.post<CloudinaryAttachment[]>(
+    '/messages/upload-attachments',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+      timeout: 120_000, // 2 min for large files
+      onUploadProgress: (evt) => {
+        if (evt.total) {
+          const pct = Math.round((evt.loaded / evt.total) * 90) + 10;
+          files.forEach((_, idx) => onProgress?.(idx, Math.min(pct, 99)));
+        }
+      },
+    }
+  );
+
+  files.forEach((_, idx) => onProgress?.(idx, 100));
+
+  return response.data.map((r) => ({
     url: r.url,
     name: r.name,
     size: r.size,

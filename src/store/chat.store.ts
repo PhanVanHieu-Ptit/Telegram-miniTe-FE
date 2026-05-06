@@ -72,6 +72,7 @@ interface ChatActions {
     deleteMessage: (messageId: string, mode?: 'self' | 'everyone') => Promise<void>;
     openSavedMessages: () => Promise<void>;
     saveMessage: (message: Message) => Promise<void>;
+    loadOlderMessages: () => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -117,16 +118,42 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 limit,
             };
             const result = await getMessages(params);
-            const messagesArray = Array.isArray(result) ? result : ((result as any).data || (result as any).messages || []);
+            
+            // Extract messages and metadata
+            let messagesArray: any[] = [];
+            let nextCursor: string | undefined = undefined;
+            let hasMore = false;
+
+            if (Array.isArray(result)) {
+                messagesArray = result;
+                // If it's a plain array, we assume if we got 'limit' items, there might be more
+                hasMore = messagesArray.length === limit;
+                // Use the ID of the oldest message as the next cursor for loading older
+                nextCursor = messagesArray.length > 0 ? messagesArray[0].id : undefined;
+            } else {
+                const data = (result as any);
+                messagesArray = data.data || data.messages || [];
+                nextCursor = data.nextCursor || (messagesArray.length > 0 ? messagesArray[0].id : undefined);
+                hasMore = data.hasMore !== undefined ? data.hasMore : messagesArray.length === limit;
+            }
 
             const mappedMessages = messagesArray.map((msg: any) => ({
                 ...msg,
                 timestamp: msg.timestamp || msg.createdAt || new Date().toISOString(),
+                attachments: msg.attachments?.map(({ localUrl: _l, ...att }: any) => att),
             }));
 
-            set(() => ({
-                messages: mappedMessages
-            }));
+            set((state) => {
+                const newMessages = cursor 
+                    ? [...mappedMessages, ...state.messages] 
+                    : mappedMessages;
+                
+                return {
+                    messages: newMessages,
+                    messagesCursor: nextCursor,
+                    hasMoreMessages: hasMore
+                };
+            });
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
@@ -135,6 +162,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         } finally {
             set({ loading: false });
         }
+    },
+
+    loadOlderMessages: async () => {
+        const { activeConversationId, messagesCursor, hasMoreMessages, loading } = get();
+        if (!activeConversationId || !hasMoreMessages || loading) return;
+
+        await get().fetchMessages(activeConversationId, messagesCursor);
     },
 
     addMessage: (message: Message) => {
