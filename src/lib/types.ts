@@ -12,7 +12,10 @@ export interface Message {
   id: string;
   conversationId: string;
   senderId: string;
-  text: string;
+  type?: string;
+  content: string;
+  attachments?: any[];
+  metadata?: any;
   timestamp: string;
   status: MessageStatus;
   seenBy?: string[];

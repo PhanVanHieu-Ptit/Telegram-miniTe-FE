@@ -12,7 +12,7 @@ const mapMessage = (message: ApiMessage): Message => ({
     id: message.id,
     conversationId: message.conversationId,
     senderId: message.senderId,
-    text: message.content,
+    content: message.content,
     timestamp: message.timestamp,
     status: message.status,
     read: message.status === MessageStatus.Seen,

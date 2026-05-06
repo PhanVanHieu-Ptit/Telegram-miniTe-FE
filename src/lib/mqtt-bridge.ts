@@ -139,7 +139,7 @@ export class MqttStoreBridge {
       id: message.id,
       conversationId: message.conversationId,
       senderId: message.senderId,
-      text: message.text,
+      text: message.content,
       timestamp: message.timestamp,
       seenBy: message.seenBy,
       read: message.read ?? false,
