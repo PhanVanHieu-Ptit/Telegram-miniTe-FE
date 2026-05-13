@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Typography } from 'antd';
+import { Button, Card, Switch, Typography } from 'antd';
 const { Text } = Typography;
 import { Sparkles } from 'lucide-react';
 import { SummaryHeader } from './SummaryHeader';
@@ -12,7 +12,7 @@ interface SummaryBubbleProps {
   isOpen: boolean;
   onClose: () => void;
   isSummarizing: boolean;
-  summary: string[] | null;
+  summary: string | null;
   error: string | null;
   senderFilter: string | null;
   dateRange: [dayjs.Dayjs, dayjs.Dayjs] | null;
@@ -23,6 +23,8 @@ interface SummaryBubbleProps {
   setDateRange: (dates: [dayjs.Dayjs, dayjs.Dayjs] | null) => void;
   setQuickPreset: (preset: 'today' | '24h' | '7d') => void;
   hasActiveConversation: boolean;
+  useV2: boolean;
+  setUseV2: (val: boolean) => void;
 }
 
 export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
@@ -39,7 +41,9 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
   setSenderFilter,
   setDateRange,
   setQuickPreset,
-  hasActiveConversation
+  hasActiveConversation,
+  useV2,
+  setUseV2,
 }) => {
   if (!isOpen) return null;
 
@@ -88,7 +92,26 @@ export const SummaryBubble: React.FC<SummaryBubbleProps> = ({
           )}
         </div>
 
-        <div className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-md">
+        <div className="p-6 border-t border-white/10 bg-white/5 backdrop-blur-md space-y-3">
+          {/* Model version toggle */}
+          <div className="flex items-center justify-between px-1">
+            <div className="flex flex-col">
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 600 }}>
+                {useV2 ? 'HuggingFace AI (v2)' : 'Local LLM (v1)'}
+              </Text>
+              <Text style={{ color: 'rgba(255,255,255,0.35)', fontSize: 10 }}>
+                {useV2 ? 'Qwen2.5-7B qua HuggingFace' : 'Mô hình nội bộ'}
+              </Text>
+            </div>
+            <Switch
+              checked={useV2}
+              onChange={setUseV2}
+              checkedChildren="v2"
+              unCheckedChildren="v1"
+              style={useV2 ? { backgroundColor: '#0ea5e9' } : undefined}
+            />
+          </div>
+
           {!summary ? (
             <Button
               type="primary"

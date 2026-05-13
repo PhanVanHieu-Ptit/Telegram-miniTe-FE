@@ -134,6 +134,18 @@ export const unpinConversation = (conversationId: string): Promise<void> => {
         .then((response) => response.data);
 };
 
+export const muteConversation = (conversationId: string): Promise<void> => {
+    return apiClient
+        .post<void>(`/conversations/${conversationId}/mute`)
+        .then((response) => response.data);
+};
+
+export const unmuteConversation = (conversationId: string): Promise<void> => {
+    return apiClient
+        .post<void>(`/conversations/${conversationId}/unmute`)
+        .then((response) => response.data);
+};
+
 export const addMembers = (conversationId: string, userIds: string[]): Promise<void> => {
     return apiClient
         .post<void>(`/conversations/${conversationId}/members`, { userIds })

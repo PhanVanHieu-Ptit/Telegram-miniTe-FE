@@ -12,7 +12,8 @@ import {
   List,
   BookmarkIcon,
   PinOff,
-  Users
+  Users,
+  Volume2
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { User, Message } from "@/types/chat.types";
@@ -84,8 +85,11 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
   const unpinMessage = useChatStore((s) => s.unpinMessage);
   const pinConversation = useChatStore((s) => s.pinConversation);
   const unpinConversation = useChatStore((s) => s.unpinConversation);
+  const muteConversation = useChatStore((s) => s.muteConversation);
+  const unmuteConversation = useChatStore((s) => s.unmuteConversation);
   const conversation = useChatStore((s) => s.conversations.find((c) => c.id === conversationId));
   const isPinned = conversation?.pinned || false;
+  const isMuted = conversation?.muted || false;
   const isGroup = conversation?.type === 'group' || (conversation?.participantIds && conversation.participantIds.length > 2);
   const [isPinnedModalOpen, setIsPinnedModalOpen] = useState(false);
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
@@ -109,7 +113,11 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       label: t('pin_conversation'),
       icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
     },
-    {
+    isMuted ? {
+      key: "unmute",
+      label: t('unmute_notifications', { defaultValue: 'Unmute notifications' }),
+      icon: <Volume2 className="h-4 w-4" strokeWidth={1.5} />,
+    } : {
       key: "mute",
       label: t('mute_notifications'),
       icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
@@ -156,6 +164,12 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
     } else if (key === "unpin") {
       void unpinConversation(conversationId);
       message.success(t('conversation_unpinned', { defaultValue: 'Conversation unpinned' }));
+    } else if (key === "mute") {
+      void muteConversation(conversationId);
+      message.success(t('conversation_muted', { defaultValue: 'Notifications muted' }));
+    } else if (key === "unmute") {
+      void unmuteConversation(conversationId);
+      message.success(t('conversation_unmuted', { defaultValue: 'Notifications unmuted' }));
     }
   };
 
