@@ -58,6 +58,8 @@ interface ChatActions {
     unpinMessage: (conversationId: string, messageId: string) => Promise<void>;
     pinConversation: (conversationId: string) => Promise<void>;
     unpinConversation: (conversationId: string) => Promise<void>;
+    muteConversation: (conversationId: string) => Promise<void>;
+    unmuteConversation: (conversationId: string) => Promise<void>;
     addMembers: (conversationId: string, userIds: string[]) => Promise<void>;
     removeMember: (conversationId: string, userId: string) => Promise<void>;
     /**
@@ -581,6 +583,34 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unpinConversationApi(conversationId);
         } catch (error) {
             console.error("Failed to unpin conversation:", error);
+        }
+    },
+    
+    muteConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: true } : c
+            ),
+        }));
+        try {
+            const { muteConversation: muteConversationApi } = await import("@/api/chat.api");
+            await muteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to mute conversation:", error);
+        }
+    },
+
+    unmuteConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: false } : c
+            ),
+        }));
+        try {
+            const { unmuteConversation: unmuteConversationApi } = await import("@/api/chat.api");
+            await unmuteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unmute conversation:", error);
         }
     },
     

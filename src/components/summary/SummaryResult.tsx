@@ -6,7 +6,7 @@ import React from 'react';
 const { Text } = Typography;
 
 interface SummaryResultProps {
-  summary: string[] | null;
+  summary: string | null;
   loading: boolean;
   error?: string | null;
 }
@@ -49,13 +49,15 @@ export const SummaryResult: React.FC<SummaryResultProps> = ({ summary, loading, 
     );
   }
 
+  const lines = summary.split('\n').filter(l => l.trim().length > 0);
+
   return (
     <div className="p-6 space-y-5 overflow-y-auto max-h-[350px]">
       <div className="flex items-center gap-2 mb-2">
         <div className="h-1 w-8 bg-primary rounded-full" />
         <Text strong style={{ color: 'var(--primary)', fontSize: '12px', letterSpacing: '1px', textTransform: 'uppercase' }}>Tóm tắt tin nhắn</Text>
       </div>
-      {summary.map((line, idx) => (
+      {lines.map((line, idx) => (
         <motion.div
           key={idx}
           initial={{ opacity: 0, x: -10 }}

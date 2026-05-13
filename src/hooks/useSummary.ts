@@ -13,6 +13,7 @@ export const useSummary = () => {
   const { isSummarizing, summary, error, generateSummary, clearSummary } = useMessageSummary();
   const [senderFilter, setSenderFilter] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
+  const [useV2, setUseV2] = useState(false);
 
   const activeConversation = useMemo(() => {
     return conversations.find((c) => c.id === activeConversationId);
@@ -32,22 +33,18 @@ export const useSummary = () => {
       return;
     }
 
-    // Format messages: "Sender: Content"
-    const rawMessages = messages
-      .map((m) => {
-        const member = activeConversation.members.find((mem) => mem.id === m.senderId);
-        const senderName = member ? member.fullName : "Unknown";
-        return `${senderName}: ${m.content}`;
-      })
-      .join("\n");
-
     try {
-      await generateSummary({
-        messages: rawMessages,
-        senderFilter: senderFilter || undefined,
-        startTime: dateRange?.[0]?.toISOString(),
-        endTime: dateRange?.[1]?.toISOString(),
-      });
+      await generateSummary(
+        {
+          // Use conversationId so backend fetches ALL messages from DB and applies
+          // accurate timestamp-based filtering (not limited to the store's last 50)
+          conversationId: activeConversationId,
+          senderFilter: senderFilter || undefined,
+          startTime: dateRange?.[0]?.toISOString(),
+          endTime: dateRange?.[1]?.toISOString(),
+        },
+        useV2
+      );
     } catch (err) {
       console.error("Summarization failed:", err);
     }
@@ -56,10 +53,12 @@ export const useSummary = () => {
   const setQuickPreset = (preset: 'today' | '24h' | '7d') => {
     const now = dayjs();
     let start: dayjs.Dayjs;
+    let end: dayjs.Dayjs = now;
 
     switch (preset) {
       case 'today':
         start = now.startOf('day');
+        end = now.endOf('day');
         break;
       case '24h':
         start = now.subtract(24, 'hour');
@@ -71,7 +70,7 @@ export const useSummary = () => {
         return;
     }
 
-    setDateRange([start, now]);
+    setDateRange([start, end]);
   };
 
   return {
@@ -82,6 +81,8 @@ export const useSummary = () => {
     senderFilter,
     dateRange,
     activeConversation,
+    useV2,
+    setUseV2,
     toggleOpen,
     close,
     handleSummarize,

@@ -2,7 +2,7 @@ import { memo, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Avatar, Badge, Dropdown, Modal, message } from "antd";
 import type { MenuProps } from "antd";
-import { Pin, PinOff, VolumeOff, Trash2 } from "lucide-react";
+import { Pin, PinOff, VolumeOff, Volume2, Trash2 } from "lucide-react";
 import type { Conversation } from "@/types/chat.types";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -92,6 +92,8 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
 
   const pinConversation = useChatStore((s) => s.pinConversation);
   const unpinConversation = useChatStore((s) => s.unpinConversation);
+  const muteConversation = useChatStore((s) => s.muteConversation);
+  const unmuteConversation = useChatStore((s) => s.unmuteConversation);
   const deleteConversation = useChatStore((s) => s.deleteConversation);
 
   const handleMenuClick: MenuProps["onClick"] = ({ key, domEvent }) => {
@@ -102,6 +104,12 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
     } else if (key === "unpin") {
       void unpinConversation(conversation.id);
       message.success(t('conversation_unpinned', { defaultValue: 'Conversation unpinned' }));
+    } else if (key === "mute") {
+      void muteConversation(conversation.id);
+      message.success(t('conversation_muted', { defaultValue: 'Notifications muted' }));
+    } else if (key === "unmute") {
+      void unmuteConversation(conversation.id);
+      message.success(t('conversation_unmuted', { defaultValue: 'Notifications unmuted' }));
     } else if (key === "delete") {
       Modal.confirm({
         title: t('delete_chat_modal_title'),
@@ -133,6 +141,17 @@ const ChatListItemComponent = ({ conversation, active, onClick }: ChatListItemPr
           key: "pin",
           label: t('pin_conversation'),
           icon: <Pin className="h-4 w-4" strokeWidth={1.5} />,
+        },
+    conversation.muted
+      ? {
+          key: "unmute",
+          label: t('unmute_notifications', { defaultValue: 'Unmute notifications' }),
+          icon: <Volume2 className="h-4 w-4" strokeWidth={1.5} />,
+        }
+      : {
+          key: "mute",
+          label: t('mute_notifications'),
+          icon: <VolumeOff className="h-4 w-4" strokeWidth={1.5} />,
         },
     { type: "divider" },
     {

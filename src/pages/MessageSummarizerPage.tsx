@@ -37,7 +37,9 @@ const MessageSummarizerPage = () => {
 
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [senderFilter, setSenderFilter] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string[] | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [resolved, setResolved] = useState<string[]>([]);
+  const [pending, setPending] = useState<string[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
   // Get active conversation details
@@ -89,6 +91,8 @@ const MessageSummarizerPage = () => {
 
       if (response.success) {
         setSummary(response.summary);
+        setResolved(response.resolved || []);
+        setPending(response.pending || []);
         message.success(t('notifications.summary_generated'));
       } else {
         message.error(t('notifications.summary_failed'));
@@ -239,12 +243,32 @@ const MessageSummarizerPage = () => {
                   className="shadow-md border-primary/20 bg-primary/5"
                   styles={{ header: { borderBottom: '1px solid rgba(0,0,0,0.06)' } }}
                 >
-                  <div className="space-y-3">
-                    {summary.map((line, idx) => (
-                      <Paragraph key={idx} style={{ marginBottom: idx === summary.length - 1 ? 0 : '8px' }}>
-                        • {line}
-                      </Paragraph>
-                    ))}
+                  <div className="space-y-4">
+                    <div className="summary-text text-sm leading-relaxed">
+                      {summary}
+                    </div>
+
+                    {resolved.length > 0 && (
+                      <div className="space-y-2">
+                        <Text strong className="text-xs uppercase tracking-wider text-green-600">Resolved</Text>
+                        <ul className="list-disc pl-4 text-sm space-y-1">
+                          {resolved.map((item, idx) => (
+                            <li key={idx} className="text-muted-foreground">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {pending.length > 0 && (
+                      <div className="space-y-2">
+                        <Text strong className="text-xs uppercase tracking-wider text-amber-600">Pending</Text>
+                        <ul className="list-disc pl-4 text-sm space-y-1">
+                          {pending.map((item, idx) => (
+                            <li key={idx} className="text-muted-foreground">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}
