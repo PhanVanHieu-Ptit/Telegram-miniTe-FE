@@ -174,7 +174,7 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
   };
 
   return (
-    <header className="flex h-[72px] items-center gap-4 border-b border-white/5 px-4 bg-background/60 backdrop-blur-3xl z-20 overflow-hidden">
+    <header className="flex h-[72px] items-center gap-2 sm:gap-4 border-b border-white/5 px-3 sm:px-4 bg-background/60 backdrop-blur-3xl z-20 overflow-hidden">
       {/* Pinned Messages Modal */}
       <Modal
         title={
@@ -244,8 +244,8 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
       {/* User info (Left Side) */}
       <div 
         className={cn(
-          "flex items-center gap-3", 
-          lastPinned ? "max-w-[200px] shrink-0" : "flex-1",
+          "flex items-center gap-3 min-w-0", 
+          lastPinned ? "flex-1 sm:flex-none sm:max-w-[200px] sm:shrink-0" : "flex-1",
           isGroup ? "cursor-pointer hover:bg-white/5 p-1 -ml-1 rounded-lg transition-colors" : ""
         )}
         onClick={() => isGroup && setIsGroupInfoOpen(true)}
@@ -285,10 +285,10 @@ export function ChatHeader({ partner, onBack, conversationId, onOpenSearch, pinn
         </div>
       </div>
 
-      {/* Pinned Message Section (Middle/Right) */}
+      {/* Pinned Message Section (Middle/Right) - hidden on mobile to keep call button visible */}
       {lastPinned && (
         <div 
-          className="flex-1 flex items-center gap-3 px-4 h-full cursor-pointer hover:bg-white/5 transition-colors relative group/pin"
+          className="hidden sm:flex flex-1 items-center gap-3 px-4 h-full cursor-pointer hover:bg-white/5 transition-colors relative group/pin"
           onClick={() => {
             const element = document.getElementById(`msg-${lastPinned.id}`);
             if (element) {
