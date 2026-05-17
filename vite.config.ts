@@ -12,9 +12,4 @@ export default defineConfig({
             "@": path.resolve(__dirname, "./src"),
         },
     },
-    server: {
-        allowedHosts: [
-            'mollusklike-nonfatally-felicita.ngrok-free.dev'
-        ]
-    }
 })
