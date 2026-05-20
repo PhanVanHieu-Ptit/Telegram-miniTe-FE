@@ -1,6 +1,7 @@
 export type ISODateString = string;
 
 export const MessageStatus = {
+    Uploading: "uploading",
     Sending: "sending",
     Sent: "sent",
     Delivered: "delivered",
@@ -13,18 +14,57 @@ export type MessageStatus = (typeof MessageStatus)[keyof typeof MessageStatus];
 export interface User {
     id: string;
     displayName: string;
+    username?: string;
+    email?: string;
     avatarUrl?: string;
     online: boolean;
     lastSeenAt?: ISODateString;
+}
+
+export type MessageType = 'TEXT' | 'IMAGE' | 'VIDEO' | 'VOICE' | 'FILE' | 'LOCATION' | 'CONTACT' | 'BANK' | 'POLL' | 'REMINDER' | 'LINK' | 'GIF';
+
+export interface Attachment {
+    id?: string;
+    url: string;
+    /** Blob/object URL for immediate local preview before upload completes */
+    localUrl?: string;
+    /** Upload progress 0-100. Present only during upload. */
+    uploadProgress?: number;
+    type?: string;
+    name?: string;
+    size?: number;
+    /** Cloudinary public_id for the uploaded asset */
+    public_id?: string;
+    /** Cloudinary format e.g. "jpg", "mp4", "pdf" */
+    format?: string;
 }
 
 export interface Message {
     id: string;
     conversationId: string;
     senderId: string;
+    sender?: User;
+    type?: MessageType;
     content: string;
+    mediaUrl?: string;
+    attachments?: Attachment[];
+    metadata?: any;
+    mentions?: string[];
+    hiddenBy?: string[];
+    isPinned?: boolean;
+    reactions?: Record<string, string[]>;
     timestamp: ISODateString;
+    createdAt?: ISODateString;
+    updatedAt?: ISODateString;
     status: MessageStatus;
+
+    // New fields
+    replyTo?: string;
+    forwardedFrom?: string;
+    isDeleted?: boolean;
+    deletedForUsers?: string[];
+    editedAt?: ISODateString;
+    editHistory?: { content: string; editedAt: ISODateString }[];
 }
 
 export interface ConversationMember {
@@ -37,6 +77,7 @@ export interface ConversationMember {
 
 export interface Conversation {
     id: string;
+    type?: 'private' | 'group';
     participantIds: string[];
     members: ConversationMember[];
     lastMessage?: Message;
@@ -50,6 +91,7 @@ export interface Conversation {
 export interface TypingEvent {
     conversationId: string;
     userId: string;
-    isTyping: boolean;
-    timestamp: ISODateString;
+    fullName?: string;
+    typing: boolean;
+    timestamp?: ISODateString;
 }

@@ -1,23 +1,26 @@
 
 
 import { memo } from "react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 interface TypingIndicatorProps {
   usersTyping: string[];
 }
 
-function formatLabel(names: string[]): string {
-  if (names.length === 0) return "";
-  if (names.length === 1) return `${names[0]} is typing`;
-  if (names.length === 2) return `${names[0]} and ${names[1]} are typing`;
-  return `${names[0]} and ${names.length - 1} others are typing`;
-}
-
 function TypingIndicatorComponent({ usersTyping }: TypingIndicatorProps) {
+  const { t } = useTranslation();
+
   if (usersTyping.length === 0) return null;
 
-  const label = formatLabel(usersTyping);
+  let label = "";
+  if (usersTyping.length === 1) {
+    label = t("typing_single", { name: usersTyping[0] });
+  } else if (usersTyping.length === 2) {
+    label = t("typing_double", { name1: usersTyping[0], name2: usersTyping[1] });
+  } else {
+    label = t("typing_multiple", { name: usersTyping[0], count: usersTyping.length - 1 });
+  }
 
   return (
     <div className="flex items-center gap-1.5 px-4 pb-1 pt-0.5">

@@ -5,19 +5,20 @@ import { message as antMessage } from 'antd';
 
 interface UseMessageSummaryReturn {
   isSummarizing: boolean;
-  summary: string[] | null;
+  summary: string | null;
   error: string | null;
-  generateSummary: (params: SummarizeRequest) => Promise<void>;
+  generateSummary: (params: SummarizeRequest, useV2?: boolean) => Promise<void>;
   clearSummary: () => void;
 }
 
 export const useMessageSummary = (): UseMessageSummaryReturn => {
   const [isSummarizing, setIsSummarizing] = useState(false);
-  const [summary, setSummary] = useState<string[] | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const generateSummary = useCallback(async (params: SummarizeRequest) => {
-    if (!params.messages.trim()) {
+  const generateSummary = useCallback(async (params: SummarizeRequest, useV2 = false) => {
+    const hasContent = params.conversationId || (params.messages && params.messages.trim());
+    if (!hasContent) {
       antMessage.warning('No messages to summarize');
       return;
     }
@@ -27,7 +28,9 @@ export const useMessageSummary = (): UseMessageSummaryReturn => {
     setSummary(null);
 
     try {
-      const response = await messageSummaryService.summarize(params);
+      const response = useV2
+        ? await messageSummaryService.summarizeV2(params)
+        : await messageSummaryService.summarize(params);
       
       if (response.success) {
         setSummary(response.summary);

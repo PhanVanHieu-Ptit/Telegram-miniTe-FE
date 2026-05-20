@@ -9,10 +9,13 @@ export interface SummarizeRequest {
 
 export interface SummarizeResponse {
   success: boolean;
-  summary: string[];
+  summary: string;
+  resolved: string[];
+  pending: string[];
+  language: 'vi';
 }
 
 export const summarizeMessages = async (payload: SummarizeRequest): Promise<SummarizeResponse> => {
-  const response = await apiClient.post<SummarizeResponse>("/messages/summarize", payload);
+  const response = await apiClient.post<SummarizeResponse>("/api/v2/summarize", payload);
   return response.data;
 };

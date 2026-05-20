@@ -15,6 +15,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useWebRTCContext } from "@/contexts/webrtc.context";
+import { cn } from "@/lib/utils";
 import {
   Phone,
   PhoneOff,
@@ -126,13 +127,13 @@ const VideoCall: React.FC<VideoCallProps> = ({
     if (localVideoRef.current) {
       localVideoRef.current.srcObject = localStream;
     }
-  }, [localStream]);
+  }, [localStream, callStatus]);
 
   useEffect(() => {
     if (remoteVideoRef.current) {
       remoteVideoRef.current.srcObject = remoteStream;
     }
-  }, [remoteStream]);
+  }, [remoteStream, callStatus]);
 
   // ──────────────────────────────────────────────────────────────────────────
   // Handlers
@@ -199,17 +200,14 @@ const VideoCall: React.FC<VideoCallProps> = ({
             ) : (
               <WifiOff className="h-4 w-4 text-rose-400" />
             )}
-            <span className="text-sm font-semibold text-white">
+            <span className="text-sm font-bold tracking-tight text-white">
               {targetUserName}
             </span>
             <span
-              className={`text-xs font-medium ${
-                callStatus === "connected"
-                  ? "text-emerald-400"
-                  : callStatus === "calling" || callStatus === "ringing"
-                  ? "text-amber-400"
-                  : "text-gray-400"
-              }`}
+              className={cn(
+                "sub-header-premium text-[10px] lowercase",
+                callStatus === "connected" ? "text-emerald-400" : "text-amber-400"
+              )}
             >
               · {statusLabel[callStatus]}
               {callStatus === "connected" && ` · ${formatDuration(callDuration)}`}
@@ -247,8 +245,8 @@ const VideoCall: React.FC<VideoCallProps> = ({
                 {callStatus === "calling"
                   ? "Waiting for the other person to answer…"
                   : callStatus === "connected"
-                  ? "Establishing video…"
-                  : "No remote video yet"}
+                    ? "Establishing video…"
+                    : "No remote video yet"}
               </span>
             </div>
           )}
@@ -280,11 +278,10 @@ const VideoCall: React.FC<VideoCallProps> = ({
               id="start-call-btn"
               onClick={handleStartCall}
               disabled={!isSocketConnected}
-              className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition active:scale-95 ${
-                isSocketConnected
-                  ? 'bg-emerald-500 hover:bg-emerald-600'
-                  : 'bg-gray-500 cursor-not-allowed opacity-60'
-              }`}
+              className={`flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition active:scale-95 ${isSocketConnected
+                ? 'bg-emerald-500 hover:bg-emerald-600'
+                : 'bg-gray-500 cursor-not-allowed opacity-60'
+                }`}
             >
               <Phone className="h-4 w-4" />
               {isSocketConnected ? 'Start Video Call' : 'Connecting…'}

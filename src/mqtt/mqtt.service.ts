@@ -1,6 +1,8 @@
-import type { Message, MessageStatus } from "@/types/chat.types";
+import { playMessageSound } from "@/lib/notification-sound";
+import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import { usePresenceStore } from "@/store/presence.store";
+import type { MessageStatus } from "@/types/chat.types";
 import type { AppMqttClient, MqttMessage } from "./mqtt.client";
 
 interface OnlineEvent {
@@ -17,6 +19,7 @@ interface MessageStatusEvent {
 
 interface TypingEvent {
     userId: string;
+    fullName?: string;
     typing: boolean;
 }
 
@@ -41,7 +44,7 @@ export async function subscribeToOnlineStatus(
     client: AppMqttClient,
     userId: string
 ): Promise<void> {
-    await client.subscribe(`user/${userId}/online`);
+    await client.subscribe([`user/${userId}/online`, `user/${userId}/events`]);
 }
 
 /**
@@ -87,6 +90,18 @@ export async function subscribeToConversationSeen(
 }
 
 /**
+ * Publish heartbeat for a user
+ */
+export async function publishHeartbeat(
+    client: AppMqttClient,
+    userId: string,
+    activeConversationId?: string | null
+): Promise<void> {
+    const payload = { activeConversationId };
+    await client.publish(`presence/${userId}/heartbeat`, payload);
+}
+
+/**
  * Subscribe to typing events for a specific conversation
  */
 export async function subscribeToTyping(
@@ -103,9 +118,10 @@ export async function publishTyping(
     client: AppMqttClient,
     conversationId: string,
     userId: string,
-    typing: boolean
+    typing: boolean,
+    fullName?: string
 ): Promise<void> {
-    const payload = { userId, typing };
+    const payload = { userId, typing, fullName, timestamp: new Date().toISOString() };
     await client.publish(`chat/${conversationId}/typing`, payload);
 }
 
@@ -144,8 +160,57 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
 
         // Handle message events: chat/{conversationId}/message
         if (topic.match(/^chat\/[^/]+\/message$/)) {
-            const messageData = payload as Message;
-            useChatStore.getState().addMessage(messageData);
+            const messageData = payload as any;
+            const store = useChatStore.getState();
+
+            // Handle special events via eventType
+            if (messageData.eventType === 'MESSAGE_EDITED') {
+                store.updateMessage(messageData.id, messageData);
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_DELETED') {
+                store.updateMessage(messageData.id, messageData); // messageData has isDeleted: true
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_PINNED') {
+                store.updateMessage(messageData.id, { isPinned: true });
+                return;
+            }
+            if (messageData.eventType === 'MESSAGE_UNPINNED') {
+                store.updateMessage(messageData.id, { isPinned: false });
+                return;
+            }
+            if (messageData.eventType === 'REACTION_UPDATE') {
+                store.updateMessage(messageData.id, { reactions: messageData.reactions });
+                return;
+            }
+
+            // Standard new message flow
+            // Deduplicate: skip if message already exists
+            if (store.messages.some((m) => m.id === messageData.id)) {
+                store.updateConversationLastMessage(messageData.conversationId, messageData);
+                return;
+            }
+
+            // Only add to the messages list if it belongs to the active conversation
+            if (messageData.conversationId === store.activeConversationId) {
+                store.addMessage({
+                    ...messageData,
+                    timestamp: messageData.timestamp || messageData.createdAt || new Date().toISOString(),
+                    status: messageData.status || "sent",
+                    // Strip localUrl — blob URLs from the sender are invalid on this client
+                    attachments: messageData.attachments?.map(({ localUrl: _l, ...att }: any) => att),
+                });
+            }
+
+            // Always update the sidebar's lastMessage preview
+            store.updateConversationLastMessage(messageData.conversationId, messageData);
+
+            // Play notification sound for messages from other users
+            const currentUserId = useAuthStore.getState().user?.id;
+            if (messageData.senderId !== currentUserId) {
+                playMessageSound();
+            }
 
             // Auto-publish delivered status and subscribe to message status
             publishMessageDelivered(client, messageData.id).catch((err) => {
@@ -188,10 +253,47 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
             if (conversationIdMatch) {
                 const conversationId = conversationIdMatch[1];
                 if (typingData.typing) {
-                    useChatStore.getState().setTypingUser(conversationId, typingData.userId);
+                    useChatStore.getState().setTypingUser(conversationId, typingData.userId, typingData.fullName);
                 } else {
                     useChatStore.getState().removeTypingUser(conversationId, typingData.userId);
                 }
+            }
+            return;
+        }
+
+        // Handle system events: user/{userId}/events
+        if (topic.match(/^user\/[^/]+\/events$/)) {
+            const eventData = payload as any;
+            if (eventData?.type === 'CONVERSATION_UPDATED') {
+                const store = useChatStore.getState();
+                const conversationId = eventData.conversationId;
+                
+                // Fetch conversations to ensure we have the newly created conversation in the UI list
+                if (!store.conversations.some(c => c.id === conversationId)) {
+                    store.fetchConversations().then(() => {
+                        // Subscribe to the new conversation's events after list is updated
+                        subscribeToConversation(client, conversationId).catch(console.error);
+                    }).catch(console.error);
+                } else {
+                    // Just update its presence
+                    subscribeToConversation(client, conversationId).catch(console.error);
+                }
+            } else if (eventData?.type === 'CONVERSATION_DELETED') {
+                const store = useChatStore.getState();
+                const conversationId = eventData.conversationId;
+                
+                // If it's the active conversation, clear it
+                if (store.activeConversationId === conversationId) {
+                    store.setActiveConversationId(null);
+                }
+                
+                // Update local state by re-fetching conversations or manually filtering
+                // Manually filtering is faster if we just want to remove one item
+                const updatedConversations = store.conversations.filter(c => c.id !== conversationId);
+                useChatStore.setState({ conversations: updatedConversations });
+                
+                // Unsubscribe from its events
+                unsubscribeFromConversation(client, conversationId).catch(console.error);
             }
             return;
         }

@@ -24,6 +24,7 @@ const transformAuthResponseToUser = (response: AuthResponse): User => {
     return {
         id: response.user.id,
         displayName: response.user.username,
+        email: response.user.email,
         online: true,
     };
 };
@@ -216,15 +217,22 @@ export const useAuthStore = create<AuthState>((set) => ({
             const user = {
                 id: apiUser.id,
                 displayName: apiUser.username,
+                email: apiUser.email,
                 online: true,
             };
+
+            // If the server returned a fresh JWT (e.g. cookie-only OAuth flow),
+            // persist it so WebRTCProvider and other services can use it.
+            if (apiUser.token) {
+                tokenStorage.setToken(apiUser.token);
+            }
 
             // Sync storage with latest data
             tokenStorage.setUser(user);
 
             set({
                 user,
-                accessToken: tokenStorage.getToken(),
+                accessToken: apiUser.token || tokenStorage.getToken(),
                 workspaceId: workspaceId || null,
                 isAuthenticated: true,
                 initialized: true,
@@ -258,15 +266,21 @@ export const useAuthStore = create<AuthState>((set) => ({
             const user = {
                 id: apiUser.id,
                 displayName: apiUser.username,
+                email: apiUser.email,
                 online: true,
             };
+
+            // Persist the fresh JWT so WebRTCProvider can use it
+            if (apiUser.token) {
+                tokenStorage.setToken(apiUser.token);
+            }
 
             // Update storage and store
             tokenStorage.setUser(user);
 
             set({
                 user,
-                accessToken: tokenStorage.getToken(),
+                accessToken: apiUser.token || tokenStorage.getToken(),
                 isAuthenticated: true,
                 loading: false,
                 initialized: true,

@@ -24,10 +24,14 @@ messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
   // Customize notification here
   const notificationTitle = payload.notification.title;
+  const isCallNotification = payload.data?.type === "CALL_INCOMING";
   const notificationOptions = {
-    body: payload.notification?.body || 'You have a new message',
-    icon: '/firebase-logo.png',
+    body: payload.notification?.body || "You have a new message",
+    icon: "/firebase-logo.png",
     data: payload.data, // Important for click handling
+    // Keep call notifications visible until user interacts
+    requireInteraction: isCallNotification,
+    tag: isCallNotification ? "incoming-call" : undefined,
   };
 
   self.registration.showNotification(notificationTitle, notificationOptions);

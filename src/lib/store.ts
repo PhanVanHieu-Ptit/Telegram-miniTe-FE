@@ -53,7 +53,7 @@ interface ChatActions {
   getConversationMessages: (conversationId: string) => Message[];
   getConversationPartner: (conversation: Conversation) => User | undefined;
   getFilteredConversations: () => Conversation[];
-  sendMessage: (conversationId: string, text: string) => Promise<void>;
+  sendMessage: (conversationId: string, content: string) => Promise<void>;
 }
 
 // ─── Store ────────────────────────────────────────────────────────────────────
@@ -410,8 +410,8 @@ export const useChatStore = create<ChatStore>((set, get) => {
       });
     },
 
-    sendMessage: async (conversationId: string, text: string) => {
-      const trimmed = text.trim();
+    sendMessage: async (conversationId: string, content: string) => {
+      const trimmed = content.trim();
       if (!trimmed) return;
 
       const senderId = get().currentUserId;
@@ -420,7 +420,7 @@ export const useChatStore = create<ChatStore>((set, get) => {
         id: tempId,
         conversationId,
         senderId,
-        text: trimmed,
+        content: trimmed,
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",

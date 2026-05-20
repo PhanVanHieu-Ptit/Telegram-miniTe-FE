@@ -4,15 +4,29 @@ import { ChatPanel } from "@/components/chat-panel";
 import { useChatStore } from "@/store/chat.store";
 import { cn } from "@/lib/utils";
 import { SummaryWidget } from "@/components/summary";
+import { ForwardModal } from "@/components/chat/ForwardModal";
+import { useSearchParams } from "react-router-dom";
 
 export default function ChatPage() {
     const activeConversationId = useChatStore((s) => s.activeConversationId);
+    const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
     const sidebarOpen = useChatStore((s) => s.sidebarOpen);
     const messages = useChatStore((s) => s.messages);
     const fetchConversations = useChatStore((s) => s.fetchConversations);
     const subscribeToConversation = useChatStore((s) => s.subscribeToConversation);
-    const unsubscribeFromConversation = useChatStore((s) => s.unsubscribeFromConversation);
     const publishSeenStatus = useChatStore((s) => s.publishSeenStatus);
+    const forwardingMessage = useChatStore((s) => s.forwardingMessage);
+    const setForwardingMessage = useChatStore((s) => s.setForwardingMessage);
+
+    const [searchParams] = useSearchParams();
+    const chatId = searchParams.get('id');
+
+    // Handle deep linking from URL (e.g. from notifications)
+    useEffect(() => {
+        if (chatId && chatId !== activeConversationId) {
+            setActiveConversationId(chatId);
+        }
+    }, [chatId, activeConversationId, setActiveConversationId]);
 
 
     // Subscribe to conversation when activeConversationId changes
@@ -20,13 +34,7 @@ export default function ChatPage() {
         if (activeConversationId) {
             subscribeToConversation(activeConversationId);
         }
-
-        return () => {
-            if (activeConversationId) {
-                unsubscribeFromConversation(activeConversationId);
-            }
-        };
-    }, [activeConversationId, subscribeToConversation, unsubscribeFromConversation]);
+    }, [activeConversationId, subscribeToConversation]);
 
     // Publish seen status when new messages arrive in active conversation
     useEffect(() => {
@@ -54,7 +62,7 @@ export default function ChatPage() {
     }, [fetchConversations]);
 
     return (
-        <main className="flex h-dvh w-full overflow-hidden">
+        <main className="flex h-dvh w-full overflow-hidden bg-transparent">
             {/* Sidebar */}
             <div
                 className={cn(
@@ -68,7 +76,7 @@ export default function ChatPage() {
             {/* Chat panel */}
             <div
                 className={cn(
-                    "h-full flex-1",
+                    "h-full flex-1 bg-transparent backdrop-blur-sm",
                     !activeConversationId || sidebarOpen ? "hidden md:flex" : "flex"
                 )}
             >
@@ -77,6 +85,12 @@ export default function ChatPage() {
 
             {/* Floating Summary Widget */}
             <SummaryWidget />
+
+            {/* Forward Message Modal */}
+            <ForwardModal 
+              message={forwardingMessage} 
+              onClose={() => setForwardingMessage(null)} 
+            />
         </main>
     );
 }

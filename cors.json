@@ -1,0 +1,22 @@
+[
+  {
+    "origin": [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:4000",
+      "https://app-3hchat.firebaseapp.com",
+      "https://app-3hchat.web.app",
+      "*"
+    ],
+    "method": ["GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS"],
+    "maxAgeSeconds": 3600,
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Disposition",
+      "Authorization",
+      "x-goog-resumable",
+      "Access-Control-Allow-Origin"
+    ]
+  }
+]

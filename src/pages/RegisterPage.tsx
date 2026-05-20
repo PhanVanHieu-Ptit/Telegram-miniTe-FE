@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Form, Input, Button, Card, Typography, message } from "antd";
 import { UserOutlined, MailOutlined, LockOutlined } from "@ant-design/icons";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { useAuthStore } from "@/store/auth.store";
 import type { RegisterDto } from "@/api/auth.api";
 
@@ -10,6 +12,7 @@ const { Title, Text } = Typography;
 interface RegisterFormValues extends RegisterDto { }
 
 export default function RegisterPage() {
+    const { t } = useTranslation();
     const [form] = Form.useForm<RegisterFormValues>();
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -18,161 +21,157 @@ export default function RegisterPage() {
     const onFinish = async (values: RegisterFormValues) => {
         setLoading(true);
         try {
-            // Call register action
             await register(values);
-
-            // Show success message
-            message.success("Registration successful! Redirecting to login...");
-
-            // Reset form
+            message.success(t('registration_successful'));
             form.resetFields();
-
-            // Redirect to login after 1 second
-            setTimeout(() => {
-                navigate("/sign-in");
-            }, 1000);
+            setTimeout(() => navigate("/sign-in"), 1000);
         } catch (error) {
-            // Handle errors from store or validation
-            const errorMessage =
-                error instanceof Error
-                    ? error.message
-                    : "Registration failed. Please try again.";
-            message.error(errorMessage);
+            message.error(error instanceof Error ? error.message : t('registration_failed'));
         } finally {
             setLoading(false);
         }
     };
 
+
+
     return (
-        <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-            <Card className="w-full max-w-md shadow-lg">
-                <div className="mb-8 text-center">
-                    <Title level={2} className="mb-2!">
-                        Create Account
-                    </Title>
-                    <Text type="secondary">Sign up to get started</Text>
-                </div>
-
-                <Form
-                    form={form}
-                    name="register"
-                    onFinish={onFinish}
-                    layout="vertical"
-                    size="large"
-                    autoComplete="off"
-                >
-                    <Form.Item
-                        name="name"
-                        label="Full Name"
-                        rules={[
-                            {
-                                required: true,
-                                message: "Please enter your full name",
-                            },
-                        ]}
-                    >
-                        <Input
-                            prefix={<UserOutlined className="text-gray-400" />}
-                            placeholder="Full Name"
-                            autoComplete="off"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="email"
-                        label="Email"
-                        rules={[
-                            {
-                                required: true,
-                                message: "Please enter your email",
-                            },
-                            {
-                                type: "email",
-                                message: "Please enter a valid email address",
-                            },
-                        ]}
-                    >
-                        <Input
-                            prefix={<MailOutlined className="text-gray-400" />}
-                            placeholder="Email address"
-                            autoComplete="email"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="password"
-                        label="Password"
-                        rules={[
-                            {
-                                required: true,
-                                message: "Please enter your password",
-                            },
-                            {
-                                min: 6,
-                                message: "Password must be at least 6 characters",
-                            },
-                        ]}
-                    >
-                        <Input.Password
-                            prefix={<LockOutlined className="text-gray-400" />}
-                            placeholder="Password"
-                            autoComplete="new-password"
-                        />
-                    </Form.Item>
-
-                    <Form.Item
-                        name="confirmPassword"
-                        label="Confirm Password"
-                        dependencies={["password"]}
-                        rules={[
-                            {
-                                required: true,
-                                message: "Please confirm your password",
-                            },
-                            ({ getFieldValue }) => ({
-                                validator(_, value) {
-                                    if (!value || getFieldValue("password") === value) {
-                                        return Promise.resolve();
-                                    }
-                                    return Promise.reject(
-                                        new Error("Passwords do not match")
-                                    );
-                                },
-                            }),
-                        ]}
-                    >
-                        <Input.Password
-                            prefix={<LockOutlined className="text-gray-400" />}
-                            placeholder="Confirm Password"
-                            autoComplete="new-password"
-                        />
-                    </Form.Item>
-
-                    <Form.Item className="mb-4!">
-                        <Button
-                            type="primary"
-                            htmlType="submit"
-                            loading={loading}
-                            block
-                            size="large"
+        <div className="flex min-h-screen items-center justify-center bg-transparent px-4 py-12 sm:px-6 lg:px-8 overflow-hidden relative">
+            <motion.div
+                initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                className="w-full max-w-md"
+            >
+                <Card className="w-full glass-card neon-border rounded-3xl relative overflow-hidden border-none" style={{ backdropFilter: 'blur(30px)', background: 'rgba(15, 23, 42, 0.6)' }}>
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-primary to-accent opacity-50" />
+                    <div className="mb-10 text-center relative z-10 pt-8">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: 0.2, duration: 0.6 }}
                         >
-                            Create Account
-                        </Button>
-                    </Form.Item>
-
-                    <div className="text-center">
-                        <Text type="secondary">
-                            Already have an account?{" "}
-                            <Link
-                                to="/sign-in"
-                                className="font-medium text-blue-600 hover:text-blue-500"
-                            >
-                                Sign in
-                            </Link>
-                        </Text>
+                            <Title level={1} className="headline-premium mb-2! text-white" style={{ fontSize: '2.5rem' }}>
+                                {t('join_the_network')}
+                            </Title>
+                            <div className="flex items-center justify-center gap-2">
+                                <div className="h-px w-8 bg-gradient-to-r from-transparent to-primary/50" />
+                                <Text className="sub-header-premium">{t('access_neural_link')}</Text>
+                                <div className="h-px w-8 bg-gradient-to-l from-transparent to-primary/50" />
+                            </div>
+                        </motion.div>
                     </div>
-                </Form>
-            </Card>
+
+                    <Form
+                        form={form}
+                        name="register"
+                        onFinish={onFinish}
+                        layout="vertical"
+                        size="large"
+                        autoComplete="off"
+                        className="relative z-10"
+                    >
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+                            <Form.Item
+                                name="username"
+                                rules={[{ required: true, message: t('designation_required') }]}
+                            >
+                                <Input
+                                    prefix={<UserOutlined className="mr-2 text-muted" />}
+                                    placeholder={t('neural_handle_placeholder')}
+                                    autoComplete="off"
+                                    className="premium-input py-3 px-4"
+                                />
+                            </Form.Item>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                            <Form.Item
+                                name="email"
+                                rules={[
+                                    { required: true, message: t('identification_required') },
+                                    { type: "email", message: t('invalid_frequency_format') },
+                                ]}
+                            >
+                                <Input
+                                    prefix={<MailOutlined className="mr-2 text-muted" />}
+                                    placeholder={t('neural_id_placeholder')}
+                                    autoComplete="email"
+                                    className="premium-input py-3 px-4"
+                                />
+                            </Form.Item>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+                            <Form.Item
+                                name="password"
+                                rules={[
+                                    { required: true, message: t('security_key_required') },
+                                    { min: 6, message: t('insecure_key_length') },
+                                ]}
+                            >
+                                <Input.Password
+                                    prefix={<LockOutlined className="mr-2 text-muted" />}
+                                    placeholder={t('encryption_key_placeholder')}
+                                    autoComplete="new-password"
+                                    className="premium-input py-3 px-4"
+                                />
+                            </Form.Item>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }}>
+                            <Form.Item
+                                name="confirmPassword"
+                                dependencies={["password"]}
+                                rules={[
+                                    { required: true, message: t('validation_required') },
+                                    ({ getFieldValue }) => ({
+                                        validator(_, value) {
+                                            if (!value || getFieldValue("password") === value) return Promise.resolve();
+                                            return Promise.reject(new Error(t('key_mismatch_detected')));
+                                        },
+                                    }),
+                                ]}
+                            >
+                                <Input.Password
+                                    prefix={<LockOutlined className="mr-2 text-muted" />}
+                                    placeholder={t('validate_encryption_key_placeholder')}
+                                    autoComplete="new-password"
+                                    className="premium-input py-3 px-4"
+                                />
+                            </Form.Item>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
+                            <Form.Item className="mb-8!">
+                                <Button
+                                    type="primary"
+                                    htmlType="submit"
+                                    loading={loading}
+                                    block
+                                    size="large"
+                                    className="h-14 mesh-btn rounded-2xl tracking-widest text-white shadow-xl"
+                                >
+                                    {t('create_identity')}
+                                </Button>
+                            </Form.Item>
+                        </motion.div>
+
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }}>
+                            <div className="text-center mt-6">
+                                <Text className="text-white/40 text-sm">
+                                    {t('already_synced_to_grid')}{" "}
+                                    <Link
+                                        to="/sign-in"
+                                        className="font-bold text-primary hover:text-white transition-all duration-300 underline-offset-4 hover:underline"
+                                    >
+                                        {t('initiate_link')}
+                                    </Link>
+                                </Text>
+                            </div>
+                        </motion.div>
+                    </Form>
+                </Card>
+            </motion.div>
         </div>
     );
 }

@@ -22,6 +22,7 @@ import { io, type Socket } from 'socket.io-client';
 import { tokenStorage } from '@/lib/token-storage';
 import { useAuthStore } from '@/store/auth.store';
 import { callApi, type CallDTO } from '@/services/call.api';
+import { fetchIceServers } from '@/api/ice-server.api';
 import type {
     AcceptCallPayload,
     CallStatus,
@@ -40,22 +41,7 @@ import type {
 const RTC_SERVICE_URL =
     import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
 
-const ICE_CONFIG: RTCConfiguration = {
-    iceServers: [
-        { urls: 'stun:openrelay.metered.ca:80' },
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-    ],
-    iceTransportPolicy: 'relay',
-};
+// Không dùng ICE_CONFIG hardcode nữa
 
 // ---------------------------------------------------------------------------
 // Context value type
@@ -98,6 +84,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
     children,
 }) => {
     const accessToken = useAuthStore((s) => s.accessToken);
+    const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
     // ── State ────────────────────────────────────────────────────────────────
     const [localStream, setLocalStream] = useState<MediaStream | null>(null);
@@ -135,7 +122,15 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
 
     useEffect(() => {
         const token = accessToken || tokenStorage.getToken();
-        if (!token) return;
+        if (!token) {
+            if (isAuthenticated) {
+                console.warn(
+                    '[WebRTC] Authenticated but no JWT available for RTC socket. ' +
+                    'Token will be fetched on next auth refresh.',
+                );
+            }
+            return;
+        }
 
         const socket = io(RTC_SERVICE_URL, {
             auth: { token },
@@ -169,6 +164,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 callId?: string;
                 callerId: string;
                 callerName: string;
+                callerAvatar?: string | null;
                 roomId: string;
                 offer?: RTCSessionDescriptionInit;
                 callType?: 'audio' | 'video';
@@ -180,6 +176,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                             callId: data.callId ?? prev.callId,
                             callerId: data.callerId ?? prev.callerId,
                             callerName: data.callerName ?? prev.callerName,
+                            callerAvatar: data.callerAvatar ?? prev.callerAvatar,
                             roomId: data.roomId,
                             offer: data.offer ?? prev.offer,
                             callType: data.callType ?? prev.callType ?? 'video',
@@ -189,6 +186,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                         callId: data.callId,
                         callerId: data.callerId,
                         callerName: data.callerName,
+                        callerAvatar: data.callerAvatar,
                         roomId: data.roomId,
                         offer: data.offer,
                         callType: data.callType ?? 'video',
@@ -205,14 +203,19 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
         socket.on(
             'call-answered',
             async (data: { answer: RTCSessionDescriptionInit }) => {
-                console.log('[WebRTC] Call answered');
+                console.log('[WebRTC] Call answered — applying remote description');
                 const pc = peerConnectionRef.current;
-                if (!pc) return;
+                if (!pc) {
+                    console.warn('[WebRTC] Received answer but no peer connection exists');
+                    return;
+                }
                 try {
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+                    // Note: callStatus 'connected' is set when ICE connection succeeds
+                    // but we can set it here too for UI feedback as negotiation is complete.
                     setCallStatus('connected');
                 } catch (err) {
-                    console.error('[WebRTC] setRemoteDescription failed', err);
+                    console.error('[WebRTC] setRemoteDescription (answer) failed', err);
                 }
             },
         );
@@ -239,12 +242,30 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             stopLocalTracks();
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accessToken]);
+    }, [accessToken, isAuthenticated]);
 
     // ── 2. PeerConnection factory ───────────────────────────────────────────
 
-    const createPeerConnection = useCallback((): RTCPeerConnection => {
-        const pc = new RTCPeerConnection(ICE_CONFIG);
+    const createPeerConnection = useCallback(async (): Promise<RTCPeerConnection> => {
+        let iceServers: RTCIceServer[] = [];
+        try {
+            const data = await fetchIceServers();
+            // Handle both { iceServers: [...] } and [...] formats
+            if (Array.isArray(data)) {
+                iceServers = data;
+            } else if (data && Array.isArray(data.iceServers)) {
+                iceServers = data.iceServers;
+            }
+        } catch (err) {
+            console.warn('[WebRTC] Failed to fetch ICE servers, fallback to default', err);
+            // fallback: public STUN
+            iceServers = [
+                { urls: 'stun:stun.l.google.com:19302' },
+            ];
+        }
+        // Remove iceTransportPolicy: 'relay' to allow direct connections (STUN/host)
+        // combined with TURN if available. Forced relay is often too restrictive.
+        const pc = new RTCPeerConnection({ iceServers });
 
         const stream = localStreamRef.current;
         if (stream) {
@@ -311,10 +332,50 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             callerName: string,
             callType: 'audio' | 'video' = 'video',
         ): Promise<void> => {
-            const socket = socketRef.current;
+            let socket = socketRef.current;
+
+            // ── Lazy socket recovery ────────────────────────────────────────
+            // If the socket was never created (e.g. token arrived after the
+            // initial effect ran), try to create it on-demand so the call is
+            // not silently dropped.
             if (!socket) {
-                console.error('[WebRTC] Socket not initialized');
-                return;
+                const token =
+                    useAuthStore.getState().accessToken || tokenStorage.getToken();
+                if (!token) {
+                    console.error(
+                        '[WebRTC] Cannot start call — no authentication token available',
+                    );
+                    return;
+                }
+                console.log('[WebRTC] Socket not found, creating on-demand…');
+                socket = io(RTC_SERVICE_URL, {
+                    auth: { token },
+                    reconnectionAttempts: 5,
+                    reconnectionDelay: 1000,
+                });
+                socketRef.current = socket;
+
+                // Wait for connection before proceeding
+                try {
+                    await new Promise<void>((resolve, reject) => {
+                        const timeout = setTimeout(() => {
+                            reject(new Error('Socket connection timeout'));
+                        }, 5000);
+                        socket!.once('connect', () => {
+                            clearTimeout(timeout);
+                            setIsSocketConnected(true);
+                            resolve();
+                        });
+                        socket!.once('connect_error', (err) => {
+                            clearTimeout(timeout);
+                            reject(err);
+                        });
+                    });
+                } catch (err) {
+                    console.error('[WebRTC] On-demand socket failed:', err);
+                    socketRef.current = null;
+                    return;
+                }
             }
 
             if (!socket.connected) {
@@ -338,22 +399,28 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             setCallStatus('calling');
 
             try {
+                // Step 1: Acquire media
                 if (!localStreamRef.current) await getMedia(callType);
 
-                const pc = createPeerConnection();
+                // Step 2: Persist in backend FIRST to get roomId
+                const callRecord = await callApi.startCall(targetUserId, callType);
+                setActiveCall(callRecord);
+                const roomId = callRecord.roomName;
+                roomIdRef.current = roomId;
+
+                // Step 3: Join room on rtc-service
+                socket.emit('join-room', { roomId } satisfies JoinRoomPayload);
+
+                // Step 4: Create PeerConnection + offer
+                // (Setting roomIdRef.current BEFORE this ensures early ICE candidates are relayed)
+                const pc = await createPeerConnection();
                 const offer = await pc.createOffer({
                     offerToReceiveAudio: true,
                     offerToReceiveVideo: callType === 'video',
                 });
                 await pc.setLocalDescription(offer);
 
-                const callRecord = await callApi.startCall(targetUserId, callType);
-                setActiveCall(callRecord);
-
-                const roomId = callRecord.roomName;
-                roomIdRef.current = roomId;
-                socket.emit('join-room', { roomId } satisfies JoinRoomPayload);
-
+                // Step 5: Send offer via socket (rtc-service routes it to callee)
                 const startPayload: StartCallPayload = {
                     targetUserId,
                     roomId,
@@ -389,7 +456,7 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 roomId: incomingCall.roomId,
             } satisfies JoinRoomPayload);
 
-            const pc = createPeerConnection();
+            const pc = await createPeerConnection();
             await pc.setRemoteDescription(
                 new RTCSessionDescription(incomingCall.offer),
             );
