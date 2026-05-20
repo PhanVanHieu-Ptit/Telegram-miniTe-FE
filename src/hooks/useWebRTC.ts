@@ -93,6 +93,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const roomIdRef = useRef<string | null>(null);
+  const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
 
   // ── 1. Socket initialization ────────────────────────────────────────────────
 
@@ -176,6 +177,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
       if (!pc) return;
       try {
         await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        // Drain any ICE candidates that arrived before remote description was set
+        const buffered = iceCandidateBufferRef.current.splice(0);
+        for (const c of buffered) {
+          try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+        }
         setCallStatus('connected');
       } catch (err) {
         console.error('[useWebRTC] setRemoteDescription (answer) failed', err);
@@ -184,8 +190,13 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
     // ── ICE candidate ───────────────────────────────────────────────────────
     socket.on('ice-candidate', async (data: IceCandidate) => {
+      if (!data.candidate) return;
       const pc = peerConnectionRef.current;
-      if (!pc || !data.candidate) return;
+      // Buffer candidates until PC exists and remote description is set
+      if (!pc || !pc.remoteDescription) {
+        iceCandidateBufferRef.current.push(data.candidate);
+        return;
+      }
       try {
         await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
       } catch (err) {
@@ -301,6 +312,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     roomIdRef.current = null;
+    iceCandidateBufferRef.current = [];
     setRemoteStream(null);
     setIncomingCall(null);
     setActiveCall(null);
@@ -407,6 +419,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
       // Step 3: Build PeerConnection + SDP answer
       const pc = await createPeerConnection();
       await pc.setRemoteDescription(new RTCSessionDescription(incomingCall.offer));
+      // Drain any ICE candidates that arrived before remote description was set
+      const buffered = iceCandidateBufferRef.current.splice(0);
+      for (const c of buffered) {
+        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+      }
       const answer = await pc.createAnswer();
       await pc.setLocalDescription(answer);
 
