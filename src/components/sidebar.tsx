@@ -1,6 +1,6 @@
 import { Input, Dropdown, Typography, Avatar } from "antd";
 import type { MenuProps } from "antd";
-import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles, User as UserIcon, LogOut } from "lucide-react";
+import { Menu, Search, Settings, Users, BookmarkIcon, Moon, Sparkles, LogOut } from "lucide-react";
 import { useChatStore } from "@/store/chat.store";
 import { ChatListItem } from "./chat-list-item";
 import { useNavigate } from "react-router-dom";

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Avatar, Button, Space, Typography, Tag } from 'antd';
-import { Bell, MessageSquare, Info, X, ExternalLink } from 'lucide-react';
+import { Bell, MessageSquare, Info, ExternalLink } from 'lucide-react';
 
 const { Text, Title, Paragraph } = Typography;
 
