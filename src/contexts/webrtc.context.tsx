@@ -41,27 +41,6 @@ import type {
 const RTC_SERVICE_URL =
     import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
 
-<<<<<<< Updated upstream
-// Không dùng ICE_CONFIG hardcode nữa
-=======
-const ICE_CONFIG: RTCConfiguration = {
-    iceServers: [
-        { urls: 'stun:stun.l.google.com:19302' },
-        { urls: 'stun:stun1.l.google.com:19302' },
-        {
-            urls: 'turn:openrelay.metered.ca:80',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-        {
-            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
-            username: 'openrelayproject',
-            credential: 'openrelayproject',
-        },
-    ],
-};
->>>>>>> Stashed changes
-
 // ---------------------------------------------------------------------------
 // Context value type
 // ---------------------------------------------------------------------------
@@ -234,16 +213,11 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 }
                 try {
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
-<<<<<<< Updated upstream
-                    // Note: callStatus 'connected' is set when ICE connection succeeds
-                    // but we can set it here too for UI feedback as negotiation is complete.
-=======
                     // Drain buffered ICE candidates that arrived before remote description
                     const buffered = iceCandidateBufferRef.current.splice(0);
                     for (const c of buffered) {
                         try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
                     }
->>>>>>> Stashed changes
                     setCallStatus('connected');
                 } catch (err) {
                     console.error('[WebRTC] setRemoteDescription (answer) failed', err);
