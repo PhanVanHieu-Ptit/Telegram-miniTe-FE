@@ -1,23 +1,59 @@
-
-
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Input } from "antd";
-import { SendHorizontal, Smile } from "lucide-react";
+import { SendHorizontal, X, Mic } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
+import { AttachmentMenu } from "./chat/inputs/AttachmentMenu";
+import { GifPicker } from "./chat/inputs/GifPicker";
+import { LocationPicker } from "./chat/inputs/LocationPicker";
+import { PollCreator } from "./chat/inputs/PollCreator";
+import { DrawingCanvas } from "./chat/inputs/DrawingCanvas";
+import { QuickMessagePicker } from "./chat/inputs/QuickMessagePicker";
+import { BankInfoForm } from "./chat/inputs/BankInfoForm";
+import { ContactPicker } from "./chat/inputs/ContactPicker";
+import { ReminderCreator } from "./chat/inputs/ReminderCreator";
 
 interface MessageInputProps {
   conversationId: string;
 }
 
 export function MessageInput({ conversationId }: MessageInputProps) {
+  const { t } = useTranslation();
   const [text, setText] = useState("");
+  const [files, setFiles] = useState<File[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [activePicker, setActivePicker] = useState<string | null>(null);
+  
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<BlobPart[]>([]);
   const typingRef = useRef(false);
   const typingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { id: currentUserId } = useAuthStore((state) => state.user) || {};
 
+  const [mentionQuery, setMentionQuery] = useState<{ query: string; index: number } | null>(null);
+  const conversations = useChatStore((s) => s.conversations);
+  const activeConversation = conversations.find(c => c.id === conversationId);
+  const members = activeConversation?.members || [];
+
   const sendMessage = useChatStore((s) => s.sendMessage);
+  const addMessage = useChatStore((s) => s.addMessage);
+  const updateMessage = useChatStore((s) => s.updateMessage);
   const setTypingActive = useChatStore((s) => s.setTypingActive);
+  const replyingToMessage = useChatStore((s) => s.replyingToMessage);
+  const setReplyingToMessage = useChatStore((s) => s.setReplyingToMessage);
+  const editingMessage = useChatStore((s) => s.editingMessage);
+  const setEditingMessage = useChatStore((s) => s.setEditingMessage);
+  const editMessage = useChatStore((s) => s.editMessage);
+
+  useEffect(() => {
+    if (editingMessage) {
+      setText(editingMessage.content);
+    } else {
+      setText("");
+    }
+  }, [editingMessage]);
 
   // ── Typing indicator management ──────────────────────────────────
 
@@ -37,7 +73,7 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     typingTimerRef.current = setTimeout(() => {
       typingRef.current = false;
       emitTyping(false);
-    }, 3000); // 3 seconds inactivity
+    }, 3000);
   }, [emitTyping]);
 
   const stopTyping = useCallback(() => {
@@ -64,63 +100,381 @@ export function MessageInput({ conversationId }: MessageInputProps) {
     };
   }, [emitTyping]);
 
-  // ── Send ─────────────────────────────────────────────────────────
+  // ── General Send Logic ──────────────────────────────────────────
 
-  const handleSend = useCallback(() => {
-    const trimmed = text.trim();
-    if (!trimmed || !currentUserId) return;
+  const handleSend = useCallback(async (overrides?: {
+    type?: any;
+    content?: string;
+    attachments?: any[];
+    customPayload?: any;
+  }) => {
+    const trimmed = overrides?.content !== undefined ? overrides.content : text.trim();
+    const capturedFiles = [...files];
+    const hasFiles = capturedFiles.length > 0;
+
+    if (!trimmed && !hasFiles && !overrides?.customPayload) return;
+    if (!currentUserId) return;
+
+    if (editingMessage) {
+      try {
+        await editMessage(editingMessage.id, trimmed);
+        setEditingMessage(null);
+        setText("");
+        return;
+      } catch (err) {
+        console.error("Failed to edit:", err);
+        return;
+      }
+    }
 
     stopTyping();
-    void sendMessage({ conversationId, content: trimmed, senderId: currentUserId });
-    setText("");
-  }, [text, conversationId, sendMessage, stopTyping, currentUserId]);
 
-  // ── Keyboard ─────────────────────────────────────────────────────
+    let messageType = overrides?.type || (hasFiles ? "IMAGE" : "TEXT");
+    if (hasFiles && !overrides?.type) {
+        if (capturedFiles[0].type.startsWith("image/")) messageType = "IMAGE";
+        else if (capturedFiles[0].type.startsWith("video/")) messageType = "VIDEO";
+        else if (capturedFiles[0].type.startsWith("audio/")) messageType = "VOICE";
+        else messageType = "FILE";
+    }
+
+    const blobUrls = hasFiles ? capturedFiles.map((f) => URL.createObjectURL(f)) : [];
+    const localAttachments = hasFiles
+      ? capturedFiles.map((f, i) => ({
+          id: `local-${i}-${Date.now()}`,
+          url: blobUrls[i],
+          localUrl: blobUrls[i],
+          name: f.name,
+          size: f.size,
+          type: f.type,
+          uploadProgress: 0,
+        }))
+      : overrides?.attachments;
+
+    const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const finalContent = trimmed || (overrides?.customPayload ? JSON.stringify(overrides.customPayload) : capturedFiles.map((f) => f.name).join(", "));
+
+    // ── Phase 1: Add optimistic message ──
+    addMessage({
+      id: tempId,
+      conversationId,
+      senderId: currentUserId,
+      content: finalContent,
+      type: messageType,
+      attachments: localAttachments,
+      replyTo: replyingToMessage?.id,
+      timestamp: new Date().toISOString(),
+      status: (hasFiles || messageType === 'GIF') ? "uploading" : "sending",
+    });
+
+    setText("");
+    setFiles([]);
+    setActivePicker(null);
+
+    try {
+      let remoteAttachments: any[] | undefined = undefined;
+
+      if (hasFiles) {
+        const { uploadAttachmentsViaBackend } = await import("@/lib/uploadMedia");
+        const uploaded = await uploadAttachmentsViaBackend(
+          capturedFiles,
+          conversationId,
+          (fileIdx, pct) => {
+            updateMessage(tempId, {
+              attachments: localAttachments?.map((att: any, i: number) =>
+                i === fileIdx ? { ...att, uploadProgress: pct } : att
+              ),
+            });
+          }
+        );
+
+        remoteAttachments = uploaded.map((att, i) => ({
+          ...att,
+          localUrl: blobUrls[i],
+          uploadProgress: undefined,
+        }));
+
+        updateMessage(tempId, { status: "sending", attachments: remoteAttachments });
+      }
+
+      // Process mentions
+      const mentionMatches = finalContent.match(/@([\w\u00C0-\u017F]+)/g) || [];
+      const mentionedNames = mentionMatches.map(m => m.slice(1).toLowerCase());
+      
+      let mentions: string[] = [];
+      if (mentionedNames.includes('all') || mentionedNames.includes('everyone')) {
+        mentions = members.filter(m => m.id !== currentUserId).map(m => m.id);
+      } else {
+        mentions = members.filter(m => {
+           const formattedName = m.fullName.replace(/\s+/g, '').toLowerCase();
+           return mentionedNames.includes(formattedName);
+        }).map(m => m.id);
+      }
+
+      // ── Phase 3: POST to backend ──
+      // Strip localUrl (blob URL) — it's only valid in the sender's browser
+      // and must NOT be persisted to the DB or sent to recipients.
+      const attachmentsForBackend = (remoteAttachments || localAttachments)?.map(
+        ({ localUrl: _localUrl, uploadProgress: _p, ...rest }: any) => rest
+      );
+      const result = await sendMessage({
+        conversationId,
+        content: finalContent,
+        senderId: currentUserId,
+        type: messageType,
+        attachments: attachmentsForBackend,
+        mentions,
+        replyTo: replyingToMessage?.id,
+      });
+
+      if (replyingToMessage) setReplyingToMessage(null);
+
+      if (result) {
+        updateMessage(tempId, {
+          ...result,
+          id: result.id ?? tempId,
+          status: "sent",
+        });
+      }
+    } catch (err) {
+      console.error("[MessageInput] Failed to send message:", err);
+      blobUrls.forEach((u) => URL.revokeObjectURL(u));
+      updateMessage(tempId, { status: "failed" });
+    }
+  }, [text, files, conversationId, sendMessage, addMessage, updateMessage, stopTyping, currentUserId]);
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+      e.target.value = "";
+    }
+  };
+
+  const toggleRecording = async () => {
+    if (isRecording && mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    } else {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const recorder = new MediaRecorder(stream);
+        mediaRecorderRef.current = recorder;
+        audioChunksRef.current = [];
+        recorder.ondataavailable = e => audioChunksRef.current.push(e.data);
+        recorder.onstop = () => {
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const file = new File([audioBlob], `voice-note-${Date.now()}.webm`, { type: 'audio/webm' });
+          setFiles(prev => [...prev, file]);
+          stream.getTracks().forEach(t => t.stop());
+        };
+        recorder.start();
+        setIsRecording(true);
+      } catch (error) {
+        console.error("Microphone access denied", error);
+      }
+    }
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      handleSend();
+      void handleSend();
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setText(e.target.value);
-    if (e.target.value.trim()) {
-      handleTypingStart();
+  const menuSelect = (id: string) => {
+    if (id === 'image' || id === 'file') {
+        fileInputRef.current?.click();
     } else {
-      stopTyping();
+        setActivePicker(id);
     }
   };
 
-  // ── Render ───────────────────────────────────────────────────────
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const val = e.target.value;
+    setText(val);
+    handleTypingStart();
+
+    const cursor = e.target.selectionStart;
+    const textBeforeCursor = val.slice(0, cursor);
+    const match = textBeforeCursor.match(/@([\w\u00C0-\u017F]*)$/);
+    if (match) {
+      setMentionQuery({ query: match[1], index: cursor - match[1].length - 1 });
+    } else {
+      setMentionQuery(null);
+    }
+  };
+
+  const insertMention = (name: string) => {
+    if (!mentionQuery) return;
+    const before = text.slice(0, mentionQuery.index);
+    const after = text.slice(mentionQuery.index + mentionQuery.query.length + 1);
+    const newText = `${before}@${name} ${after}`;
+    setText(newText);
+    setMentionQuery(null);
+  };
+
+  const filteredMembers = [
+    { id: 'all', fullName: 'All (Everyone)', avatarUrl: null, tag: 'all' },
+    ...members.filter(m => m.id !== currentUserId).map(m => ({
+       ...m,
+       tag: m.fullName.replace(/\s+/g, '')
+    }))
+  ].filter(m => m.tag.toLowerCase().includes((mentionQuery?.query || '').toLowerCase()));
 
   return (
-    <footer className="shrink-0 border-t border-border bg-card px-3 py-2.5 md:px-6">
-      <div className="mx-auto flex max-w-2xl items-end gap-2">
+    <footer className="shrink-0 border-t border-white/10 backdrop-blur-md relative z-20" style={{ background: "rgba(10, 15, 25, 0.4)" }}>
+      {/* Overlay Pickers */}
+      {activePicker && (
+        <div className="absolute bottom-full left-4 mb-4 animate-in slide-in-from-bottom-4 duration-300">
+           {activePicker === 'gif' && <GifPicker onSelect={(url) => handleSend({ type: 'GIF', attachments: [{ url }] })} />}
+           {activePicker === 'location' && <LocationPicker onSend={(lat, lng, isLive) => handleSend({ type: 'LOCATION', customPayload: { lat, lng, isLive } })} />}
+           {activePicker === 'poll' && <PollCreator onSend={(question, options, allowMultiple) => handleSend({ type: 'POLL', customPayload: { question, options: options.map((t, i) => ({ id: i.toString(), text: t, votes: 0 })), totalVotes: 0, allowMultiple } })} />}
+           {activePicker === 'draw' && <DrawingCanvas onSend={(blob) => {
+               const file = new File([blob], `drawing-${Date.now()}.png`, { type: 'image/png' });
+               setFiles([file]);
+               handleSend({ type: 'IMAGE' });
+           }} />}
+           {activePicker === 'quick' && <QuickMessagePicker onSelect={(text) => handleSend({ content: text })} />}
+           {activePicker === 'bank' && <BankInfoForm onSend={(data) => handleSend({ type: 'BANK', customPayload: data })} />}
+           {activePicker === 'contact' && <ContactPicker onSend={(data) => handleSend({ type: 'CONTACT', customPayload: data })} />}
+           {activePicker === 'reminder' && <ReminderCreator onSend={(text, time) => handleSend({ type: 'REMINDER', content: text, customPayload: { reminderAt: time } })} />}
+           
+           <button 
+             onClick={() => setActivePicker(null)}
+             className="absolute -top-2 -right-2 bg-black border border-white/20 rounded-full p-1 text-white/60 hover:text-white"
+           >
+             <X size={14} />
+           </button>
+        </div>
+      )}
+
+      {/* File Preview Strip */}
+      {files.length > 0 && (
+        <div className="flex gap-2 px-6 py-2 overflow-x-auto border-b border-white/5">
+          {files.map((file, idx) => (
+            <div key={idx} className="relative flex-shrink-0 w-20 h-20 bg-white/10 rounded-xl overflow-hidden group border border-white/10">
+              {file.type.startsWith('image/') ? (
+                <img src={URL.createObjectURL(file)} className="w-full h-full object-cover" alt="preview" />
+              ) : file.type.startsWith('video/') ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-black/20">
+                  <span className="text-2xl">🎬</span>
+                  <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
+                </div>
+              ) : file.type.startsWith('audio/') ? (
+                <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-purple-900/30">
+                  <span className="text-2xl">🎵</span>
+                  <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
+                </div>
+              ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center gap-1 bg-blue-900/20 p-1">
+                        <span className="text-2xl">
+                          {file.name.endsWith('.pdf') ? '📕' : file.name.match(/\.docx?$/) ? '📘' : file.name.match(/\.xlsx?$/) ? '📗' : '📄'}
+                        </span>
+                        <span className="text-[9px] text-white/60 truncate w-full px-1 text-center">{file.name}</span>
+                </div>
+              )}
+              {/* Upload indicator badge */}
+              <div className="absolute top-1 left-1 bg-black/50 rounded px-1 py-0.5">
+                <span className="text-[8px] text-white/70">
+                  {(file.size / 1024 / 1024).toFixed(1)}MB
+                </span>
+              </div>
+              <button
+                onClick={() => setFiles(files.filter((_, i) => i !== idx))}
+                className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 opacity-100 hover:bg-red-500/80 transition-colors"
+              >
+                <X className="w-3 h-3 text-white" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Mention Picker */}
+      {mentionQuery && filteredMembers.length > 0 && (
+        <div className="absolute bottom-full left-4 mb-2 max-h-48 overflow-y-auto bg-[#1a1f2e] border border-white/10 rounded-xl shadow-2xl p-2 w-64 z-50">
+          <div className="text-[10px] text-white/50 mb-1 px-2 uppercase font-semibold">Members</div>
+          {filteredMembers.map(m => (
+            <button
+              key={m.id}
+              onClick={() => insertMention(m.tag)}
+              className="flex items-center gap-2 w-full p-2 hover:bg-white/5 rounded-lg transition text-left"
+            >
+              <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center text-[10px] shrink-0 font-bold overflow-hidden">
+                {m.avatarUrl ? <img src={m.avatarUrl} alt="" className="w-full h-full object-cover" /> : m.fullName[0].toUpperCase()}
+              </div>
+              <div className="flex flex-col overflow-hidden">
+                <span className="text-sm text-white truncate leading-tight">{m.fullName}</span>
+                <span className="text-[10px] text-white/40 truncate">@{m.tag}</span>
+              </div>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Reply Preview */}
+      {replyingToMessage && (
+        <div className="mx-auto max-w-2xl px-6 py-2 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-sm animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-1 bg-blue-500 h-8 rounded-full" />
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold text-blue-400">Replying to {replyingToMessage.sender?.displayName}</span>
+              <span className="text-[11px] text-white/60 truncate">{replyingToMessage.content}</span>
+            </div>
+          </div>
+          <button onClick={() => setReplyingToMessage(null)} className="p-1.5 hover:bg-white/10 rounded-full text-white/40">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {/* Edit Preview */}
+      {editingMessage && (
+        <div className="mx-auto max-w-2xl px-6 py-2 border-b border-white/10 flex items-center justify-between bg-white/5 backdrop-blur-sm animate-in slide-in-from-bottom-2">
+          <div className="flex items-center gap-3 overflow-hidden">
+            <div className="w-1 bg-amber-500 h-8 rounded-full" />
+            <div className="flex flex-col overflow-hidden">
+              <span className="text-xs font-bold text-amber-400">Editing Message</span>
+              <span className="text-[11px] text-white/60 truncate">{editingMessage.content}</span>
+            </div>
+          </div>
+          <button onClick={() => setEditingMessage(null)} className="p-1.5 hover:bg-white/10 rounded-full text-white/40">
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      <div className="mx-auto flex max-w-2xl px-3 py-2.5 md:px-6 items-end gap-2">
+        <input type="file" multiple className="hidden" ref={fileInputRef} onChange={handleFileSelect} />
+
+        <AttachmentMenu onSelect={menuSelect} />
+
         <button
           type="button"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-accent"
-          aria-label="Emoji"
+          onClick={toggleRecording}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full transition-colors ${
+            isRecording ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-muted-foreground hover:bg-white/10'
+          }`}
         >
-          <Smile className="h-5 w-5" />
+          <Mic className="h-5 w-5" />
         </button>
 
         <Input.TextArea
           value={text}
-          onChange={handleChange}
+          onChange={handleTextChange}
           onKeyDown={handleKeyDown}
-          placeholder="Message"
+          placeholder={t('type_a_message')}
           autoSize={{ minRows: 1, maxRows: 5 }}
           variant="filled"
+          className="elevated-input !bg-white/5 !border-none !text-white"
           styles={{
             textarea: {
-              backgroundColor: "var(--input)",
-              borderRadius: "18px",
-              padding: "8px 14px",
+              backgroundColor: "transparent",
+              padding: "10px 16px",
               resize: "none",
               fontSize: "14px",
               lineHeight: "1.5",
+              color: "white",
               border: "none",
             },
           }}
@@ -128,12 +482,11 @@ export function MessageInput({ conversationId }: MessageInputProps) {
 
         <button
           type="button"
-          onClick={handleSend}
-          disabled={!text.trim()}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-primary transition-all hover:bg-accent disabled:scale-90 disabled:opacity-40"
-          aria-label="Send message"
+          onClick={() => void handleSend()}
+          disabled={!text.trim() && files.length === 0}
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white shadow-lg transition-all hover:scale-110 disabled:opacity-40"
         >
-          <SendHorizontal className="h-5 w-5" />
+          <SendHorizontal className="h-5 w-5 ml-0.5" />
         </button>
       </div>
     </footer>

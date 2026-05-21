@@ -13,6 +13,7 @@ import MessageSummarizerPage from './pages/MessageSummarizerPage'
 import NotificationProvider from './components/NotificationProvider'
 import { WebRTCProvider } from '@/contexts/webrtc.context'
 import IncomingCallOverlay from '@/components/IncomingCallOverlay'
+import { Toaster } from 'sonner'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
 
@@ -92,6 +93,27 @@ function App(): JSX.Element {
   }, [isAuthenticated, bootstrapChat])
 
   useEffect(() => {
+    if (!isAuthenticated || !mqttInitializedRef.current) return;
+
+    const intervalId = setInterval(() => {
+      const user = useAuthStore.getState().user;
+      const activeConvId = useChatStore.getState().activeConversationId;
+
+      if (user?.id) {
+        const client = getMqttClient({ url: MQTT_URL });
+        const isHidden = document.hidden;
+        const effectiveActiveConvId = isHidden ? null : activeConvId;
+
+        import('@/mqtt/mqtt.service').then(({ publishHeartbeat }) => {
+          void publishHeartbeat(client, user.id, effectiveActiveConvId);
+        });
+      }
+    }, 10_000); // 10 seconds
+
+    return () => clearInterval(intervalId);
+  }, [isAuthenticated]);
+
+  useEffect(() => {
     return () => {
       mqttCleanupRef.current?.()
       mqttCleanupRef.current = null
@@ -105,53 +127,66 @@ function App(): JSX.Element {
           and conversations finish loading. This prevents missing incoming
           calls during the app bootstrap window. */}
       <WebRTCProvider>
+        <Toaster 
+          position="top-center" 
+          richColors 
+          toastOptions={{
+            style: {
+              background: 'rgba(15, 23, 42, 0.8)',
+              backdropFilter: 'blur(16px)',
+              border: '1px solid rgba(255, 255, 255, 0.1)',
+              borderRadius: '16px',
+              color: '#ffffff',
+            },
+          }}
+        />
         {/* Global incoming call popup — always visible regardless of page */}
         <IncomingCallOverlay />
         {bootstrapPhase !== 'ready' ? (
-          <div className="flex items-center justify-center h-dvh w-full bg-background">
+          <div className="flex items-center justify-center h-dvh w-full bg-transparent">
             <div className="flex flex-col items-center gap-2">
               <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
               <p className="text-sm text-muted-foreground">Loading...</p>
             </div>
           </div>
         ) : (
-        <Routes>
-          <Route path="/sign-in" element={<LoginPage />} />
-          <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
-          <Route path="/auth/login" element={<Navigate to="/sign-in" replace />} />
-          <Route path="/auth/register" element={<RegisterPage />} />
-          <Route
-            path="/chat"
-            element={
-              <ProtectedRoute>
-                <ChatPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/summarize"
-            element={
-              <ProtectedRoute>
-                <MessageSummarizerPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={<Navigate to="/chat" replace />}
-          />
-          <Route
-            path="/admin"
-            element={<Navigate to="/" replace />}
-          />
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/sign-in" replace />
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          <Routes>
+            <Route path="/sign-in" element={<LoginPage />} />
+            <Route path="/auth/google/callback" element={<GoogleCallbackPage />} />
+            <Route path="/auth/login" element={<Navigate to="/sign-in" replace />} />
+            <Route path="/auth/register" element={<RegisterPage />} />
+            <Route
+              path="/chat"
+              element={
+                <ProtectedRoute>
+                  <ChatPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/summarize"
+              element={
+                <ProtectedRoute>
+                  <MessageSummarizerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={<Navigate to="/chat" replace />}
+            />
+            <Route
+              path="/admin"
+              element={<Navigate to="/" replace />}
+            />
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? <Navigate to="/chat" replace /> : <Navigate to="/sign-in" replace />
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         )}
       </WebRTCProvider>
     </NotificationProvider>

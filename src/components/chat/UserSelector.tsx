@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Select, Spin, Avatar } from "antd";
+import { useTranslation } from "react-i18next";
 import { searchUsers } from "@/api/user.api";
 import type { User } from "@/types/chat.types";
 import { Search } from "lucide-react";
@@ -14,6 +15,7 @@ interface UserSelectorProps {
  * Multi-select user selector with debounced server-side search
  */
 export const UserSelector = ({ selectedUserIds, onSelect, onDeselect }: UserSelectorProps) => {
+  const { t } = useTranslation();
   const [fetching, setFetching] = useState(false);
   const [options, setOptions] = useState<User[]>([]);
   const [searchValue, setSearchValue] = useState("");
@@ -54,14 +56,14 @@ export const UserSelector = ({ selectedUserIds, onSelect, onDeselect }: UserSele
     <Select
       mode="multiple"
       labelInValue
-      placeholder="Search users to add..."
+      placeholder={t('search_users_placeholder')}
       suffixIcon={<Search className="h-4 w-4 text-muted-foreground mr-1" />}
       filterOption={false}
       onSearch={setSearchValue}
       onSelect={handleSelect}
       onDeselect={handleDeselect}
       style={{ width: '100%' }}
-      notFoundContent={fetching ? <Spin size="small" /> : (searchValue ? "No users found" : "Type to search users")}
+      notFoundContent={fetching ? <Spin size="small" /> : (searchValue ? t('no_users_found') : t('type_to_search'))}
       className="conversation-user-selector"
       popupClassName="user-selector-popup"
       options={options.map(user => ({

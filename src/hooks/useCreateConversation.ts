@@ -1,9 +1,11 @@
 import { useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useChatStore } from "@/store/chat.store";
 import { useAuthStore } from "@/store/auth.store";
 import { conversationService } from "@/services/conversation.service";
 import type { Conversation } from "@/types/chat.types";
 import { message } from "antd";
+import { useNavigate } from "react-router-dom";
 
 interface CreateConversationParams {
     name?: string;
@@ -17,30 +19,31 @@ interface CreateConversationParams {
  * Handles form state, loading, validation, and post-creation side effects
  */
 export const useCreateConversation = () => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const currentUser = useAuthStore((s) => s.user);
     const fetchConversations = useChatStore((s) => s.fetchConversations);
-    const setActiveConversationId = useChatStore((s) => s.setActiveConversationId);
+    const navigate = useNavigate();
 
     const createConversation = useCallback(async (params: CreateConversationParams): Promise<Conversation | undefined> => {
         if (!currentUser) {
-            message.error("You must be logged in to create a conversation");
+            message.error(t('notifications.login_required_error'));
             return;
         }
 
         // 1. Validation Logic
         if (params.type === "group" && !params.name) {
-            message.error("Conversation name is required for group chats");
+            message.error(t('notifications.group_name_required_error'));
             return;
         }
 
         if (params.type === "private" && params.userIds.length < 1) {
-            message.error("At least 1 user is required for private chat");
+            message.error(t('notifications.private_chat_member_error'));
             return;
         }
 
         if (params.type === "group" && params.userIds.length < 2) {
-            message.error("At least 2 users are required for group chat");
+            message.error(t('notifications.group_chat_member_error'));
             return;
         }
 
@@ -60,18 +63,19 @@ export const useCreateConversation = () => {
 
             // 3. Post-Creation side-effects
             await fetchConversations();
-            setActiveConversationId(result.id);
-            message.success("Conversation created successfully");
-            
+            // Update URL which will trigger setActiveConversationId in ChatPage
+            navigate(`/chat?id=${result.id}`);
+            message.success(t('notifications.conversation_created_success'));
+
             return result;
         } catch (error: any) {
-            const errorMessage = error.message || "Failed to create conversation";
+            const errorMessage = error.message || t('notifications.conversation_create_failed');
             message.error(errorMessage);
             throw error;
         } finally {
             setLoading(false);
         }
-    }, [currentUser, fetchConversations, setActiveConversationId]);
+    }, [currentUser, fetchConversations, navigate, t]);
 
     return {
         createConversation,

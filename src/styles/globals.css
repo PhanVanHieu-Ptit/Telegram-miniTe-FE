@@ -4,207 +4,659 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: oklch(0.97 0.003 240);
-  --foreground: oklch(0.15 0.01 240);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.15 0.01 240);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.15 0.01 240);
-  --primary: oklch(0.62 0.16 240);
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.005 240);
-  --secondary-foreground: oklch(0.25 0.01 240);
-  --muted: oklch(0.94 0.005 240);
-  --muted-foreground: oklch(0.50 0.01 240);
-  --accent: oklch(0.92 0.01 240);
-  --accent-foreground: oklch(0.20 0.01 240);
-  --destructive: oklch(0.577 0.245 27.325);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.90 0.005 240);
-  --input: oklch(0.94 0.005 240);
-  --ring: oklch(0.62 0.16 240);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(1 0 0);
-  --sidebar-foreground: oklch(0.15 0.01 240);
-  --sidebar-primary: oklch(0.62 0.16 240);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.94 0.01 240);
-  --sidebar-accent-foreground: oklch(0.20 0.01 240);
-  --sidebar-border: oklch(0.90 0.005 240);
-  --sidebar-ring: oklch(0.62 0.16 240);
-  --bubble-out: oklch(0.90 0.06 170);
-  --bubble-out-foreground: oklch(0.15 0.01 240);
-  --bubble-in: oklch(1 0 0);
-  --bubble-in-foreground: oklch(0.15 0.01 240);
-   --online: oklch(0.69 0.16 145);
-}
-
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
-   --online: oklch(0.69 0.16 145);
+  /* Premium SaaS Glass Aesthetic */
+  --background: #0f172a;
+  --foreground: #ffffff;
+  --secondary: #94a3b8;
+  --radius: 16px;
+  --primary: #0ea5e9;
+  /* Cyan */
+  --accent: #a855f7;
+  /* Purple */
+  --glass-bg: rgba(15, 23, 42, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 @theme inline {
-  --font-sans: 'Geist', 'Geist Fallback';
-  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-sans: var(--font-sans);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-border: var(--glass-border);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-bubble-out: var(--bubble-out);
-  --color-bubble-out-foreground: var(--bubble-out-foreground);
-  --color-bubble-in: var(--bubble-in);
-  --color-bubble-in-foreground: var(--bubble-in-foreground);
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-white font-sans overflow-x-hidden;
+    background-color: var(--background);
+    background-image:
+      radial-gradient(at 0% 0%, rgba(14, 165, 233, 0.15) 0, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.15) 0, transparent 50%),
+      radial-gradient(at 50% 50%, rgba(15, 23, 42, 1) 0, rgba(15, 23, 42, 0.8) 100%);
+    background-attachment: fixed;
+    line-height: 1.6;
+    min-height: 100vh;
   }
 }
 
-/* Thin scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
+/* Glassmorphism Refinement */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
 }
+
+/* Multi-colored Neon Border */
+.neon-border {
+  position: relative;
+}
+
+.neon-border::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  /* Border width */
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.5), rgba(168, 85, 247, 0.5));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: destination-out;
+  pointer-events: none;
+}
+
+/* Mesh Gradient Button */
+.mesh-btn {
+  background: linear-gradient(135deg, #0ea5e9 0%, #a855f7 100%);
+  position: relative;
+  border: none !important;
+  color: white !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  overflow: hidden;
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.2);
+}
+
+.mesh-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 20% 30%, rgba(255, 255, 255, 0.2), transparent 50%),
+    radial-gradient(circle at 80% 70%, rgba(255, 255, 255, 0.1), transparent 50%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mesh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(14, 165, 233, 0.4), 0 0 15px rgba(168, 85, 247, 0.4);
+}
+
+.mesh-btn:hover::before {
+  opacity: 1;
+}
+
+.mesh-btn:active {
+  transform: translateY(0);
+}
+
+/* Gradients */
+.primary-gradient {
+  background: linear-gradient(135deg, #0ea5e9 0%, #a855f7 100%) !important;
+  color: white !important;
+}
+
+.primary-gradient:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 20px rgba(14, 165, 233, 0.4) !important;
+}
+
+/* Typography Enhancements */
+.headline-premium {
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  background: linear-gradient(to bottom right, #fff, #94a3b8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.sub-header-premium {
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.65rem;
+}
+
+/* Input Styles */
+.premium-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-radius: 12px !important;
+  color: #ffffff !important;
+  padding: 12px 18px !important;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease !important;
+}
+
+.premium-input::placeholder {
+  color: rgba(255, 255, 255, 0.3) !important;
+}
+
+.premium-input:focus-within {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1) !important;
+}
+
+/* Ant Design Global Fixes */
+.ant-typography {
+  color: #ffffff !important;
+}
+
+.ant-btn {
+  font-family: inherit !important;
+}
+
+.ant-input {
+  font-family: inherit !important;
+}
+
+/* ABSOLUTE DARK THEME FOR MODALS */
+.ant-modal .ant-modal-content,
+.ant-modal-content,
+.saas-modal .ant-modal-content,
+.dark-modal .ant-modal-content,
+div.ant-modal-content {
+  background: #0a0f19 !important;
+  /* Pure Dark for Modal Background */
+  background-color: #0a0f19 !important;
+  backdrop-filter: blur(40px) !important;
+  border: 1px solid rgba(14, 165, 233, 0.2) !important;
+  border-radius: 32px !important;
+  box-shadow: 0 0 40px rgba(14, 165, 233, 0.1), 0 30px 60px rgba(0, 0, 0, 0.9) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.ant-modal-confirm .ant-modal-body {
+  padding: 24px 32px 16px !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-title {
+  color: white !important;
+  font-weight: 800 !important;
+  font-size: 1.15rem !important;
+  margin-bottom: 8px !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-content {
+  color: rgba(255, 255, 255, 0.6) !important;
+  font-size: 0.9rem !important;
+}
+
+.ant-modal-confirm .ant-modal-confirm-btns {
+  padding: 0 32px 24px !important;
+  margin-top: 16px !important;
+}
+
+.ant-modal-confirm .ant-btn {
+  border-radius: 12px !important;
+  height: 42px !important;
+  padding: 0 24px !important;
+  font-weight: 600 !important;
+}
+
+.ant-modal-mask {
+  backdrop-filter: blur(12px) !important;
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+.ant-modal-header,
+div.ant-modal-header {
+  background: rgba(255, 255, 255, 0.02) !important;
+  background-color: transparent !important;
+  padding: 28px 40px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  margin-bottom: 0 !important;
+}
+
+.ant-modal-header {
+  background: rgba(255, 255, 255, 0.02) !important;
+  padding: 28px 40px 20px !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05) !important;
+  margin-bottom: 0 !important;
+}
+
+.ant-modal-title {
+  color: white !important;
+}
+
+.ant-modal-close {
+  top: 24px !important;
+  right: 24px !important;
+  color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  border-radius: 12px !important;
+  width: 36px !important;
+  height: 36px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.ant-modal-close:hover {
+  background: rgba(244, 63, 94, 0.1) !important;
+  color: #f43f5e !important;
+  border-color: rgba(244, 63, 94, 0.2) !important;
+  transform: rotate(90deg);
+}
+
+.ant-modal-close-x {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* SaaS Switcher Refinement */
+.saas-switcher {
+  display: flex;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 18px;
+  position: relative;
+  gap: 8px;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
+.saas-switcher-bg {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  bottom: 6px;
+  width: calc(50% - 10px);
+  background: linear-gradient(135deg, #0ea5e9, #a855f7);
+  border-radius: 12px;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  z-index: 0;
+  box-shadow: 0 4px 15px rgba(14, 165, 233, 0.3);
+}
+
+.saas-switcher-item {
+  flex: 1;
+  text-align: center;
+  padding: 12px 0;
+  font-size: 11px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s ease;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.saas-switcher-item:hover {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.saas-switcher-item.active {
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+}
+
+/* Ant Design Dark Theme Specific Overrides */
+.ant-select-selector {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+  border-radius: 12px !important;
+}
+
+
+.ant-select-selection-item {
+  color: #0ea5e9 !important;
+  font-weight: 800 !important;
+  text-shadow: 0 0 10px rgba(14, 165, 233, 0.3) !important;
+}
+
+.ant-select-selection-placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.ant-select-arrow {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.ant-select-dropdown {
+  background: rgba(15, 23, 42, 0.95) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 4px !important;
+}
+
+.ant-select-item {
+  color: rgba(255, 255, 255, 0.9) !important;
+  border-radius: 8px !important;
+  margin: 2px 0 !important;
+  transition: all 0.2s ease !important;
+}
+
+.ant-select-item-option-selected {
+  background: rgba(14, 165, 233, 0.25) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
+
+.ant-select-item-option-active {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: white !important;
+}
+
+/* DatePicker & RangePicker */
+.ant-picker {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  border-radius: 12px !important;
+  color: white !important;
+}
+
+.ant-picker-input>input {
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.ant-picker-range-separator {
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.ant-picker-suffix {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-picker-placeholder {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* DatePicker Dropdown (Calendar) */
+.ant-picker-dropdown .ant-picker-panel-container {
+  background: rgba(15, 23, 42, 0.98) !important;
+  backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+}
+
+.ant-picker-dropdown .ant-picker-header,
+.ant-picker-dropdown .ant-picker-content th,
+.ant-picker-dropdown .ant-picker-cell {
+  color: rgba(255, 255, 255, 0.8) !important;
+}
+
+.ant-picker-dropdown .ant-picker-header button {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.ant-picker-dropdown .ant-picker-header button:hover {
+  color: white !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-in-view {
+  color: white !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell:hover .ant-picker-cell-inner {
+  background: rgba(255, 255, 255, 0.05) !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-selected .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-range-start .ant-picker-cell-inner,
+.ant-picker-dropdown .ant-picker-cell-range-end .ant-picker-cell-inner {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-range-hover::before,
+.ant-picker-dropdown .ant-picker-cell-in-range::before {
+  background: rgba(14, 165, 233, 0.1) !important;
+}
+
+.ant-picker-dropdown .ant-picker-footer {
+  border-top: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.ant-picker-time-panel-column {
+  border-inline-start: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+
+.ant-picker-time-panel-column>li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+.ant-picker-time-panel-column>li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+  background: rgba(14, 165, 233, 0.3) !important;
+  color: white !important;
+}
+
+/* Action Button */
+.ant-picker-dropdown .ant-picker-ok button {
+  background: var(--primary) !important;
+  border: none !important;
+  color: white !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3) !important;
+}
+
+.ant-picker-dropdown .ant-picker-ok button:hover {
+  filter: brightness(1.2) !important;
+  transform: translateY(-1px);
+}
+
+/* Custom Helpers */
+.elevated-input {
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.3s ease !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+.elevated-input:hover,
+.elevated-input:focus-within {
+  border-color: rgba(14, 165, 233, 0.3) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 0 15px rgba(14, 165, 233, 0.1) !important;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+}
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
-  background-color: oklch(0.75 0 0);
-  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.6 0 0);
+  background: rgba(255, 255, 255, 0.2);
 }
 
-/* Typing indicator dots */
-@keyframes typing-dot {
-  0%, 60%, 100% {
-    opacity: 0.3;
-    transform: translateY(0);
-  }
-  30% {
-    opacity: 1;
-    transform: translateY(-3px);
-  }
+.ant-select-selection-item {
+  color: white !important;
+  font-weight: 800 !important;
 }
 
-/* Ant Design overrides for consistent theming */
-.ant-input-affix-wrapper-focused {
+.user-selector-popup .ant-select-item-option-selected {
+  background: rgba(14, 165, 233, 0.3) !important;
+}
+
+.user-selector-popup .ant-select-item {
+  padding: 8px 12px !important;
+}
+
+/* Utility to hide scrollbars */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Force single line for UserSelector tags */
+.conversation-user-selector .ant-select-selection-overflow {
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+}
+
+.conversation-user-selector .ant-select-selection-overflow::-webkit-scrollbar {
+  display: none;
+}
+
+/* Aggressive fix for UserSelector no-wrap */
+.conversation-user-selector .ant-select-selector {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+  overflow-x: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  min-height: 44px !important;
+  align-items: center !important;
+}
+
+.conversation-user-selector .ant-select-selection-overflow {
+  display: flex !important;
+  flex-wrap: nowrap !important;
+}
+
+.conversation-user-selector .ant-select-selection-overflow-item {
+  flex: none !important;
+}
+
+/* Hide scrollbar for the selector */
+.conversation-user-selector .ant-select-selector::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Notification Container */
+.custom-notification-notice {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
+  overflow: visible !important;
   box-shadow: none !important;
-}
-.ant-dropdown-menu {
-  border-radius: 8px !important;
+  margin-bottom: 12px !important;
 }
 
-/* Modern Notification Styles */
+.custom-notification-notice .ant-notification-notice-content {
+  padding: 0 !important;
+  background: transparent !important;
+}
+
+.custom-notification-notice .ant-notification-notice-close {
+  display: none !important;
+}
+
+.custom-notification-notice .ant-notification-notice-message {
+  display: none !important;
+}
+
+.custom-notification-notice .ant-notification-notice-description {
+  margin-inline-start: 0 !important;
+  padding: 0 !important;
+}
+
+/* Global Ant Design Notification Overrides for General Popups */
 .ant-notification-notice {
-  border-radius: 12px !important;
-  padding: 16px !important;
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid rgba(0, 0, 0, 0.05) !important;
-  backdrop-filter: blur(8px);
-  background: rgba(255, 255, 255, 0.95) !important;
+  background: #0f172a !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5) !important;
 }
 
-.dark .ant-notification-notice {
-  background: rgba(31, 41, 55, 0.9) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+.ant-notification-notice-message {
+  color: white !important;
+  font-weight: 700 !important;
+}
+
+.ant-notification-notice-description {
+  color: rgba(255, 255, 255, 0.6) !important;
 }
 
 .ant-notification-notice-close {
-  top: 12px !important;
-  right: 12px !important;
-  color: #9ca3af !important;
+  color: rgba(255, 255, 255, 0.4) !important;
 }
 
 .ant-notification-notice-close:hover {
-  color: #4b5563 !important;
+  color: white !important;
 }
 
-.notification-item-content {
-  animation: notification-slide 0.3s ease-out;
+/* Ant Design Message (Toasts) Overrides */
+.ant-message-notice-content {
+  background: rgba(15, 23, 42, 0.8) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+  color: white !important;
+  padding: 10px 16px !important;
 }
 
-@keyframes notification-slide {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
+.ant-message-notice-content .ant-message-custom-content {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+}
+
+.ant-message .anticon {
+  font-size: 16px !important;
+}
+
+.ant-message-success .anticon {
+  color: #10b981 !important;
+  /* Emerald 500 */
+}
+
+.ant-message-error .anticon {
+  color: #f43f5e !important;
+  /* Rose 500 */
+}
+
+.ant-message-warning .anticon {
+  color: #f59e0b !important;
+  /* Amber 500 */
+}
+
+.ant-message-info .anticon {
+  color: #0ea5e9 !important;
+  /* Cyan 500 */
 }

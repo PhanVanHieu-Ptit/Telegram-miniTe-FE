@@ -24,6 +24,7 @@ const transformAuthResponseToUser = (response: AuthResponse): User => {
     return {
         id: response.user.id,
         displayName: response.user.username,
+        email: response.user.email,
         online: true,
     };
 };
@@ -216,6 +217,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const user = {
                 id: apiUser.id,
                 displayName: apiUser.username,
+                email: apiUser.email,
                 online: true,
             };
 
@@ -264,6 +266,7 @@ export const useAuthStore = create<AuthState>((set) => ({
             const user = {
                 id: apiUser.id,
                 displayName: apiUser.username,
+                email: apiUser.email,
                 online: true,
             };
 

@@ -1,31 +1,33 @@
-import { useState, useMemo, useEffect } from "react";
-import { 
-  Table, 
-  Select, 
-  DatePicker, 
-  Button, 
-  Card, 
-  Typography, 
-  Tag, 
-  Empty, 
-  Spin, 
-  message 
-} from "antd";
-import { ArrowLeft, Sparkles, MessageSquare, Filter } from "lucide-react";
-import { Link, Navigate } from "react-router-dom";
-import dayjs from "dayjs";
-import isBetween from "dayjs/plugin/isBetween";
-import { useChatStore } from "@/store/chat.store";
 import { summarizeMessages } from "@/api/summarize.api";
 import { Sidebar } from "@/components/sidebar";
 import { cn } from "@/lib/utils";
+import { useChatStore } from "@/store/chat.store";
+import {
+  Button,
+  Card,
+  DatePicker,
+  Empty,
+  Select,
+  Spin,
+  Table,
+  Tag,
+  Typography,
+  message
+} from "antd";
+import dayjs from "dayjs";
+import isBetween from "dayjs/plugin/isBetween";
+import { ArrowLeft, Filter, MessageSquare, Sparkles } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, Navigate } from "react-router-dom";
 
 dayjs.extend(isBetween);
 
-const { Title, Text, Paragraph } = Typography;
+const { Title, Text, } = Typography;
 const { RangePicker } = DatePicker;
 
 const MessageSummarizerPage = () => {
+  const { t } = useTranslation();
   const activeConversationId = useChatStore((s) => s.activeConversationId);
   const conversations = useChatStore((s) => s.conversations);
   const messages = useChatStore((s) => s.messages);
@@ -35,7 +37,9 @@ const MessageSummarizerPage = () => {
 
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
   const [senderFilter, setSenderFilter] = useState<string | null>(null);
-  const [summary, setSummary] = useState<string[] | null>(null);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [resolved, setResolved] = useState<string[]>([]);
+  const [pending, setPending] = useState<string[]>([]);
   const [isSummarizing, setIsSummarizing] = useState(false);
 
   // Get active conversation details
@@ -55,24 +59,24 @@ const MessageSummarizerPage = () => {
 
   const filteredMessages = useMemo(() => {
     if (!messages) return [];
-    
+
     return messages.filter((msg) => {
       // Filter by sender
       if (senderFilter && msg.senderId !== senderFilter) return false;
-      
+
       // Filter by date range
       if (dateRange && dateRange[0] && dateRange[1]) {
         const msgDate = dayjs(msg.timestamp);
         if (!msgDate.isBetween(dateRange[0], dateRange[1], 'second', '[]')) return false;
       }
-      
+
       return true;
     });
   }, [messages, senderFilter, dateRange]);
 
   const handleSummarize = async () => {
     if (!activeConversationId) {
-      message.error("Please select a conversation first");
+      message.error(t('notifications.select_conversation_error'));
       return;
     }
 
@@ -87,13 +91,15 @@ const MessageSummarizerPage = () => {
 
       if (response.success) {
         setSummary(response.summary);
-        message.success("Summary generated successfully!");
+        setResolved(response.resolved || []);
+        setPending(response.pending || []);
+        message.success(t('notifications.summary_generated'));
       } else {
-        message.error("Failed to generate summary");
+        message.error(t('notifications.summary_failed'));
       }
     } catch (error) {
       console.error("Summarization error:", error);
-      message.error("An error occurred while generating the summary");
+      message.error(t('notifications.summary_failed'));
     } finally {
       setIsSummarizing(false);
     }
@@ -170,25 +176,25 @@ const MessageSummarizerPage = () => {
                 </Text>
               </div>
             </div>
-              <Button 
-                type="primary" 
-                size="large" 
-                icon={<Sparkles className="h-4 w-4" />}
-                onClick={handleSummarize}
-                loading={isSummarizing}
-                disabled={filteredMessages.length === 0}
-                className="bg-primary hover:bg-primary/90 flex items-center gap-2"
-                shape="round"
-              >
-                Summarize
-              </Button>
+            <Button
+              type="primary"
+              size="large"
+              icon={<Sparkles className="h-4 w-4" />}
+              onClick={handleSummarize}
+              loading={isSummarizing}
+              disabled={filteredMessages.length === 0}
+              className="bg-primary hover:bg-primary/90 flex items-center gap-2"
+              shape="round"
+            >
+              Summarize
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
             {/* Filters Section (1/3) */}
             <div className="lg:col-span-1 space-y-6">
-              <Card 
-                title={<div className="flex items-center gap-2"><Filter className="h-4 w-4" /> Filters</div>} 
+              <Card
+                title={<div className="flex items-center gap-2"><Filter className="h-4 w-4" /> Filters</div>}
                 className="shadow-sm border-border"
                 styles={{ header: { borderBottom: '1px solid var(--border)' } }}
               >
@@ -232,17 +238,37 @@ const MessageSummarizerPage = () => {
 
               {/* Summary Section (Displayed only after generation) */}
               {summary && (
-                <Card 
+                <Card
                   title={<div className="flex items-center gap-2"><Sparkles className="h-4 w-4 text-primary" /> AI Summary</div>}
                   className="shadow-md border-primary/20 bg-primary/5"
                   styles={{ header: { borderBottom: '1px solid rgba(0,0,0,0.06)' } }}
                 >
-                  <div className="space-y-3">
-                    {summary.map((line, idx) => (
-                      <Paragraph key={idx} style={{ marginBottom: idx === summary.length - 1 ? 0 : '8px' }}>
-                        • {line}
-                      </Paragraph>
-                    ))}
+                  <div className="space-y-4">
+                    <div className="summary-text text-sm leading-relaxed">
+                      {summary}
+                    </div>
+
+                    {resolved.length > 0 && (
+                      <div className="space-y-2">
+                        <Text strong className="text-xs uppercase tracking-wider text-green-600">Resolved</Text>
+                        <ul className="list-disc pl-4 text-sm space-y-1">
+                          {resolved.map((item, idx) => (
+                            <li key={idx} className="text-muted-foreground">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {pending.length > 0 && (
+                      <div className="space-y-2">
+                        <Text strong className="text-xs uppercase tracking-wider text-amber-600">Pending</Text>
+                        <ul className="list-disc pl-4 text-sm space-y-1">
+                          {pending.map((item, idx) => (
+                            <li key={idx} className="text-muted-foreground">{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </Card>
               )}
@@ -259,18 +285,18 @@ const MessageSummarizerPage = () => {
 
             {/* Messages Section (2/3) */}
             <div className="lg:col-span-2">
-              <Card 
+              <Card
                 title={<div className="flex items-center gap-2"><MessageSquare className="h-4 w-4" /> Selected Messages</div>}
                 className="shadow-sm h-full border-border"
-                styles={{ 
+                styles={{
                   header: { borderBottom: '1px solid var(--border)' },
-                  body: { padding: 0 } 
+                  body: { padding: 0 }
                 }}
               >
                 {filteredMessages.length > 0 ? (
-                  <Table 
-                    columns={columns} 
-                    dataSource={filteredMessages} 
+                  <Table
+                    columns={columns}
+                    dataSource={filteredMessages}
                     rowKey="id"
                     pagination={{ pageSize: 15, size: 'small' }}
                     scroll={{ y: 'calc(100dvh - 350px)' }}
@@ -278,8 +304,8 @@ const MessageSummarizerPage = () => {
                     size="middle"
                   />
                 ) : (
-                  <Empty 
-                    description="No messages found for the selected filters" 
+                  <Empty
+                    description="No messages found for the selected filters"
                     className="my-20"
                   />
                 )}

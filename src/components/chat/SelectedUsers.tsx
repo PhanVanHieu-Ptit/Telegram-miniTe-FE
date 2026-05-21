@@ -1,5 +1,4 @@
 import type { User } from "@/types/chat.types";
-import { X } from "lucide-react";
 import { Avatar, Tag } from "antd";
 
 interface SelectedUsersProps {
@@ -14,7 +13,7 @@ export const SelectedUsers = ({ users, onRemove }: SelectedUsersProps) => {
   if (users.length === 0) return null;
 
   return (
-    <div className="flex flex-wrap gap-2 p-3 border rounded-lg bg-accent/10 min-h-[60px] max-h-[120px] overflow-y-auto mt-2">
+    <div className="flex flex-wrap items-center gap-2.5 p-4 border border-white/5 bg-white/[0.02] rounded-2xl min-h-[70px] max-h-[140px] overflow-y-auto mt-2 shadow-inner">
       {users.map((user) => (
         <Tag
           key={user.id}
@@ -23,13 +22,12 @@ export const SelectedUsers = ({ users, onRemove }: SelectedUsersProps) => {
             e.preventDefault();
             onRemove(user.id);
           }}
-          closeIcon={<X className="h-3 w-3 mt-1 mr-1" />}
-          className="flex items-center gap-1.5 py-1 px-2.5 rounded-full bg-primary/10 text-primary border-primary/20 hover:border-primary/40 transition-all font-medium"
+          className="flex items-center gap-2 py-1.5 px-3.5 rounded-xl bg-white/5 text-white border-white/10 hover:border-primary/40 hover:bg-white/10 transition-all font-bold text-[11px] tracking-wide"
         >
-          <Avatar size={20} src={user.avatarUrl} className="shrink-0">
-             {user.displayName[0].toUpperCase()}
+          <Avatar size={22} src={user.avatarUrl} className="shrink-0 border border-white/10">
+            {user.displayName[0].toUpperCase()}
           </Avatar>
-          <span className="text-xs truncate max-w-[80px]">{user.displayName}</span>
+          <span className="truncate max-w-[100px] ml-1">{user.displayName}</span>
         </Tag>
       ))}
     </div>

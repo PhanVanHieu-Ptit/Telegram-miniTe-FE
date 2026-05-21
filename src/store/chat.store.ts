@@ -7,6 +7,10 @@ import {
     type SendMessageDto,
     sendMessage as sendMessageApi,
     type GetMessagesParams,
+    hideMessage as hideMessageApi,
+    unhideMessage as unhideMessageApi,
+    pinMessage as pinMessageApi,
+    unpinMessage as unpinMessageApi,
 } from "@/api/chat.api";
 
 interface ChatState {
@@ -18,8 +22,11 @@ interface ChatState {
     activeConversationId: string | null;
     sidebarOpen: boolean;
     searchQuery: string;
-    typingUsers: Record<string, string[]>; // conversationId -> userId[]
+    typingUsers: Record<string, { userId: string; fullName: string }[]>; // conversationId -> {userId, fullName}[]
     onlineUsers: string[];
+    replyingToMessage: Message | null;
+    editingMessage: Message | null;
+    forwardingMessage: Message | null;
 }
 
 interface ChatActions {
@@ -30,7 +37,7 @@ interface ChatActions {
     sendMessage: (payload: SendMessageDto) => Promise<Message | undefined>;
     setActiveConversationId: (id: string | null) => void;
     setSidebarOpen: (open: boolean) => void;
-    setTypingUser: (conversationId: string, userId: string) => void;
+    setTypingUser: (conversationId: string, userId: string, fullName?: string) => void;
     removeTypingUser: (conversationId: string, userId: string) => void;
     setTypingActive: (conversationId: string, isTyping: boolean) => Promise<void>;
     setSearchQuery: (query: string) => void;
@@ -43,6 +50,31 @@ interface ChatActions {
     subscribeToAllConversations: () => Promise<void>;
     updateConversationLastMessage: (conversationId: string, message: Message) => void;
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
+    deleteConversation: (conversationId: string) => Promise<void>;
+    reactMessage: (conversationId: string, messageId: string, emoji: string) => Promise<void>;
+    hideMessage: (conversationId: string, messageId: string) => Promise<void>;
+    unhideMessage: (conversationId: string, messageId: string) => Promise<void>;
+    pinMessage: (conversationId: string, messageId: string) => Promise<void>;
+    unpinMessage: (conversationId: string, messageId: string) => Promise<void>;
+    pinConversation: (conversationId: string) => Promise<void>;
+    unpinConversation: (conversationId: string) => Promise<void>;
+    muteConversation: (conversationId: string) => Promise<void>;
+    unmuteConversation: (conversationId: string) => Promise<void>;
+    addMembers: (conversationId: string, userIds: string[]) => Promise<void>;
+    removeMember: (conversationId: string, userId: string) => Promise<void>;
+    /**
+     * Merge `patch` fields into the message currently identified by `tempOrRealId`.
+     * Used to swap a locally-previewed optimistic message for real server data.
+     */
+    updateMessage: (tempOrRealId: string, patch: Partial<Message>) => void;
+    setReplyingToMessage: (message: Message | null) => void;
+    setEditingMessage: (message: Message | null) => void;
+    setForwardingMessage: (message: Message | null) => void;
+    editMessage: (messageId: string, content: string) => Promise<void>;
+    deleteMessage: (messageId: string, mode?: 'self' | 'everyone') => Promise<void>;
+    openSavedMessages: () => Promise<void>;
+    saveMessage: (message: Message) => Promise<void>;
+    loadOlderMessages: () => Promise<void>;
 }
 
 type ChatStore = ChatState & ChatActions;
@@ -59,6 +91,9 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     searchQuery: "",
     typingUsers: {},
     onlineUsers: [],
+    replyingToMessage: null,
+    editingMessage: null,
+    forwardingMessage: null,
 
     // Actions
     fetchConversations: async () => {
@@ -85,11 +120,42 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 limit,
             };
             const result = await getMessages(params);
-            const messagesArray = Array.isArray(result) ? result : ((result as any).data || (result as any).messages || []);
+            
+            // Extract messages and metadata
+            let messagesArray: any[] = [];
+            let nextCursor: string | undefined = undefined;
+            let hasMore = false;
 
-            set(() => ({
-                messages: messagesArray
+            if (Array.isArray(result)) {
+                messagesArray = result;
+                // If it's a plain array, we assume if we got 'limit' items, there might be more
+                hasMore = messagesArray.length === limit;
+                // Use the ID of the oldest message as the next cursor for loading older
+                nextCursor = messagesArray.length > 0 ? messagesArray[0].id : undefined;
+            } else {
+                const data = (result as any);
+                messagesArray = data.data || data.messages || [];
+                nextCursor = data.nextCursor || (messagesArray.length > 0 ? messagesArray[0].id : undefined);
+                hasMore = data.hasMore !== undefined ? data.hasMore : messagesArray.length === limit;
+            }
+
+            const mappedMessages = messagesArray.map((msg: any) => ({
+                ...msg,
+                timestamp: msg.timestamp || msg.createdAt || new Date().toISOString(),
+                attachments: msg.attachments?.map(({ localUrl: _l, ...att }: any) => att),
             }));
+
+            set((state) => {
+                const newMessages = cursor 
+                    ? [...mappedMessages, ...state.messages] 
+                    : mappedMessages;
+                
+                return {
+                    messages: newMessages,
+                    messagesCursor: nextCursor,
+                    hasMoreMessages: hasMore
+                };
+            });
         } catch (error) {
             const message = error instanceof Error
                 ? error.message
@@ -100,9 +166,24 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         }
     },
 
+    loadOlderMessages: async () => {
+        const { activeConversationId, messagesCursor, hasMoreMessages, loading } = get();
+        if (!activeConversationId || !hasMoreMessages || loading) return;
+
+        await get().fetchMessages(activeConversationId, messagesCursor);
+    },
+
     addMessage: (message: Message) => {
         set((state) => ({
             messages: [...state.messages, message],
+        }));
+    },
+
+    updateMessage: (tempOrRealId: string, patch: Partial<Message>) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === tempOrRealId ? { ...msg, ...patch } : msg
+            ),
         }));
     },
 
@@ -119,6 +200,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     sendMessage: async (payload) => {
+        // Optimistic message insertion is handled by the caller (message-input).
+        // This action only POSTs to the API and updates conversations.lastMessage.
         set({ loading: true });
 
         const senderId = useAuthStore.getState().user?.id;
@@ -127,45 +210,30 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             throw new Error("User not authenticated");
         }
 
-        const tempId = `tmp-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-        const optimisticMessage: Message = {
-            id: tempId,
-            conversationId: payload.conversationId,
-            senderId,
-            content: payload.content,
-            timestamp: new Date().toISOString(),
-            status: MessageStatus.Sending,
-        };
-
-        get().addMessage(optimisticMessage);
-
         try {
-            const message = await sendMessageApi(payload);
+            const result = await sendMessageApi(payload);
+            const message: Message = {
+                ...result,
+                timestamp: result.timestamp || result.createdAt || new Date().toISOString(),
+            };
+
             set((state) => ({
-                messages: state.messages.map((item) =>
-                    item.id === tempId ? message : item
-                ),
                 conversations: state.conversations.map((c) =>
                     c.id === payload.conversationId
                         ? { ...c, lastMessage: message, updatedAt: message.timestamp }
                         : c
                 ),
             }));
+
             return message;
         } catch (error) {
             console.error("Failed to send message:", error);
-            set((state) => ({
-                messages: state.messages.map((item) =>
-                    item.id === tempId
-                        ? { ...item, status: MessageStatus.Failed }
-                        : item
-                ),
-            }));
-            return undefined;
+            throw error; // caller marks temp message as failed
         } finally {
             set({ loading: false });
         }
     },
+
 
     setActiveConversationId: (id: string | null) => {
         set({ activeConversationId: id });
@@ -180,16 +248,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         set({ sidebarOpen: open });
     },
 
-    setTypingUser: (conversationId: string, userId: string) => {
+    setTypingUser: (conversationId: string, userId: string, fullName?: string) => {
         set((state) => {
             const currentUsers = state.typingUsers[conversationId] || [];
-            if (currentUsers.includes(userId)) {
+            if (currentUsers.some(u => u.userId === userId)) {
                 return state;
             }
             return {
                 typingUsers: {
                     ...state.typingUsers,
-                    [conversationId]: [...currentUsers, userId],
+                    [conversationId]: [...currentUsers, { userId, fullName: fullName || "Someone" }],
                 },
             };
         });
@@ -198,7 +266,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     removeTypingUser: (conversationId: string, userId: string) => {
         set((state) => {
             const currentUsers = state.typingUsers[conversationId] || [];
-            const filtered = currentUsers.filter((id) => id !== userId);
+            const filtered = currentUsers.filter((u) => u.userId !== userId);
             return {
                 typingUsers: {
                     ...state.typingUsers,
@@ -223,7 +291,8 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 password: import.meta.env.VITE_MQTT_PASS,
             });
             await client.connect(); // Ensure MQTT client is connected
-            await publishTyping(client, conversationId, userId, isTyping);
+            const fullName = useAuthStore.getState().user?.displayName;
+            await publishTyping(client, conversationId, userId, isTyping, fullName);
         } catch (error) {
             console.error("Failed to publish typing status:", error);
         }
@@ -318,7 +387,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     subscribeToAllConversations: async () => {
         try {
-            const { subscribeToMessages } = await import("@/mqtt/mqtt.service");
+            const { subscribeToMessages, subscribeToOnlineStatus } = await import("@/mqtt/mqtt.service");
             const { getMqttClient } = await import("@/mqtt/mqtt.client");
 
             const client = getMqttClient({
@@ -330,9 +399,13 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await client.connect();
 
             const { conversations } = get();
-            await Promise.all(
-                conversations.map((c) => subscribeToMessages(client, c.id))
-            );
+            const userId = useAuthStore.getState().user?.id;
+
+            const subs: Promise<void>[] = conversations.map((c) => subscribeToMessages(client, c.id));
+            if (userId) {
+                subs.push(subscribeToOnlineStatus(client, userId));
+            }
+            await Promise.all(subs);
         } catch (error) {
             console.error("Failed to subscribe to all conversations:", error);
         }
@@ -364,6 +437,337 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await publishConversationSeen(client, conversationId, messageId);
         } catch (error) {
             console.error("Failed to publish seen status:", error);
+        }
+    },
+
+    deleteConversation: async (conversationId: string) => {
+        set({ loading: true });
+        try {
+            const { deleteConversation } = await import("@/api/chat.api");
+            await deleteConversation(conversationId);
+            set((state) => ({
+                conversations: state.conversations.filter((c) => c.id !== conversationId),
+                activeConversationId: state.activeConversationId === conversationId ? null : state.activeConversationId,
+                messages: state.activeConversationId === conversationId ? [] : state.messages,
+            }));
+        } catch (error) {
+            const message = error instanceof Error ? error.message : "Failed to delete conversation";
+            throw new Error(message);
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    reactMessage: async (conversationId: string, messageId: string, emoji: string) => {
+        // Optimistic UI Update
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) => {
+                if (msg.id === messageId) {
+                    const currentReactions = { ...msg.reactions };
+                    if (!currentReactions[emoji]) currentReactions[emoji] = [];
+
+                    const idx = currentReactions[emoji].indexOf(userId);
+                    if (idx > -1) {
+                        currentReactions[emoji].splice(idx, 1);
+                        if (currentReactions[emoji].length === 0) delete currentReactions[emoji];
+                    } else {
+                        currentReactions[emoji].push(userId);
+                    }
+
+                    return { ...msg, reactions: currentReactions };
+                }
+                return msg;
+            }),
+        }));
+
+        try {
+            const { reactMessage } = await import("@/api/chat.api");
+            await reactMessage({ conversationId, messageId, emoji });
+        } catch (error) {
+            console.error("Failed to react to message:", error);
+            // We could revert optimistic update here if we want to be strict
+        }
+    },
+
+    hideMessage: async (conversationId: string, messageId: string) => {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: [...(msg.hiddenBy || []), userId] }
+                    : msg
+            ),
+        }));
+
+        try {
+            await hideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to hide message:", error);
+        }
+    },
+
+    unhideMessage: async (conversationId: string, messageId: string) => {
+        const userId = useAuthStore.getState().user?.id;
+        if (!userId) return;
+
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: (msg.hiddenBy || []).filter(id => id !== userId) }
+                    : msg
+            ),
+        }));
+
+        try {
+            await unhideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unhide message:", error);
+        }
+    },
+
+    pinMessage: async (conversationId: string, messageId: string) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: true } : msg
+            ),
+        }));
+
+        try {
+            await pinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to pin message:", error);
+        }
+    },
+
+    unpinMessage: async (conversationId: string, messageId: string) => {
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: false } : msg
+            ),
+        }));
+
+        try {
+            await unpinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unpin message:", error);
+        }
+    },
+    
+    pinConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: true } : c
+            ),
+        }));
+        try {
+            const { pinConversation: pinConversationApi } = await import("@/api/chat.api");
+            await pinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to pin conversation:", error);
+        }
+    },
+
+    unpinConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: false } : c
+            ),
+        }));
+        try {
+            const { unpinConversation: unpinConversationApi } = await import("@/api/chat.api");
+            await unpinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unpin conversation:", error);
+        }
+    },
+    
+    muteConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: true } : c
+            ),
+        }));
+        try {
+            const { muteConversation: muteConversationApi } = await import("@/api/chat.api");
+            await muteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to mute conversation:", error);
+        }
+    },
+
+    unmuteConversation: async (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: false } : c
+            ),
+        }));
+        try {
+            const { unmuteConversation: unmuteConversationApi } = await import("@/api/chat.api");
+            await unmuteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unmute conversation:", error);
+        }
+    },
+    
+    addMembers: async (conversationId: string, userIds: string[]) => {
+        try {
+            const { addMembers: addMembersApi } = await import("@/api/chat.api");
+            await addMembersApi(conversationId, userIds);
+            // Re-fetch conversation to get updated members
+            get().fetchConversations();
+        } catch (error) {
+            console.error("Failed to add members:", error);
+            throw error;
+        }
+    },
+
+    removeMember: async (conversationId: string, userId: string) => {
+        try {
+            const { removeMember: removeMemberApi } = await import("@/api/chat.api");
+            await removeMemberApi(conversationId, userId);
+            // Optimistic update
+            set((state) => ({
+                conversations: state.conversations.map((c) =>
+                    c.id === conversationId
+                        ? { ...c, members: c.members?.filter((m) => m.id !== userId) }
+                        : c
+                ),
+            }));
+        } catch (error) {
+            console.error("Failed to remove member:", error);
+            throw error;
+        }
+    },
+
+    setReplyingToMessage: (message) => set({ replyingToMessage: message }),
+    setEditingMessage: (message) => set({ editingMessage: message }),
+    setForwardingMessage: (message) => set({ forwardingMessage: message }),
+
+    editMessage: async (messageId, content) => {
+        const { activeConversationId } = get();
+        if (!activeConversationId) return;
+
+        try {
+            const { editMessage: editMessageApi } = await import("@/api/chat.api");
+            const updatedMessage = await editMessageApi({ messageId, conversationId: activeConversationId, content });
+
+            set((state) => ({
+                messages: state.messages.map((msg) =>
+                    msg.id === messageId ? updatedMessage : msg
+                ),
+                editingMessage: null,
+            }));
+        } catch (error) {
+            console.error("Failed to edit message:", error);
+            throw error;
+        }
+    },
+
+    deleteMessage: async (messageId, mode = 'self') => {
+        const { activeConversationId } = get();
+        if (!activeConversationId) return;
+
+        try {
+            const { deleteMessage: deleteMessageApi } = await import("@/api/chat.api");
+            await deleteMessageApi({ messageId, conversationId: activeConversationId, mode });
+
+            if (mode === 'everyone') {
+                set((state) => ({
+                    messages: state.messages.map((msg) =>
+                        msg.id === messageId
+                            ? { ...msg, isDeleted: true, content: "", attachments: [] }
+                            : msg
+                    ),
+                }));
+            } else {
+                set((state) => ({
+                    messages: state.messages.filter((msg) => msg.id !== messageId),
+                }));
+            }
+        } catch (error) {
+            console.error("Failed to delete message:", error);
+            throw error;
+        }
+    },
+
+    openSavedMessages: async () => {
+        set({ loading: true });
+        try {
+            const { getSavedMessages } = await import("@/api/chat.api");
+            const conversation = await getSavedMessages();
+            
+            // Check if it already exists in our list
+            const exists = get().conversations.some(c => c.id === conversation.id);
+            if (!exists) {
+                set(state => ({
+                    conversations: [conversation, ...state.conversations]
+                }));
+            }
+            
+            get().setActiveConversationId(conversation.id);
+        } catch (error) {
+            console.error("Failed to open saved messages:", error);
+            throw error;
+        } finally {
+            set({ loading: false });
+        }
+    },
+
+    saveMessage: async (message: Message) => {
+        set({ loading: true });
+        try {
+            const { getSavedMessages, sendMessage } = await import("@/api/chat.api");
+            const { user } = useAuthStore.getState();
+            if (!user) throw new Error("User not authenticated");
+
+            const savedConv = await getSavedMessages();
+            
+            // Ensure conversation is in the list
+            const exists = get().conversations.some(c => c.id === savedConv.id);
+            if (!exists) {
+                set(state => ({
+                    conversations: [savedConv, ...state.conversations]
+                }));
+            }
+
+            // Forward the message to saved messages
+            const result = await sendMessage({
+                conversationId: savedConv.id,
+                senderId: user.id,
+                content: message.content || "",
+                type: message.type,
+                attachments: message.attachments,
+                forwardedFrom: message.senderId,
+                metadata: {
+                    ...message.metadata,
+                    forwardedFromName: message.sender?.displayName || "Someone"
+                }
+            });
+            
+            if (result) {
+                // Update last message in the list
+                set(state => ({
+                    conversations: state.conversations.map(c => 
+                        c.id === savedConv.id ? { ...c, lastMessage: result, updatedAt: result.timestamp } : c
+                    )
+                }));
+            }
+
+            const { toast } = await import("sonner");
+            const { t } = await import("i18next");
+            toast.success(t('message_saved'));
+        } catch (error) {
+            console.error("Failed to save message:", error);
+            const { toast } = await import("sonner");
+            toast.error("Failed to save message");
+            throw error;
+        } finally {
+            set({ loading: false });
         }
     },
 }));
