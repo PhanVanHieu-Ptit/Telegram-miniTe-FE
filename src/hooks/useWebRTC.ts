@@ -93,6 +93,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
   const roomIdRef = useRef<string | null>(null);
+<<<<<<< Updated upstream
+=======
+  const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
+  const remoteTracksRef = useRef<MediaStreamTrack[]>([]);
+>>>>>>> Stashed changes
 
   // ── 1. Socket initialization ────────────────────────────────────────────────
 
@@ -252,8 +257,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
     // Receive remote tracks
     pc.ontrack = (event: RTCTrackEvent) => {
-      console.log('[useWebRTC] Remote track received');
-      setRemoteStream(event.streams[0] ?? null);
+      console.log('[useWebRTC] Remote track received:', event.track.kind);
+      if (!remoteTracksRef.current.includes(event.track)) {
+        remoteTracksRef.current.push(event.track);
+      }
+      setRemoteStream(new MediaStream(remoteTracksRef.current));
     };
 
     // Trickle ICE
@@ -310,6 +318,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
     peerConnectionRef.current?.close();
     peerConnectionRef.current = null;
     roomIdRef.current = null;
+<<<<<<< Updated upstream
+=======
+    iceCandidateBufferRef.current = [];
+    remoteTracksRef.current = [];
+>>>>>>> Stashed changes
     setRemoteStream(null);
     setIncomingCall(null);
     setActiveCall(null);

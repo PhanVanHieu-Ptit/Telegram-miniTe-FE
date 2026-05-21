@@ -41,7 +41,26 @@ import type {
 const RTC_SERVICE_URL =
     import.meta.env.VITE_RTC_SERVICE_URL ?? 'http://localhost:4000';
 
+<<<<<<< Updated upstream
 // Không dùng ICE_CONFIG hardcode nữa
+=======
+const ICE_CONFIG: RTCConfiguration = {
+    iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' },
+        {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+        },
+        {
+            urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+            username: 'openrelayproject',
+            credential: 'openrelayproject',
+        },
+    ],
+};
+>>>>>>> Stashed changes
 
 // ---------------------------------------------------------------------------
 // Context value type
@@ -99,6 +118,8 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
     const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
     const localStreamRef = useRef<MediaStream | null>(null);
     const roomIdRef = useRef<string | null>(null);
+    const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
+    const remoteTracksRef = useRef<MediaStreamTrack[]>([]);
 
     // ── Helpers (stable refs for use inside useEffect) ───────────────────────
 
@@ -106,6 +127,8 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
         peerConnectionRef.current?.close();
         peerConnectionRef.current = null;
         roomIdRef.current = null;
+        iceCandidateBufferRef.current = [];
+        remoteTracksRef.current = [];
         setRemoteStream(null);
         setIncomingCall(null);
         setActiveCall(null);
@@ -211,8 +234,16 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
                 }
                 try {
                     await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+<<<<<<< Updated upstream
                     // Note: callStatus 'connected' is set when ICE connection succeeds
                     // but we can set it here too for UI feedback as negotiation is complete.
+=======
+                    // Drain buffered ICE candidates that arrived before remote description
+                    const buffered = iceCandidateBufferRef.current.splice(0);
+                    for (const c of buffered) {
+                        try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+                    }
+>>>>>>> Stashed changes
                     setCallStatus('connected');
                 } catch (err) {
                     console.error('[WebRTC] setRemoteDescription (answer) failed', err);
@@ -222,8 +253,13 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
 
         // ── ICE candidate ───────────────────────────────────────────────────
         socket.on('ice-candidate', async (data: IceCandidate) => {
+            if (!data.candidate) return;
             const pc = peerConnectionRef.current;
-            if (!pc || !data.candidate) return;
+            // Buffer candidates until PC exists and remote description is set
+            if (!pc || !pc.remoteDescription) {
+                iceCandidateBufferRef.current.push(data.candidate);
+                return;
+            }
             try {
                 await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
             } catch (err) {
@@ -275,8 +311,11 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
         }
 
         pc.ontrack = (event: RTCTrackEvent) => {
-            console.log('[WebRTC] Remote track received');
-            setRemoteStream(event.streams[0] ?? null);
+            console.log('[WebRTC] Remote track received:', event.track.kind);
+            if (!remoteTracksRef.current.includes(event.track)) {
+                remoteTracksRef.current.push(event.track);
+            }
+            setRemoteStream(new MediaStream(remoteTracksRef.current));
         };
 
         pc.onicecandidate = (event: RTCPeerConnectionIceEvent) => {
@@ -460,6 +499,11 @@ export const WebRTCProvider: React.FC<{ children: ReactNode }> = ({
             await pc.setRemoteDescription(
                 new RTCSessionDescription(incomingCall.offer),
             );
+            // Drain buffered ICE candidates that arrived before PC was created
+            const buffered = iceCandidateBufferRef.current.splice(0);
+            for (const c of buffered) {
+                try { await pc.addIceCandidate(new RTCIceCandidate(c)); } catch {}
+            }
             const answer = await pc.createAnswer();
             await pc.setLocalDescription(answer);
 
