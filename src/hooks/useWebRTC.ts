@@ -254,8 +254,11 @@ export const useWebRTC = (): UseWebRTCReturn => {
 
     // Receive remote tracks
     pc.ontrack = (event: RTCTrackEvent) => {
-      console.log('[useWebRTC] Remote track received');
-      setRemoteStream(event.streams[0] ?? null);
+      console.log('[useWebRTC] Remote track received:', event.track.kind);
+      if (!remoteTracksRef.current.includes(event.track)) {
+        remoteTracksRef.current.push(event.track);
+      }
+      setRemoteStream(new MediaStream(remoteTracksRef.current));
     };
 
     // Trickle ICE
