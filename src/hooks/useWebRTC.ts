@@ -94,6 +94,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const localStreamRef = useRef<MediaStream | null>(null);
   const roomIdRef = useRef<string | null>(null);
   const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
+  const remoteTracksRef = useRef<MediaStreamTrack[]>([]);
 
   // ── 1. Socket initialization ────────────────────────────────────────────────
 
@@ -316,6 +317,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
     peerConnectionRef.current = null;
     roomIdRef.current = null;
     iceCandidateBufferRef.current = [];
+    remoteTracksRef.current = [];
     setRemoteStream(null);
     setIncomingCall(null);
     setActiveCall(null);
