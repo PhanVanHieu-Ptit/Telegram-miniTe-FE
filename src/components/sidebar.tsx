@@ -2,7 +2,7 @@ import { useAuthStore } from "@/store/auth.store";
 import { useChatStore } from "@/store/chat.store";
 import type { MenuProps } from "antd";
 import { Avatar, Dropdown, Input, Typography } from "antd";
-import { BookmarkIcon, LogOut, Menu, Moon, Search, Settings, Sparkles, Users, Languages } from "lucide-react";
+import { BookmarkIcon, LogOut, Menu, Moon, Phone, Search, Settings, Sparkles, Users, Languages } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -110,6 +110,12 @@ export function Sidebar() {
       label: t('summarize_chat'),
       icon: <Sparkles className="h-4 w-4" strokeWidth={1.5} />,
       onClick: () => navigate("/summarize")
+    },
+    {
+      key: "call-history",
+      label: t('call_history'),
+      icon: <Phone className="h-4 w-4" strokeWidth={1.5} />,
+      onClick: () => navigate("/call-history")
     },
     {
       key: "new-group",

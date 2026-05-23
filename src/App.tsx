@@ -10,6 +10,7 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import MessageSummarizerPage from './pages/MessageSummarizerPage'
+import CallHistoryPage from './pages/CallHistoryPage'
 import NotificationProvider from './components/NotificationProvider'
 import { WebRTCProvider } from '@/contexts/webrtc.context'
 import IncomingCallOverlay from '@/components/IncomingCallOverlay'
@@ -168,6 +169,14 @@ function App(): JSX.Element {
               element={
                 <ProtectedRoute>
                   <MessageSummarizerPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/call-history"
+              element={
+                <ProtectedRoute>
+                  <CallHistoryPage />
                 </ProtectedRoute>
               }
             />
