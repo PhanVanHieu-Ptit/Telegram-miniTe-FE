@@ -14,8 +14,8 @@ interface LinkMessageProps {
 export const LinkMessage: React.FC<LinkMessageProps> = ({ content, metadata }) => {
   const isUrl = (text: string) => {
     try {
-      new URL(text);
-      return true;
+      const { protocol } = new URL(text);
+      return protocol === 'http:' || protocol === 'https:';
     } catch {
       return false;
     }

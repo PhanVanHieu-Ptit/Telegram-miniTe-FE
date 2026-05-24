@@ -14,10 +14,11 @@ import { Buffer } from 'buffer';
 // Topic schema
 // ---------------------------------------------------------------------------
 
+// Must match backend MqttTopics in Telegram-mini/src/modules/mqtt/mqtt.topics.ts
 const TOPICS = {
-  messageNew: (id: string) => `conversation/${id}/message/new` as const,
-  typing: (id: string) => `conversation/${id}/typing` as const,
-  seen: (id: string) => `conversation/${id}/seen` as const,
+  messageNew: (id: string) => `chat/${id}/message` as const,
+  typing: (id: string) => `chat/${id}/typing` as const,
+  seen: (id: string) => `chat/${id}/seen` as const,
   online: "presence/online" as const,
 } as const;
 
@@ -65,9 +66,9 @@ function safeParse<T>(buffer: Buffer): T | null {
   }
 }
 
-const MESSAGE_RE = /^conversation\/([^/]+)\/message\/new$/;
-const TYPING_RE = /^conversation\/([^/]+)\/typing$/;
-const SEEN_RE = /^conversation\/([^/]+)\/seen$/;
+const MESSAGE_RE = /^chat\/([^/]+)\/message$/;
+const TYPING_RE = /^chat\/([^/]+)\/typing$/;
+const SEEN_RE = /^chat\/([^/]+)\/seen$/;
 
 // ---------------------------------------------------------------------------
 // Bridge — routes MQTT events into Zustand store

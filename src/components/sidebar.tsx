@@ -152,8 +152,14 @@ export function Sidebar() {
     },
   ];
 
-  const pinned = filteredConversations.filter((c) => c.pinned);
-  const regular = filteredConversations.filter((c) => !c.pinned);
+  const sortedConversations = useMemo(() => {
+    return [...filteredConversations].sort(
+      (a, b) => new Date(b.updatedAt ?? 0).getTime() - new Date(a.updatedAt ?? 0).getTime()
+    );
+  }, [filteredConversations]);
+
+  const pinned = sortedConversations.filter((c) => c.pinned);
+  const regular = sortedConversations.filter((c) => !c.pinned);
 
   const handleConversationClick = (id: string) => {
     setActiveConversationId(id);

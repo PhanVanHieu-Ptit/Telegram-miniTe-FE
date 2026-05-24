@@ -209,6 +209,10 @@ export function setupMqttListeners(client: AppMqttClient): () => void {
             // Play notification sound for messages from other users
             const currentUserId = useAuthStore.getState().user?.id;
             if (messageData.senderId !== currentUserId) {
+                // Increment unread badge for non-active conversations
+                if (messageData.conversationId !== store.activeConversationId) {
+                    store.incrementUnreadCount(messageData.conversationId);
+                }
                 playMessageSound();
             }
 
