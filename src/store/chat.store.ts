@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { MessageStatus, type Conversation, type Message, type User } from "@/types/chat.types";
+import { MessageStatus, type Conversation, type Message } from "@/types/chat.types";
 import { useAuthStore } from "@/store/auth.store";
 import {
     getConversations,
@@ -12,7 +12,6 @@ import {
     pinMessage as pinMessageApi,
     unpinMessage as unpinMessageApi,
 } from "@/api/chat.api";
-import { getConnectedMqttClient } from "@/mqtt/mqtt.helpers";
 
 interface ChatState {
     conversations: Conversation[];
@@ -43,7 +42,7 @@ interface ChatActions {
     setTypingActive: (conversationId: string, isTyping: boolean) => Promise<void>;
     setSearchQuery: (query: string) => void;
     getFilteredConversations: () => Conversation[];
-    getUser: (userId: string) => User | undefined;
+    getUser: (userId: string) => any;
     markMessageSeen: (conversationId: string, messageId: string, userId: string) => void;
     setOnlineUsers: (userIds: string[]) => void;
     subscribeToConversation: (conversationId: string) => Promise<void>;
@@ -79,40 +78,6 @@ interface ChatActions {
 }
 
 type ChatStore = ChatState & ChatActions;
-
-async function optimisticMessageUpdate(
-    get: () => ChatStore,
-    set: (partial: Partial<ChatStore>) => void,
-    applyUpdate: (messages: Message[]) => Message[],
-    apiCall: () => Promise<unknown>,
-    errorLabel: string
-) {
-    const previousMessages = get().messages;
-    set({ messages: applyUpdate(get().messages) });
-    try {
-        await apiCall();
-    } catch (error) {
-        console.error(errorLabel, error);
-        set({ messages: previousMessages });
-    }
-}
-
-async function optimisticConversationUpdate(
-    get: () => ChatStore,
-    set: (partial: Partial<ChatStore>) => void,
-    applyUpdate: (conversations: Conversation[]) => Conversation[],
-    apiCall: () => Promise<unknown>,
-    errorLabel: string
-) {
-    const previousConversations = get().conversations;
-    set({ conversations: applyUpdate(get().conversations) });
-    try {
-        await apiCall();
-    } catch (error) {
-        console.error(errorLabel, error);
-        set({ conversations: previousConversations });
-    }
-}
 
 export const useChatStore = create<ChatStore>((set, get) => ({
     // State
@@ -315,10 +280,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
 
+        // Import dynamically to avoid circular dependency
         const { publishTyping } = await import("@/mqtt/mqtt.service");
+        const { getMqttClient } = await import("@/mqtt/mqtt.client");
 
         try {
-            const client = await getConnectedMqttClient();
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
+            });
+            await client.connect(); // Ensure MQTT client is connected
             const fullName = useAuthStore.getState().user?.displayName;
             await publishTyping(client, conversationId, userId, isTyping, fullName);
         } catch (error) {
@@ -352,10 +324,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             if (member) {
                 return {
                     id: member.id,
-                    displayName: member.fullName ?? "",
-                    avatarUrl: member.avatarUrl ?? undefined,
+                    displayName: member.fullName,
+                    avatarUrl: member.avatarUrl,
                     online: false,
-                } satisfies User;
+                };
             }
         }
         return undefined;
@@ -377,8 +349,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     subscribeToConversation: async (conversationId: string) => {
         try {
+            // Import dynamically to avoid circular dependency
             const { subscribeToConversation } = await import("@/mqtt/mqtt.service");
-            const client = await getConnectedMqttClient();
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
+            });
+
+            await client.connect(); // Ensure MQTT client is connected
             await subscribeToConversation(client, conversationId);
         } catch (error) {
             console.error("Failed to subscribe to conversation:", error);
@@ -387,13 +368,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     unsubscribeFromConversation: async (conversationId: string) => {
         try {
+            // Import dynamically to avoid circular dependency  
             const { unsubscribeFromConversation } = await import("@/mqtt/mqtt.service");
             const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
             const client = getMqttClient({
                 url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
                 username: import.meta.env.VITE_MQTT_USER,
                 password: import.meta.env.VITE_MQTT_PASS,
             });
+
             if (client.connectionStatus === "connected") {
                 await unsubscribeFromConversation(client, conversationId);
             }
@@ -405,7 +389,15 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     subscribeToAllConversations: async () => {
         try {
             const { subscribeToMessages, subscribeToOnlineStatus } = await import("@/mqtt/mqtt.service");
-            const client = await getConnectedMqttClient();
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
+            });
+
+            await client.connect();
 
             const { conversations } = get();
             const userId = useAuthStore.getState().user?.id;
@@ -432,8 +424,17 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
     publishSeenStatus: async (conversationId: string, messageId: string) => {
         try {
+            // Import dynamically to avoid circular dependency
             const { publishConversationSeen } = await import("@/mqtt/mqtt.service");
-            const client = await getConnectedMqttClient();
+            const { getMqttClient } = await import("@/mqtt/mqtt.client");
+
+            const client = getMqttClient({
+                url: import.meta.env.VITE_MQTT_URL ?? "ws://localhost:9001",
+                username: import.meta.env.VITE_MQTT_USER,
+                password: import.meta.env.VITE_MQTT_PASS,
+            });
+
+            await client.connect(); // Ensure MQTT client is connected
             await publishConversationSeen(client, conversationId, messageId);
         } catch (error) {
             console.error("Failed to publish seen status:", error);
@@ -496,85 +497,139 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     hideMessage: async (conversationId: string, messageId: string) => {
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
-        await optimisticMessageUpdate(
-            get, set,
-            (msgs) => msgs.map((msg) =>
-                msg.id === messageId ? { ...msg, hiddenBy: [...(msg.hiddenBy || []), userId] } : msg
+
+        const previousMessages = get().messages;
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: [...(msg.hiddenBy || []), userId] }
+                    : msg
             ),
-            () => hideMessageApi({ conversationId, messageId }),
-            "Failed to hide message:"
-        );
+        }));
+
+        try {
+            await hideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to hide message:", error);
+            set({ messages: previousMessages });
+        }
     },
 
     unhideMessage: async (conversationId: string, messageId: string) => {
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
-        await optimisticMessageUpdate(
-            get, set,
-            (msgs) => msgs.map((msg) =>
-                msg.id === messageId ? { ...msg, hiddenBy: (msg.hiddenBy || []).filter(id => id !== userId) } : msg
+
+        const previousMessages = get().messages;
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId
+                    ? { ...msg, hiddenBy: (msg.hiddenBy || []).filter(id => id !== userId) }
+                    : msg
             ),
-            () => unhideMessageApi({ conversationId, messageId }),
-            "Failed to unhide message:"
-        );
+        }));
+
+        try {
+            await unhideMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unhide message:", error);
+            set({ messages: previousMessages });
+        }
     },
 
     pinMessage: async (conversationId: string, messageId: string) => {
-        await optimisticMessageUpdate(
-            get, set,
-            (msgs) => msgs.map((msg) => msg.id === messageId ? { ...msg, isPinned: true } : msg),
-            () => pinMessageApi({ conversationId, messageId }),
-            "Failed to pin message:"
-        );
+        const previousMessages = get().messages;
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: true } : msg
+            ),
+        }));
+
+        try {
+            await pinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to pin message:", error);
+            set({ messages: previousMessages });
+        }
     },
 
     unpinMessage: async (conversationId: string, messageId: string) => {
-        await optimisticMessageUpdate(
-            get, set,
-            (msgs) => msgs.map((msg) => msg.id === messageId ? { ...msg, isPinned: false } : msg),
-            () => unpinMessageApi({ conversationId, messageId }),
-            "Failed to unpin message:"
-        );
+        const previousMessages = get().messages;
+        set((state) => ({
+            messages: state.messages.map((msg) =>
+                msg.id === messageId ? { ...msg, isPinned: false } : msg
+            ),
+        }));
+
+        try {
+            await unpinMessageApi({ conversationId, messageId });
+        } catch (error) {
+            console.error("Failed to unpin message:", error);
+            set({ messages: previousMessages });
+        }
     },
 
     pinConversation: async (conversationId: string) => {
-        const { pinConversation: pinConversationApi } = await import("@/api/chat.api");
-        await optimisticConversationUpdate(
-            get, set,
-            (convs) => convs.map((c) => c.id === conversationId ? { ...c, pinned: true } : c),
-            () => pinConversationApi(conversationId),
-            "Failed to pin conversation:"
-        );
+        const previousConversations = get().conversations;
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: true } : c
+            ),
+        }));
+        try {
+            const { pinConversation: pinConversationApi } = await import("@/api/chat.api");
+            await pinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to pin conversation:", error);
+            set({ conversations: previousConversations });
+        }
     },
 
     unpinConversation: async (conversationId: string) => {
-        const { unpinConversation: unpinConversationApi } = await import("@/api/chat.api");
-        await optimisticConversationUpdate(
-            get, set,
-            (convs) => convs.map((c) => c.id === conversationId ? { ...c, pinned: false } : c),
-            () => unpinConversationApi(conversationId),
-            "Failed to unpin conversation:"
-        );
+        const previousConversations = get().conversations;
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, pinned: false } : c
+            ),
+        }));
+        try {
+            const { unpinConversation: unpinConversationApi } = await import("@/api/chat.api");
+            await unpinConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unpin conversation:", error);
+            set({ conversations: previousConversations });
+        }
     },
 
     muteConversation: async (conversationId: string) => {
-        const { muteConversation: muteConversationApi } = await import("@/api/chat.api");
-        await optimisticConversationUpdate(
-            get, set,
-            (convs) => convs.map((c) => c.id === conversationId ? { ...c, muted: true } : c),
-            () => muteConversationApi(conversationId),
-            "Failed to mute conversation:"
-        );
+        const previousConversations = get().conversations;
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: true } : c
+            ),
+        }));
+        try {
+            const { muteConversation: muteConversationApi } = await import("@/api/chat.api");
+            await muteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to mute conversation:", error);
+            set({ conversations: previousConversations });
+        }
     },
 
     unmuteConversation: async (conversationId: string) => {
-        const { unmuteConversation: unmuteConversationApi } = await import("@/api/chat.api");
-        await optimisticConversationUpdate(
-            get, set,
-            (convs) => convs.map((c) => c.id === conversationId ? { ...c, muted: false } : c),
-            () => unmuteConversationApi(conversationId),
-            "Failed to unmute conversation:"
-        );
+        const previousConversations = get().conversations;
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId ? { ...c, muted: false } : c
+            ),
+        }));
+        try {
+            const { unmuteConversation: unmuteConversationApi } = await import("@/api/chat.api");
+            await unmuteConversationApi(conversationId);
+        } catch (error) {
+            console.error("Failed to unmute conversation:", error);
+            set({ conversations: previousConversations });
+        }
     },
     
     addMembers: async (conversationId: string, userIds: string[]) => {
