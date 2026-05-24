@@ -49,6 +49,7 @@ interface ChatActions {
     unsubscribeFromConversation: (conversationId: string) => Promise<void>;
     subscribeToAllConversations: () => Promise<void>;
     updateConversationLastMessage: (conversationId: string, message: Message) => void;
+    incrementUnreadCount: (conversationId: string) => void;
     publishSeenStatus: (conversationId: string, messageId: string) => Promise<void>;
     deleteConversation: (conversationId: string) => Promise<void>;
     reactMessage: (conversationId: string, messageId: string, emoji: string) => Promise<void>;
@@ -238,6 +239,11 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     setActiveConversationId: (id: string | null) => {
         set({ activeConversationId: id });
         if (id) {
+            set((state) => ({
+                conversations: state.conversations.map((c) =>
+                    c.id === id ? { ...c, unreadCount: 0 } : c
+                ),
+            }));
             void get().fetchMessages(id);
         } else {
             set({ messages: [] });
@@ -417,6 +423,16 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             conversations: state.conversations.map((c) =>
                 c.id === conversationId
                     ? { ...c, lastMessage: message, updatedAt: message.timestamp }
+                    : c
+            ),
+        }));
+    },
+
+    incrementUnreadCount: (conversationId: string) => {
+        set((state) => ({
+            conversations: state.conversations.map((c) =>
+                c.id === conversationId
+                    ? { ...c, unreadCount: (c.unreadCount || 0) + 1 }
                     : c
             ),
         }));

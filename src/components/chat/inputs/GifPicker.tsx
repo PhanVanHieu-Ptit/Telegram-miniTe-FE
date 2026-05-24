@@ -11,8 +11,7 @@ export const GifPicker: React.FC<GifPickerProps> = ({ onSelect }) => {
   const [gifs, setGifs] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Using a common public beta key for Giphy
-  const GIPHY_API_KEY = 'dc6zaTOxFJmzC'; 
+  const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY ?? '';
 
   const fetchGifs = async (query: string = '') => {
     setLoading(true);

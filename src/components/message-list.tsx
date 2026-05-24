@@ -84,6 +84,7 @@ const MessageRow = memo(function MessageRow({
 export const MessageList = memo(function MessageList() {
   const parentRef = useRef<HTMLDivElement>(null);
   const prevHeightRef = useRef(0);
+  const hasScrolledToBottomRef = useRef(false);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const targetMsgId = searchParams.get("msgId");
@@ -176,18 +177,25 @@ export const MessageList = memo(function MessageList() {
      Auto scroll new message
   ========================= */
   useEffect(() => {
-    if (!targetMsgId && isNearBottom()) {
+    if (targetMsgId) return;
+
+    if (!hasScrolledToBottomRef.current) {
+      // First time messages load for this conversation — always scroll to bottom
+      if (filteredMessages.length > 0) {
+        hasScrolledToBottomRef.current = true;
+        scrollToBottom(false);
+      }
+    } else if (isNearBottom()) {
+      // Subsequent additions (new MQTT message) — scroll only if already near bottom
       scrollToBottom(true);
     }
   }, [filteredMessages.length]);
 
   /* =========================
-     Conversation change
+     Conversation change — reset initial-scroll flag
   ========================= */
   useEffect(() => {
-    if (activeConversationId && !targetMsgId) {
-      scrollToBottom(false);
-    }
+    hasScrolledToBottomRef.current = false;
   }, [activeConversationId]);
 
   /* =========================
