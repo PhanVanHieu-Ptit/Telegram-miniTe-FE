@@ -92,6 +92,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
   const socketRef = useRef<Socket | null>(null);
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const localStreamRef = useRef<MediaStream | null>(null);
+  const remoteTracksRef = useRef<MediaStreamTrack[]>([]);
   const roomIdRef = useRef<string | null>(null);
   const iceCandidateBufferRef = useRef<RTCIceCandidateInit[]>([]);
 
@@ -242,7 +243,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
         { urls: 'stun:stun.l.google.com:19302' },
       ];
     }
-    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'relay' });
+    const pc = new RTCPeerConnection({ iceServers, iceTransportPolicy: 'all' });
 
     // Add local tracks
     const stream = localStreamRef.current;
@@ -316,6 +317,7 @@ export const useWebRTC = (): UseWebRTCReturn => {
     peerConnectionRef.current = null;
     roomIdRef.current = null;
     iceCandidateBufferRef.current = [];
+    remoteTracksRef.current = [];
     setRemoteStream(null);
     setIncomingCall(null);
     setActiveCall(null);
@@ -447,9 +449,10 @@ export const useWebRTC = (): UseWebRTCReturn => {
       setCallStatus('connected');
     } catch (err) {
       console.error('[useWebRTC] acceptCall failed', err);
+      stopLocalTracks();
       cleanupCall();
     }
-  }, [incomingCall, activeCall, getMedia, createPeerConnection, cleanupCall]);
+  }, [incomingCall, activeCall, getMedia, createPeerConnection, cleanupCall, stopLocalTracks]);
 
   /**
    * CALLEE: decline without answering.
