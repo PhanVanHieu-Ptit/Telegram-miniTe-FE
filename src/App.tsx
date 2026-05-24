@@ -4,15 +4,15 @@ import { useAuthStore } from '@/store/auth.store'
 import { useChatStore } from '@/store/chat.store'
 import { useCallback, useEffect, useRef, useState, type JSX } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { ProtectedRoute } from './components/protected-route'
+import { ProtectedRoute } from './components/ProtectedRoute'
 import ChatPage from './pages/ChatPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import GoogleCallbackPage from './pages/GoogleCallbackPage'
 import MessageSummarizerPage from './pages/MessageSummarizerPage'
-import NotificationProvider from './components/notification-provider'
+import NotificationProvider from './components/NotificationProvider'
 import { WebRTCProvider } from '@/contexts/webrtc.context'
-import IncomingCallOverlay from '@/components/incoming-call-overlay'
+import IncomingCallOverlay from '@/components/IncomingCallOverlay'
 import { Toaster } from 'sonner'
 
 type BootstrapPhase = 'idle' | 'loading' | 'ready'
@@ -20,7 +20,6 @@ type BootstrapPhase = 'idle' | 'loading' | 'ready'
 const MQTT_URL = import.meta.env.VITE_MQTT_URL ?? 'ws://localhost:1883'
 const MQTT_USER = import.meta.env.VITE_MQTT_USER
 const MQTT_PASS = import.meta.env.VITE_MQTT_PASS
-const HEARTBEAT_INTERVAL_MS = 10_000
 
 function App(): JSX.Element {
   const [bootstrapPhase, setBootstrapPhase] = useState<BootstrapPhase>('idle')
@@ -109,7 +108,7 @@ function App(): JSX.Element {
           void publishHeartbeat(client, user.id, effectiveActiveConvId);
         });
       }
-    }, HEARTBEAT_INTERVAL_MS);
+    }, 10_000); // 10 seconds
 
     return () => clearInterval(intervalId);
   }, [isAuthenticated]);
