@@ -55,6 +55,9 @@ export const performTokenRefresh = async (): Promise<string> => {
     const response = await apiRefreshToken(refreshTokenValue);
 
     const newAccessToken = response.token;
+    if (!newAccessToken || typeof newAccessToken !== 'string') {
+      throw new Error('Invalid token refresh response: missing token');
+    }
     tokenStorage.setToken(newAccessToken);
 
     if (response.refreshToken) {

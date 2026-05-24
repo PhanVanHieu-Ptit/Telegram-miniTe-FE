@@ -308,9 +308,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
 
         const q = searchQuery.toLowerCase();
         return conversations.filter((convo) => {
+            if (!convo.members) return false;
             return convo.members.some((m) =>
-                m.fullName.toLowerCase().includes(q) ||
-                m.email.toLowerCase().includes(q)
+                m.fullName?.toLowerCase().includes(q) ||
+                m.email?.toLowerCase().includes(q)
             );
         });
     },
@@ -459,9 +460,10 @@ export const useChatStore = create<ChatStore>((set, get) => ({
     },
 
     reactMessage: async (conversationId: string, messageId: string, emoji: string) => {
-        // Optimistic UI Update
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
+
+        const previousMessages = get().messages;
 
         set((state) => ({
             messages: state.messages.map((msg) => {
@@ -488,7 +490,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await reactMessage({ conversationId, messageId, emoji });
         } catch (error) {
             console.error("Failed to react to message:", error);
-            // We could revert optimistic update here if we want to be strict
+            set({ messages: previousMessages });
         }
     },
 
@@ -496,6 +498,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
 
+        const previousMessages = get().messages;
         set((state) => ({
             messages: state.messages.map((msg) =>
                 msg.id === messageId
@@ -508,6 +511,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await hideMessageApi({ conversationId, messageId });
         } catch (error) {
             console.error("Failed to hide message:", error);
+            set({ messages: previousMessages });
         }
     },
 
@@ -515,6 +519,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
         const userId = useAuthStore.getState().user?.id;
         if (!userId) return;
 
+        const previousMessages = get().messages;
         set((state) => ({
             messages: state.messages.map((msg) =>
                 msg.id === messageId
@@ -527,10 +532,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unhideMessageApi({ conversationId, messageId });
         } catch (error) {
             console.error("Failed to unhide message:", error);
+            set({ messages: previousMessages });
         }
     },
 
     pinMessage: async (conversationId: string, messageId: string) => {
+        const previousMessages = get().messages;
         set((state) => ({
             messages: state.messages.map((msg) =>
                 msg.id === messageId ? { ...msg, isPinned: true } : msg
@@ -541,10 +548,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await pinMessageApi({ conversationId, messageId });
         } catch (error) {
             console.error("Failed to pin message:", error);
+            set({ messages: previousMessages });
         }
     },
 
     unpinMessage: async (conversationId: string, messageId: string) => {
+        const previousMessages = get().messages;
         set((state) => ({
             messages: state.messages.map((msg) =>
                 msg.id === messageId ? { ...msg, isPinned: false } : msg
@@ -555,10 +564,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unpinMessageApi({ conversationId, messageId });
         } catch (error) {
             console.error("Failed to unpin message:", error);
+            set({ messages: previousMessages });
         }
     },
-    
+
     pinConversation: async (conversationId: string) => {
+        const previousConversations = get().conversations;
         set((state) => ({
             conversations: state.conversations.map((c) =>
                 c.id === conversationId ? { ...c, pinned: true } : c
@@ -569,10 +580,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await pinConversationApi(conversationId);
         } catch (error) {
             console.error("Failed to pin conversation:", error);
+            set({ conversations: previousConversations });
         }
     },
 
     unpinConversation: async (conversationId: string) => {
+        const previousConversations = get().conversations;
         set((state) => ({
             conversations: state.conversations.map((c) =>
                 c.id === conversationId ? { ...c, pinned: false } : c
@@ -583,10 +596,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unpinConversationApi(conversationId);
         } catch (error) {
             console.error("Failed to unpin conversation:", error);
+            set({ conversations: previousConversations });
         }
     },
-    
+
     muteConversation: async (conversationId: string) => {
+        const previousConversations = get().conversations;
         set((state) => ({
             conversations: state.conversations.map((c) =>
                 c.id === conversationId ? { ...c, muted: true } : c
@@ -597,10 +612,12 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await muteConversationApi(conversationId);
         } catch (error) {
             console.error("Failed to mute conversation:", error);
+            set({ conversations: previousConversations });
         }
     },
 
     unmuteConversation: async (conversationId: string) => {
+        const previousConversations = get().conversations;
         set((state) => ({
             conversations: state.conversations.map((c) =>
                 c.id === conversationId ? { ...c, muted: false } : c
@@ -611,6 +628,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
             await unmuteConversationApi(conversationId);
         } catch (error) {
             console.error("Failed to unmute conversation:", error);
+            set({ conversations: previousConversations });
         }
     },
     
@@ -742,7 +760,7 @@ export const useChatStore = create<ChatStore>((set, get) => ({
                 content: message.content || "",
                 type: message.type,
                 attachments: message.attachments,
-                forwardedFrom: message.senderId,
+                forwardedFrom: message.id,
                 metadata: {
                     ...message.metadata,
                     forwardedFromName: message.sender?.displayName || "Someone"
